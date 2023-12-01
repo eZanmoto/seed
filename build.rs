@@ -284,8 +284,8 @@ fn write_test(
                         src: String::from(r#\"{src}\"#),
                         exp: TestExpectation{{
                             code: {tgt_code},
-                            stdout: String::from(\"{tgt_stdout}\"),
-                            stderr: String::from(\"{tgt_stderr}\"),
+                            stdout: String::from(r#\"{tgt_stdout}\"#),
+                            stderr: String::from(r#\"{tgt_stderr}\"#),
                         }},
                     }}
                 );

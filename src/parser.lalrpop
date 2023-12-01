@@ -48,7 +48,7 @@ CommaSepList<T>: Vec<T> = {
 }
 
 Ident: String = {
-    <s:"ident"> => s,
+    <s:"identifier"> => s,
 };
 
 StrLiteral: String = {
@@ -60,7 +60,7 @@ extern {
     type Error = LexError;
 
     enum Token {
-        "ident" => Token::Ident(<String>),
+        "identifier" => Token::Ident(<String>),
         "str_literal" => Token::StrLiteral(<String>),
 
         "," => Token::Comma,

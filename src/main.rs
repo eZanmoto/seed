@@ -156,14 +156,20 @@ fn render_parse_error(error: ParseError<(usize, usize), Token, LexError>)
             (location, "invalid token".to_string())
         },
         ParseError::UnrecognizedEOF{location, expected} =>
-            (location, format!("unexpected EOF; expected {:?}", expected)),
+            (
+                location,
+                format!(
+                    "unexpected EOF; expected {}",
+                    join_strings(&expected),
+                ),
+            ),
         ParseError::UnrecognizedToken{token: (loc, tok, _loc), expected} =>
             (
                 loc,
                 format!(
-                    "unrecognised token '{:?}'; expected {:?}",
-                    tok,
-                    expected,
+                    "unexpected '{}'; expected {}",
+                    render_token_as_char(tok),
+                    join_strings(&expected),
                 ),
             ),
         ParseError::ExtraToken{token: (loc, tok, _loc)} =>
@@ -173,5 +179,30 @@ fn render_parse_error(error: ParseError<(usize, usize), Token, LexError>)
                 LexError::Unexpected(loc, c) =>
                     (loc, format!("unexpected '{}'", c)),
             },
+    }
+}
+
+fn render_token_as_char(t: Token) -> String {
+    match t {
+        Token::Ident(s) => format!("`{}`", s),
+        Token::StrLiteral(s) => format!("\"{}\"", s),
+
+        Token::Comma => ",".to_string(),
+        Token::ParenClose => ")".to_string(),
+        Token::ParenOpen => "(".to_string(),
+        Token::Semicolon => ";".to_string(),
+    }
+}
+
+fn join_strings(xs: &[String]) -> String {
+    if xs.is_empty() {
+        String::new()
+    } else if xs.len() == 1 {
+        xs[0].clone()
+    } else {
+        let pre = xs[0 .. xs.len() - 1].join(", ");
+        let last = xs[xs.len() - 1].clone();
+
+        format!("{} or {}", pre, last)
     }
 }
