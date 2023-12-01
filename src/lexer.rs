@@ -195,7 +195,7 @@ impl<'input> Iterator for Lexer<'input> {
             } else if let Some(t) = self.next_symbol_token(c) {
                 Ok(t)
             } else {
-                Err(LexError::Unexpected(self.loc(), c))
+                Err(LexError::Unexpected(start_loc, c))
             };
 
         Some(result)
@@ -225,8 +225,6 @@ mod test {
     fn test_lexs() {
         let tests = &[
             (
-                // FIXME The start location for the interpolated string literal
-                // should ideally include the `$` prefix.
                 r#"print ( "hello" )"#,
                 r#"(---) - (-----) -"#,
                 vec![

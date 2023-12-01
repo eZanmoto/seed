@@ -19,7 +19,7 @@ mod builtins;
 mod eval;
 mod lexer;
 
-use snafu::OptionExt;
+use lalrpop_util::ParseError;
 use snafu::ResultExt;
 use snafu::Snafu;
 
@@ -32,6 +32,8 @@ use eval::value;
 use eval::value::Error as EvalError;
 use eval::value::ScopeStack;
 use lexer::Lexer;
+use lexer::LexError;
+use lexer::Token;
 use parser::ProgParser;
 
 #[macro_use]
@@ -45,34 +47,51 @@ lalrpop_mod!(
 );
 
 fn main() {
-    if let Err(e) = f() {
-        match e {
-            Error::ScriptArgMissing => {
-                eprintln!("missing script argument");
+    let mut args = std::env::args();
+    let prog =
+        match args.next() {
+            Some(v) => v,
+            None => {
+                eprintln!("couldn't get program name");
+                process::exit(101);
             },
-            Error::GetCurrentDirFailed{source} => {
-                eprintln!("couldn't get current directory: {}", source);
+        };
+
+    let raw_cur_rel_script_path =
+        match args.next() {
+            Some(v) => v,
+            None => {
+                eprintln!("usage: {} <script-path>", prog);
+                process::exit(102);
             },
-            Error::ReadScriptFailed{path, source} => {
-                let p = path.to_string_lossy();
-                eprintln!("couldn't read script at '{}': {}", p, source);
-            },
-            Error::EvalFailed{source} => {
-                eprintln!("runtime error: {}", source);
-            },
-        }
-        process::exit(1);
+        };
+
+    if let Err(e) = run(Path::new(&raw_cur_rel_script_path)) {
+        let msg =
+            match e {
+                Error::GetCurrentDirFailed{source} => {
+                    format!(" couldn't get current directory: {}", source)
+                },
+                Error::ReadScriptFailed{path, source} => {
+                    let p = path.to_string_lossy();
+
+                    format!(" couldn't read script at '{}': {}", p, source)
+                },
+                Error::ParseFailed{src} => {
+                    let ((ln, ch), msg) = render_parse_error(src);
+
+                    format!("{}:{}: {}", ln, ch, msg)
+                },
+                Error::EvalFailed{source} => {
+                    format!(" runtime error: {}", source)
+                },
+            };
+        eprintln!("{}:{}", raw_cur_rel_script_path, msg);
+        process::exit(103);
     }
 }
 
-fn f() -> Result<(), Error> {
-    let mut args = std::env::args();
-    let _prog = args.next()
-        .expect("couldn't get program name");
-    let raw_cur_rel_script_path = args.next()
-        .context(ScriptArgMissing)?;
-    let cur_rel_script_path = Path::new(&raw_cur_rel_script_path);
-
+fn run(cur_rel_script_path: &Path) -> Result<(), Error> {
     let cur_script_dir = env::current_dir()
         .context(GetCurrentDirFailed)?;
     let mut cur_script_path = cur_script_dir.clone();
@@ -90,7 +109,16 @@ fn f() -> Result<(), Error> {
 
     let mut scopes = ScopeStack::new(vec![]);
     let lexer = Lexer::new(&src);
-    let ast = ProgParser::new().parse(lexer).unwrap();
+    let ast =
+        match ProgParser::new().parse(lexer) {
+            Ok(v) => {
+                v
+            },
+            Err(e) => {
+                return Err(Error::ParseFailed{src: e});
+            },
+        };
+
     eval::eval_prog(
         &EvaluationContext{
             builtins: &Builtins{
@@ -110,9 +138,40 @@ fn f() -> Result<(), Error> {
 }
 
 #[derive(Debug, Snafu)]
+#[allow(clippy::enum_variant_names)]
 enum Error {
-    ScriptArgMissing,
     GetCurrentDirFailed{source: IoError},
     ReadScriptFailed{path: PathBuf, source: IoError},
+    // We add `ParseError` as a `src` value rather than `source` because it
+    // doesn't satisfy the error constraints required by `Snafu`.
+    ParseFailed{src: ParseError<(usize, usize), Token, LexError>},
     EvalFailed{source: EvalError},
+}
+
+fn render_parse_error(error: ParseError<(usize, usize), Token, LexError>)
+    -> ((usize, usize), String)
+{
+    match error {
+        ParseError::InvalidToken{location} => {
+            (location, "invalid token".to_string())
+        },
+        ParseError::UnrecognizedEOF{location, expected} =>
+            (location, format!("unexpected EOF; expected {:?}", expected)),
+        ParseError::UnrecognizedToken{token: (loc, tok, _loc), expected} =>
+            (
+                loc,
+                format!(
+                    "unrecognised token '{:?}'; expected {:?}",
+                    tok,
+                    expected,
+                ),
+            ),
+        ParseError::ExtraToken{token: (loc, tok, _loc)} =>
+            (loc, format!("encountered extra token '{:?}'", tok)),
+        ParseError::User{error} =>
+            match error {
+                LexError::Unexpected(loc, c) =>
+                    (loc, format!("unexpected '{}'", c)),
+            },
+    }
 }
