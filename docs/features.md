@@ -1,6 +1,13 @@
 Features
 ========
 
+Comments
+------
+
+```
+# Comments start with a number sign.
+```
+
 Values
 ------
 
