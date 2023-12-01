@@ -1,0 +1,24 @@
+[package]
+authors = ["Sean Kelleher <ezanmoto@gmail.com>"]
+categories = [
+    "development-tools"
+]
+description = "A research programming language"
+keywords = ["programming"]
+license = "MIT"
+name = "seed"
+readme = "README.md"
+repository = "https://github.com/ezanmoto/seed"
+version = "0.1.0"
+
+[build-dependencies]
+indoc = "=1.0.2"
+lalrpop = "=0.19.5"
+
+[dependencies]
+lalrpop-util = "=0.19.5"
+snafu = "=0.6.9"
+
+[dev-dependencies]
+assert_cmd = "=1.0.1"
+assert_matches = "=1.5.0"

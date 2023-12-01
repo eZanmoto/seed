@@ -1,0 +1,189 @@
+// Copyright 2023 Sean Kelleher. All rights reserved.
+// Use of this source code is governed by an MIT
+// licence that can be found in the LICENCE file.
+
+use std::collections::HashMap;
+use std::path::PathBuf;
+
+pub mod bind;
+pub mod builtins;
+pub mod value;
+
+use snafu::ResultExt;
+
+#[allow(clippy::wildcard_imports)]
+use ast::*;
+use self::builtins::Builtins;
+// We use a wildcard import for `value` to import the many error variant
+// constructors created by Snafu.
+#[allow(clippy::wildcard_imports)]
+use self::value::*;
+use self::value::BuiltinFunc;
+use self::value::Error;
+use self::value::List;
+use self::value::ScopeStack;
+use self::value::ValRefWithSource;
+use self::value::Value;
+use self::value::ValWithSource;
+
+pub struct EvaluationContext<'a> {
+    pub builtins: &'a Builtins,
+    pub cur_script_dir: PathBuf,
+
+    // `global_bindings` are added to the global scope when the program starts.
+    //
+    // TODO Consider grouping `global_bindings` with `builtins`.
+    pub global_bindings: &'a Vec<(Expr, ValRefWithSource)>,
+}
+
+pub fn eval_prog(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    global_bindings: Vec<(Expr, ValRefWithSource)>,
+    Prog::Body{stmts}: &Prog,
+)
+    -> Result<(), Error>
+{
+    eval_stmts(context, scopes, global_bindings, stmts)
+        .context(EvalProgFailed)?;
+
+    Ok(())
+}
+
+// `eval_stmts` evaluates `stmts` in a new scope pushed onto `scopes`, with the
+// given `new_bindings` declared in the new scope. It returns `Some(v)` if one
+// of the statements is evaluates is a a `return` statement, otherwise it
+// returns `None`.
+pub fn eval_stmts(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    new_bindings: Vec<(Expr, ValRefWithSource)>,
+    stmts: &Block,
+)
+    -> Result<(), Error>
+{
+    let mut inner_scopes = scopes.new_from_push(HashMap::new());
+
+    for (lhs, rhs) in new_bindings {
+        bind::bind(&mut inner_scopes, lhs.clone(), rhs)?;
+    }
+
+    eval_stmts_with_scope_stack(context, &mut inner_scopes, stmts)
+        .context(EvalStmtsFailed)?;
+
+    Ok(())
+}
+
+pub fn eval_stmts_with_scope_stack(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    stmts: &Block,
+)
+    -> Result<(), Error>
+{
+    for stmt in stmts {
+        eval_stmt(context, scopes, stmt)
+            .context(EvalStmtsWithScopeStackFailed)?;
+    }
+
+    Ok(())
+}
+
+// `eval_stmt` returns `Some(v)` if a `return` value is evaluated, otherwise it
+// returns `None`.
+fn eval_stmt(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    stmt: &Stmt,
+)
+    -> Result<(), Error>
+{
+    match stmt {
+        Stmt::Expr{expr} => {
+            eval_expr(context, scopes, expr)
+                .context(EvalStmtFailed)?;
+        },
+    }
+
+    Ok(())
+}
+
+fn eval_expr(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    expr: &Expr,
+) -> Result<ValRefWithSource, Error> {
+    match expr {
+        Expr::Str{s} => Ok(value::new_str_from_string(s.clone())),
+
+        Expr::Var{name} => {
+            let v =
+                match scopes.get(name) {
+                    Some(v) => v,
+                    None => return Err(Error::Undefined{name: name.clone()}),
+                };
+
+            Ok(v)
+        },
+
+        Expr::Call{expr, args} => {
+            let arg_vals = eval_exprs(context, scopes, args)?;
+
+            let func_val = eval_expr(context, scopes, expr)?;
+
+            let v =
+                {
+                    let ValWithSource{v, source} = &*func_val.lock().unwrap();
+                    match v {
+                        Value::BuiltInFunc{f} => {
+                            let this = source.as_ref().cloned();
+
+                            CallBinding::BuiltInFunc{
+                                f: *f,
+                                this,
+                                args: arg_vals,
+                            }
+                        },
+
+                        _ => {
+                            return Err(Error::CannotCallNonFunc{v: v.clone()});
+                        },
+                    }
+                };
+
+            let v =
+                match v {
+                    CallBinding::BuiltInFunc{f, this, args} => {
+                        f(this, args)?
+                    },
+                };
+
+            Ok(v)
+        },
+    }
+}
+
+enum CallBinding {
+    BuiltInFunc{
+        f: BuiltinFunc,
+        this: Option<ValRefWithSource>,
+        args: List,
+    },
+}
+
+pub fn eval_exprs(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    exprs: &Vec<Expr>,
+)
+    -> Result<List, Error>
+{
+    let mut vals = vec![];
+
+    for expr in exprs {
+        let v = eval_expr(context, scopes, expr)?;
+        vals.push(v);
+    }
+
+    Ok(vals)
+}
