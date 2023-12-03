@@ -2,7 +2,9 @@
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
-use std::str::CharIndices;
+mod scanner;
+
+use self::scanner::Scanner;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
@@ -21,151 +23,68 @@ pub enum LexError {
 }
 
 pub struct Lexer<'input> {
-    raw_chars: &'input str,
-    chars: CharIndices<'input>,
-    index: usize,
-    cur: Option<(usize, char)>,
-
-    // TODO Consider using a "cursor" abstraction for tracking the current line
-    // and column.
-    line: usize,
-    col: usize,
+    scanner: Scanner<'input>,
 }
 
 impl<'input> Lexer<'input> {
     pub fn new(chars: &'input str) -> Self {
-        let mut char_indices = chars.char_indices();
-
-        let cur = char_indices.next();
-        let mut line = 1;
-        if let Some((_, '\n')) = cur {
-            line += 1;
-        }
-
-        Lexer{
-            raw_chars: chars,
-            chars: char_indices,
-            index: 0,
-            cur,
-
-            line,
-            col: 1,
-        }
+        Lexer{scanner: Scanner::new(chars)}
     }
 
     fn skip_whitespace_and_comments(&mut self) {
-        while let Some(c) = self.peek_char() {
+        while let Some(c) = self.scanner.peek_char() {
             if c == '#' {
-                while let Some(c_) = self.peek_char() {
+                while let Some(c_) = self.scanner.peek_char() {
                     if c_ == '\n' {
                         break;
                     }
-                    self.next_char();
+                    self.scanner.next_char();
                 }
             } else {
                 if !c.is_ascii_whitespace() {
                     return;
                 }
-                self.next_char();
+                self.scanner.next_char();
             }
         }
     }
 
-    fn peek_char(&mut self) -> Option<char> {
-        if let Some((_, c)) = self.cur {
-            Some(c)
-        } else {
-            None
-        }
-    }
-
-    fn next_char(&mut self) {
-        // TODO Consider creating a separate cursor type that just keeps track
-        // of the current index, character and file position.
-        if let Some((i, c)) = self.chars.next() {
-            self.index = i;
-            self.cur = Some((i, c));
-
-            if c == '\n' {
-                self.line += 1;
-                self.col = 1;
-            } else {
-                self.col += 1;
-            }
-        } else {
-            self.index = self.raw_chars.len();
-            self.cur = None;
-        }
-    }
-
-    fn loc(&mut self) -> Location {
-        (self.line, self.col)
-    }
-
-    // `end_loc` returns the location one character before where the cursor
-    // currently is, under the assumption that this function is called after
-    // the newest token is parsed, such that the cursor has progressed one
-    // character beyond the end of the token. This function just returns the
-    // current location if the end of the token stream has been reached.
-    fn end_loc(&mut self) -> Location {
-        let (line, mut col) = self.loc();
-        if self.peek_char().is_some() {
-            col -= 1;
-        }
-
-        (line, col)
-    }
-
-    fn next_ident(&mut self, start: usize, start_loc: Location) -> Span {
-        while let Some(c) = self.peek_char() {
+    fn next_ident(&mut self) -> Token {
+        let start = self.scanner.index;
+        while let Some(c) = self.scanner.peek_char() {
             if !c.is_ascii_alphanumeric() && c != '_' {
                 break;
             }
-            self.next_char();
+            self.scanner.next_char();
         }
-        let end = self.index;
-        let end_loc = self.end_loc();
+        let end = self.scanner.index;
 
-        let id = &self.raw_chars[start..end];
+        let id = self.scanner.range(start, end);
 
-        let t = Token::Ident(id.to_string());
-
-        (start_loc, t, end_loc)
+        Token::Ident(id.to_string())
     }
 
-    fn next_str_literal<F>(&mut self, start_loc: Location, new_str_token: F)
-        -> Span
-    where
-        F: FnOnce(String) -> Token
-    {
-        let start = self.index;
-
-        self.next_char();
-
-        while let Some(c) = self.peek_char() {
-            self.next_char();
+    fn next_str_literal(&mut self) -> Token {
+        let start = self.scanner.index;
+        self.scanner.next_char();
+        while let Some(c) = self.scanner.peek_char() {
+            self.scanner.next_char();
             if c == '"' {
                 break;
             }
         }
-        let end = self.index;
-        let end_loc = self.end_loc();
+        let end = self.scanner.index;
 
-        let id = &self.raw_chars[(start + 1)..(end - 1)];
+        let id = self.scanner.range(start + 1, end - 1);
 
-        let t = new_str_token(id.to_string());
-
-        (start_loc, t, end_loc)
+        Token::StrLiteral(id.to_string())
     }
 
-    fn next_symbol_token(&mut self, c: char) -> Option<Span> {
-        let start_loc = self.loc();
-
+    fn next_symbol_token(&mut self, c: char) -> Option<Token> {
         if let Some(t) = match_single_symbol_token(c) {
-            self.next_char();
-            let end_loc = self.end_loc();
+            self.scanner.next_char();
 
-            Some((start_loc, t, end_loc))
+            Some(t)
         } else {
             None
         }
@@ -182,23 +101,30 @@ impl<'input> Iterator for Lexer<'input> {
     fn next(&mut self) -> Option<Self::Item> {
         self.skip_whitespace_and_comments();
 
-        let start = self.index;
-        let start_loc = self.loc();
+        let start_loc = self.scanner.loc();
 
-        let c = self.peek_char()?;
+        let c = self.scanner.peek_char()?;
 
-        let result =
+        let t =
             if c.is_ascii_alphabetic() || c == '_' {
-                Ok(self.next_ident(start, start_loc))
+                self.next_ident()
             } else if c == '"' {
-                Ok(self.next_str_literal(start_loc, Token::StrLiteral))
+                self.next_str_literal()
             } else if let Some(t) = self.next_symbol_token(c) {
-                Ok(t)
+                t
             } else {
-                Err(LexError::Unexpected(start_loc, c))
+                return Some(Err(LexError::Unexpected(start_loc, c)));
             };
 
-        Some(result)
+        let (line, mut col) = self.scanner.loc();
+        if self.scanner.peek_char().is_some() && col > 0 {
+            // We reduce the column count by one, under the assumption that in
+            // the successful cases above the scanner has progressed one
+            // character beyond the end of the current token.
+            col -= 1;
+        }
+
+        Some(Ok((start_loc, t, (line, col))))
     }
 }
 
