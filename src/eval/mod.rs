@@ -7,6 +7,7 @@ use std::path::PathBuf;
 
 pub mod bind;
 pub mod builtins;
+pub mod error;
 pub mod value;
 
 use snafu::ResultExt;
@@ -14,12 +15,12 @@ use snafu::ResultExt;
 #[allow(clippy::wildcard_imports)]
 use ast::*;
 use self::builtins::Builtins;
-// We use a wildcard import for `value` to import the many error variant
+// We use a wildcard import for `error` to import the many error variant
 // constructors created by Snafu.
 #[allow(clippy::wildcard_imports)]
-use self::value::*;
+use self::error::*;
+use self::error::Error;
 use self::value::BuiltinFunc;
-use self::value::Error;
 use self::value::List;
 use self::value::ScopeStack;
 use self::value::ValRefWithSource;

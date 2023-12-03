@@ -2,8 +2,8 @@
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
+use crate::eval::error::Error;
 use crate::eval::value;
-use crate::eval::value::Error;
 use crate::eval::value::List;
 use crate::eval::value::ValRefWithSource;
 use crate::eval::value::Value;

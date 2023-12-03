@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 #[allow(clippy::wildcard_imports)]
 use ast::*;
-use value::Error;
+use super::error::Error;
 use value::ScopeStack;
 use value::ValRefWithSource;
 
