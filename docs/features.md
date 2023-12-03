@@ -11,9 +11,11 @@ Comments
 Values
 ------
 
-Strings:
-
 ```
+# Null:
+null
+
+# Strings:
 "Hello, world!"
 ```
 

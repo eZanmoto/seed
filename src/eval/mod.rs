@@ -114,6 +114,8 @@ fn eval_expr(
     expr: &Expr,
 ) -> Result<ValRefWithSource, Error> {
     match expr {
+        Expr::Null => Ok(value::new_null()),
+
         Expr::Str{s} => Ok(value::new_str_from_string(s.clone())),
 
         Expr::Var{name} => {

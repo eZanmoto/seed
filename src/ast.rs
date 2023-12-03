@@ -16,6 +16,8 @@ pub enum Stmt {
 
 #[derive(Clone, Debug)]
 pub enum Expr {
+    Null,
+
     Str{s: String},
 
     Var{name: String},

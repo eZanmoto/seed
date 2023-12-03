@@ -11,6 +11,8 @@ pub enum Token {
     Ident(String),
     StrLiteral(String),
 
+    Null,
+
     Comma,
     ParenClose,
     ParenOpen,
@@ -49,7 +51,7 @@ impl<'input> Lexer<'input> {
         }
     }
 
-    fn next_ident(&mut self) -> Token {
+    fn next_keyword_or_ident(&mut self) -> Token {
         let start = self.scanner.index;
         while let Some(c) = self.scanner.peek_char() {
             if !c.is_ascii_alphanumeric() && c != '_' {
@@ -59,9 +61,13 @@ impl<'input> Lexer<'input> {
         }
         let end = self.scanner.index;
 
-        let id = self.scanner.range(start, end);
+        let t = self.scanner.range(start, end);
 
-        Token::Ident(id.to_string())
+        match t {
+            "null" => Token::Null,
+
+            _ => Token::Ident(t.to_string()),
+        }
     }
 
     fn next_str_literal(&mut self) -> Token {
@@ -107,7 +113,7 @@ impl<'input> Iterator for Lexer<'input> {
 
         let t =
             if c.is_ascii_alphabetic() || c == '_' {
-                self.next_ident()
+                self.next_keyword_or_ident()
             } else if c == '"' {
                 self.next_str_literal()
             } else if let Some(t) = self.next_symbol_token(c) {

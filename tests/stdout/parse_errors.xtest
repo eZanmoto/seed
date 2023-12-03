@@ -11,5 +11,5 @@ exit_code: 103
 ;
 --------------------------------------------------
 --------------------------------------------------
-parse_errors/unexpected_semicolon.sd:1:1: unexpected ';'; expected "identifier" or "str_literal"
+parse_errors/unexpected_semicolon.sd:1:1: unexpected ';'; expected "identifier", "null" or "str_literal"
 ==================================================

@@ -36,6 +36,11 @@ fn bind_next(
         Expr::Var{name} => {
             bind_next_name(scopes, names_in_binding, name, rhs)
         },
+        Expr::Null => {
+            Err(Error::InvalidBindTarget{
+                descr: "`null`".to_string(),
+            })
+        },
         Expr::Str{..} => {
             Err(Error::InvalidBindTarget{
                 descr: "a string literal".to_string(),

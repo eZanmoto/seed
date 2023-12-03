@@ -31,6 +31,8 @@ pub ExprPrecedence1: Expr = {
 }
 
 pub ExprPrecedence2: Expr = {
+    "null" => Expr::Null,
+
     <name:Ident> => Expr::Var{name},
     <s:StrLiteral> => Expr::Str{s},
 }
@@ -62,6 +64,8 @@ extern {
     enum Token {
         "identifier" => Token::Ident(<String>),
         "str_literal" => Token::StrLiteral(<String>),
+
+        "null" => Token::Null,
 
         "," => Token::Comma,
         ")" => Token::ParenClose,
