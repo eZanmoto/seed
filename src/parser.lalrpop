@@ -32,6 +32,8 @@ pub ExprPrecedence1: RawExpr = {
 
 pub ExprPrecedence2: RawExpr = {
     "null" => RawExpr::Null,
+    "true" => RawExpr::Bool{b: true},
+    "false" => RawExpr::Bool{b: false},
 
     <name:Ident> => RawExpr::Var{name},
     <s:StrLiteral> => RawExpr::Str{s},
@@ -65,7 +67,9 @@ extern {
         "identifier" => Token::Ident(<String>),
         "str_literal" => Token::StrLiteral(<String>),
 
+        "false" => Token::False,
         "null" => Token::Null,
+        "true" => Token::True,
 
         "," => Token::Comma,
         ")" => Token::ParenClose,

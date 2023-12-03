@@ -20,6 +20,7 @@ pub type Expr = (RawExpr, (usize, usize));
 pub enum RawExpr {
     Null,
 
+    Bool{b: bool},
     Str{s: String},
 
     Var{name: String},

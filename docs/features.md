@@ -15,6 +15,10 @@ Values
 # Null:
 null
 
+# Booleans:
+true
+false
+
 # Strings:
 "Hello, world!"
 ```

@@ -187,7 +187,9 @@ fn render_token_as_char(t: Token) -> String {
         Token::Ident(s) => format!("`{}`", s),
         Token::StrLiteral(s) => format!("\"{}\"", s),
 
+        Token::False => "`false`".to_string(),
         Token::Null => "`null`".to_string(),
+        Token::True => "`true`".to_string(),
 
         Token::Comma => ",".to_string(),
         Token::ParenClose => ")".to_string(),

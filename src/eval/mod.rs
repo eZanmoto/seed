@@ -127,6 +127,8 @@ fn eval_expr(
     match raw_expr {
         RawExpr::Null => Ok(value::new_null()),
 
+        RawExpr::Bool{b} => Ok(value::new_bool(*b)),
+
         RawExpr::Str{s} => Ok(value::new_str_from_string(s.clone())),
 
         RawExpr::Var{name} => {

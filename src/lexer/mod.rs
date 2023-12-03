@@ -11,7 +11,9 @@ pub enum Token {
     Ident(String),
     StrLiteral(String),
 
+    False,
     Null,
+    True,
 
     Comma,
     ParenClose,
@@ -64,7 +66,9 @@ impl<'input> Lexer<'input> {
         let t = self.scanner.range(start, end);
 
         match t {
+            "false" => Token::False,
             "null" => Token::Null,
+            "true" => Token::True,
 
             _ => Token::Ident(t.to_string()),
         }

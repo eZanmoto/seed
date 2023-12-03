@@ -34,6 +34,10 @@ fn render(v: &ValRefWithSource) -> Result<String, Error> {
             s += "<null>";
         },
 
+        Value::Bool(b) => {
+            s += &format!("{}", b);
+        },
+
         Value::Str(raw_str) => {
             let s_ =
                 match String::from_utf8(raw_str.clone()) {

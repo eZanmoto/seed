@@ -46,6 +46,11 @@ fn bind_next(
                 descr: "`null`".to_string(),
             })
         },
+        RawExpr::Bool{..} => {
+            new_loc_error(Error::InvalidBindTarget{
+                descr: "a boolean literal".to_string(),
+            })
+        },
         RawExpr::Str{..} => {
             new_loc_error(Error::InvalidBindTarget{
                 descr: "a string literal".to_string(),

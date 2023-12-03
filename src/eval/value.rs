@@ -90,6 +90,7 @@ pub struct ValWithSource {
 pub enum Value {
     Null,
 
+    Bool(bool),
     Str(Str),
 
     BuiltInFunc{f: BuiltinFunc},
@@ -154,6 +155,10 @@ pub type BuiltinFunc =
 
 pub fn new_null() -> ValRefWithSource {
     new_val_ref(Value::Null)
+}
+
+pub fn new_bool(b: bool) -> ValRefWithSource {
+    new_val_ref(Value::Bool(b))
 }
 
 pub fn new_str_from_string(s: String) -> ValRefWithSource {
