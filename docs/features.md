@@ -19,6 +19,9 @@ null
 true
 false
 
+# Integers:
+1234
+
 # Strings:
 "Hello, world!"
 ```

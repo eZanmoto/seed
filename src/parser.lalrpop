@@ -36,6 +36,7 @@ pub ExprPrecedence2: RawExpr = {
     "false" => RawExpr::Bool{b: false},
 
     <name:Ident> => RawExpr::Var{name},
+    <n:IntLiteral> => RawExpr::Int{n},
     <s:StrLiteral> => RawExpr::Str{s},
 }
 
@@ -55,6 +56,10 @@ Ident: String = {
     <s:"identifier"> => s,
 };
 
+IntLiteral: i64 = {
+    <n:"int_literal"> => n,
+};
+
 StrLiteral: String = {
     <s:"str_literal"> => s,
 };
@@ -65,6 +70,7 @@ extern {
 
     enum Token {
         "identifier" => Token::Ident(<String>),
+        "int_literal" => Token::IntLiteral(<i64>),
         "str_literal" => Token::StrLiteral(<String>),
 
         "false" => Token::False,

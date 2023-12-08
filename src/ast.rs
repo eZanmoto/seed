@@ -21,6 +21,7 @@ pub enum RawExpr {
     Null,
 
     Bool{b: bool},
+    Int{n: i64},
     Str{s: String},
 
     Var{name: String},

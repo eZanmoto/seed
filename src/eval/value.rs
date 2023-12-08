@@ -33,6 +33,7 @@ pub enum Value {
     Null,
 
     Bool(bool),
+    Int(i64),
     Str(Str),
 
     BuiltInFunc{f: BuiltinFunc},
@@ -101,6 +102,10 @@ pub fn new_null() -> ValRefWithSource {
 
 pub fn new_bool(b: bool) -> ValRefWithSource {
     new_val_ref(Value::Bool(b))
+}
+
+pub fn new_int(n: i64) -> ValRefWithSource {
+    new_val_ref(Value::Int(n))
 }
 
 pub fn new_str_from_string(s: String) -> ValRefWithSource {

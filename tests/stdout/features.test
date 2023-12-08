@@ -4,10 +4,11 @@ print("Hello, world!");
 # Comments start with a number sign.
 
 print(null);
-
 print(true);
+print(1234);
 --------------------------------------------------
 Hello, world!
 <null>
 true
+1234
 ==================================================

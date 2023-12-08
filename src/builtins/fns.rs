@@ -38,6 +38,10 @@ fn render(v: &ValRefWithSource) -> Result<String, Error> {
             s += &format!("{}", b);
         },
 
+        Value::Int(n) => {
+            s += &format!("{}", n);
+        },
+
         Value::Str(raw_str) => {
             let s_ =
                 match String::from_utf8(raw_str.clone()) {

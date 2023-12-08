@@ -9,6 +9,7 @@ use self::scanner::Scanner;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     Ident(String),
+    IntLiteral(i64),
     StrLiteral(String),
 
     False,
@@ -74,6 +75,22 @@ impl<'input> Lexer<'input> {
         }
     }
 
+    fn next_int(&mut self) -> Token {
+        let start = self.scanner.index;
+        while let Some(c) = self.scanner.peek_char() {
+            if !c.is_ascii_digit() {
+                break;
+            }
+            self.scanner.next_char();
+        }
+        let end = self.scanner.index;
+
+        let raw_int = self.scanner.range(start, end);
+        let int: i64 = raw_int.parse().unwrap();
+
+        Token::IntLiteral(int)
+    }
+
     fn next_str_literal(&mut self) -> Token {
         let start = self.scanner.index;
         self.scanner.next_char();
@@ -118,6 +135,8 @@ impl<'input> Iterator for Lexer<'input> {
         let t =
             if c.is_ascii_alphabetic() || c == '_' {
                 self.next_keyword_or_ident()
+            } else if c.is_ascii_digit() {
+                self.next_int()
             } else if c == '"' {
                 self.next_str_literal()
             } else if let Some(t) = self.next_symbol_token(c) {

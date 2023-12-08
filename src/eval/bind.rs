@@ -51,6 +51,11 @@ fn bind_next(
                 descr: "a boolean literal".to_string(),
             })
         },
+        RawExpr::Int{..} => {
+            new_loc_error(Error::InvalidBindTarget{
+                descr: "an integer literal".to_string(),
+            })
+        },
         RawExpr::Str{..} => {
             new_loc_error(Error::InvalidBindTarget{
                 descr: "a string literal".to_string(),

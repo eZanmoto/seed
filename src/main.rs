@@ -185,6 +185,7 @@ fn render_parse_error(error: ParseError<(usize, usize), Token, LexError>)
 fn render_token_as_char(t: Token) -> String {
     match t {
         Token::Ident(s) => format!("`{}`", s),
+        Token::IntLiteral(n) => format!("{}", n),
         Token::StrLiteral(s) => format!("\"{}\"", s),
 
         Token::False => "`false`".to_string(),
