@@ -14,8 +14,10 @@ pub enum Stmt {
     Expr{expr: Expr},
 }
 
+pub type Expr = (RawExpr, (usize, usize));
+
 #[derive(Clone, Debug)]
-pub enum Expr {
+pub enum RawExpr {
     Null,
 
     Str{s: String},

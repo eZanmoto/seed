@@ -18,23 +18,23 @@ pub Stmt: Stmt = {
 }
 
 pub Expr: Expr = {
-    <expr:ExprPrecedence1> => expr,
+    <loc:@L> <expr:ExprPrecedence1> => (expr, loc),
 }
 
 // `ExprPrecedence1` defines the most loosely binding expressions. Each
 // increasing precedence indicates a tighter binding.
-pub ExprPrecedence1: Expr = {
-    <expr:ExprPrecedence1> "(" <args:ParamList> ")" =>
-        Expr::Call{expr: Box::new(expr), args: args},
+pub ExprPrecedence1: RawExpr = {
+    <loc:@L> <expr:ExprPrecedence1> "(" <args:ParamList> ")" =>
+        RawExpr::Call{expr: Box::new((expr, loc)), args: args},
 
     <expr:ExprPrecedence2> => expr,
 }
 
-pub ExprPrecedence2: Expr = {
-    "null" => Expr::Null,
+pub ExprPrecedence2: RawExpr = {
+    "null" => RawExpr::Null,
 
-    <name:Ident> => Expr::Var{name},
-    <s:StrLiteral> => Expr::Str{s},
+    <name:Ident> => RawExpr::Var{name},
+    <s:StrLiteral> => RawExpr::Str{s},
 }
 
 pub ParamList: Vec<Expr> = CommaSepList<Expr>;

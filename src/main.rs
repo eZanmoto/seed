@@ -23,7 +23,7 @@ use lalrpop_util::ParseError;
 use snafu::ResultExt;
 use snafu::Snafu;
 
-use ast::Expr;
+use ast::RawExpr;
 use builtins::fns;
 use builtins::type_methods;
 use eval::builtins::Builtins;
@@ -83,7 +83,7 @@ fn main() {
                     format!("{}:{}: {}", ln, ch, msg)
                 },
                 Error::EvalFailed{source} => {
-                    format!(" runtime error: {}", source)
+                    render_eval_error(source)
                 },
             };
         eprintln!("{}:{}", raw_cur_rel_script_path, msg);
@@ -102,7 +102,7 @@ fn run(cur_rel_script_path: &Path) -> Result<(), Error> {
 
     let global_bindings = vec![
         (
-            Expr::Var{name: "print".to_string()},
+            RawExpr::Var{name: "print".to_string()},
             value::new_built_in_func(fns::print),
         ),
     ];
@@ -206,5 +206,17 @@ fn join_strings(xs: &[String]) -> String {
         let last = xs[xs.len() - 1].clone();
 
         format!("{} or {}", pre, last)
+    }
+}
+
+fn render_eval_error(error: EvalError) -> String {
+    match error {
+        EvalError::EvalProgFailed{source} |
+        EvalError::EvalStmtsInNewScopeFailed{source} |
+        EvalError::EvalStmtsWithScopeStackFailed{source} |
+        EvalError::EvalStmtsFailed{source} |
+        EvalError::EvalStmtFailed{source} => render_eval_error(*source),
+
+        _ => format!("{}", error),
     }
 }

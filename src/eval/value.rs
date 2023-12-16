@@ -16,6 +16,8 @@ use snafu::Snafu;
 #[derive(Clone, Debug, Snafu)]
 #[snafu(visibility = "pub")]
 pub enum Error {
+    // TODO Consider adding a rendered version of the source expression to
+    // highlight what the interpreter attempted to evaluate.
     #[snafu(display("value is not a function"))]
     CannotCallNonFunc{v: Value},
     #[snafu(display("'{}' is not defined", name))]
@@ -29,6 +31,18 @@ pub enum Error {
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
+
+    // NOTE This is a somewhat hacky way of adding location information to
+    // errors in a generic way. Ideally this information could be better
+    // decoupled from the core error type, but we take this approach for now
+    // for simplicity.
+    #[snafu(display("{}:{}: {}", line, col, source))]
+    AtLoc{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+        line: usize,
+        col: usize,
+    },
 
     EvalProgFailed{
         #[snafu(source(from(Error, Box::new)))]

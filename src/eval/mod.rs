@@ -33,18 +33,24 @@ pub struct EvaluationContext<'a> {
     // `global_bindings` are added to the global scope when the program starts.
     //
     // TODO Consider grouping `global_bindings` with `builtins`.
-    pub global_bindings: &'a Vec<(Expr, ValRefWithSource)>,
+    pub global_bindings: &'a Vec<(RawExpr, ValRefWithSource)>,
 }
 
 pub fn eval_prog(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
-    global_bindings: Vec<(Expr, ValRefWithSource)>,
+    global_bindings: Vec<(RawExpr, ValRefWithSource)>,
     Prog::Body{stmts}: &Prog,
 )
     -> Result<(), Error>
 {
-    eval_stmts(context, scopes, global_bindings, stmts)
+    let bindings =
+        global_bindings
+            .into_iter()
+            .map(|(raw_expr, v)| ((raw_expr, (0, 0)), v))
+            .collect();
+
+    eval_stmts(context, scopes, bindings, stmts)
         .context(EvalProgFailed)?;
 
     Ok(())
@@ -113,22 +119,29 @@ fn eval_expr(
     scopes: &mut ScopeStack,
     expr: &Expr,
 ) -> Result<ValRefWithSource, Error> {
-    match expr {
-        Expr::Null => Ok(value::new_null()),
+    let (raw_expr, (line, col)) = expr;
+    let new_loc_error = |source| {
+        Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
+    };
 
-        Expr::Str{s} => Ok(value::new_str_from_string(s.clone())),
+    match raw_expr {
+        RawExpr::Null => Ok(value::new_null()),
 
-        Expr::Var{name} => {
+        RawExpr::Str{s} => Ok(value::new_str_from_string(s.clone())),
+
+        RawExpr::Var{name} => {
             let v =
                 match scopes.get(name) {
                     Some(v) => v,
-                    None => return Err(Error::Undefined{name: name.clone()}),
+                    None => return new_loc_error(
+                        Error::Undefined{name: name.clone()},
+                    ),
                 };
 
             Ok(v)
         },
 
-        Expr::Call{expr, args} => {
+        RawExpr::Call{expr, args} => {
             let arg_vals = eval_exprs(context, scopes, args)?;
 
             let func_val = eval_expr(context, scopes, expr)?;
@@ -148,7 +161,9 @@ fn eval_expr(
                         },
 
                         _ => {
-                            return Err(Error::CannotCallNonFunc{v: v.clone()});
+                            return new_loc_error(
+                                Error::CannotCallNonFunc{v: v.clone()},
+                            );
                         },
                     }
                 };

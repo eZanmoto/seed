@@ -32,22 +32,27 @@ fn bind_next(
 )
     -> Result<(), Error>
 {
-    match lhs {
-        Expr::Var{name} => {
-            bind_next_name(scopes, names_in_binding, name, rhs)
+    let (raw_lhs, (line, col)) = lhs;
+    let new_loc_error = |source| {
+        Err(Error::AtLoc{source: Box::new(source), line, col})
+    };
+
+    match raw_lhs {
+        RawExpr::Var{name} => {
+            bind_next_name(scopes, names_in_binding, name, (line, col), rhs)
         },
-        Expr::Null => {
-            Err(Error::InvalidBindTarget{
+        RawExpr::Null => {
+            new_loc_error(Error::InvalidBindTarget{
                 descr: "`null`".to_string(),
             })
         },
-        Expr::Str{..} => {
-            Err(Error::InvalidBindTarget{
+        RawExpr::Str{..} => {
+            new_loc_error(Error::InvalidBindTarget{
                 descr: "a string literal".to_string(),
             })
         },
-        Expr::Call{..} => {
-            Err(Error::InvalidBindTarget{
+        RawExpr::Call{..} => {
+            new_loc_error(Error::InvalidBindTarget{
                 descr: "a function call".to_string(),
             })
         },
@@ -58,17 +63,23 @@ fn bind_next_name(
     scopes: &mut ScopeStack,
     names_in_binding: &mut HashSet<String>,
     name: String,
+    name_loc: (usize, usize),
     rhs: ValRefWithSource,
 )
     -> Result<(), Error>
 {
+    let (line, col) = name_loc;
+    let new_loc_error = |source| {
+        Err(Error::AtLoc{source: Box::new(source), line, col})
+    };
+
     if names_in_binding.contains(&name) {
-        return Err(Error::AlreadyInBinding{name});
+        return new_loc_error(Error::AlreadyInBinding{name});
     }
     names_in_binding.insert(name.clone());
 
     if !scopes.declare(name.clone(), rhs) {
-        return Err(Error::AlreadyInScope{name});
+        return new_loc_error(Error::AlreadyInScope{name});
     }
 
     Ok(())
