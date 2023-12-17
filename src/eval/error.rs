@@ -54,6 +54,10 @@ pub enum Error {
         col: usize,
     },
 
+    BindFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
     EvalProgFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
@@ -74,6 +78,10 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
+    EvalListItemFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
     EvalPropNameFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
@@ -82,6 +90,18 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
         name: String,
+    },
+    EvalCallArgsFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalCallFuncFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalExprFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
     },
 }
 

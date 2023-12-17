@@ -32,7 +32,8 @@ macro_rules! match_eval_expr {
         ( $context:ident, $scopes:ident, $expr:expr )
         { $( $key:pat => $value:expr , )* }
     ) => {{
-        let value = eval_expr($context, $scopes, $expr)?;
+        let value = eval_expr($context, $scopes, $expr)
+            .context(EvalExprFailed)?;
         let unlocked_value = &mut (*value.lock().unwrap()).v;
         match unlocked_value {
             $( $key => $value , )*
@@ -85,7 +86,8 @@ pub fn eval_stmts(
     let mut inner_scopes = scopes.new_from_push(HashMap::new());
 
     for (lhs, rhs) in new_bindings {
-        bind::bind(&mut inner_scopes, lhs.clone(), rhs)?;
+        bind::bind(&mut inner_scopes, lhs.clone(), rhs)
+            .context(BindFailed)?;
     }
 
     eval_stmts_with_scope_stack(context, &mut inner_scopes, stmts)
@@ -163,7 +165,8 @@ fn eval_expr(
             let mut vals = vec![];
 
             for item in items {
-                let v = eval_expr(context, scopes, item)?;
+                let v = eval_expr(context, scopes, item)
+                    .context(EvalListItemFailed)?;
 
                 vals.push(v);
             }
@@ -194,9 +197,11 @@ fn eval_expr(
         },
 
         RawExpr::Call{expr, args} => {
-            let arg_vals = eval_exprs(context, scopes, args)?;
+            let arg_vals = eval_exprs(context, scopes, args)
+                .context(EvalCallArgsFailed)?;
 
-            let func_val = eval_expr(context, scopes, expr)?;
+            let func_val = eval_expr(context, scopes, expr)
+                .context(EvalCallFuncFailed)?;
 
             let v =
                 {
@@ -250,7 +255,9 @@ pub fn eval_exprs(
     let mut vals = vec![];
 
     for expr in exprs {
-        let v = eval_expr(context, scopes, expr)?;
+        let v = eval_expr(context, scopes, expr)
+            .context(EvalExprFailed)?;
+
         vals.push(v);
     }
 

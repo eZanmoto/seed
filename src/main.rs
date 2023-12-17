@@ -219,16 +219,19 @@ fn join_strings(xs: &[String]) -> String {
 
 fn render_eval_error(error: EvalError) -> String {
     match error {
+        EvalError::BindFailed{source} |
         EvalError::EvalProgFailed{source} |
         EvalError::EvalStmtsInNewScopeFailed{source} |
         EvalError::EvalStmtsWithScopeStackFailed{source} |
         EvalError::EvalStmtsFailed{source} |
         EvalError::EvalStmtFailed{source} |
+        EvalError::EvalListItemFailed{source} |
         EvalError::EvalPropNameFailed{source} |
-        EvalError::EvalPropValueFailed{source, ..} =>
-            render_eval_error(*source),
+        EvalError::EvalPropValueFailed{source, ..} |
+        EvalError::EvalCallArgsFailed{source} |
+        EvalError::EvalCallFuncFailed{source} |
+        EvalError::EvalExprFailed{source} => render_eval_error(*source),
 
-        _ =>
-            format!("{}", error),
+        _ => format!("{}", error),
     }
 }
