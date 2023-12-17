@@ -52,6 +52,7 @@ pub ExprPrecedence2: RawExpr = {
     <s:StrLiteral> => RawExpr::Str{s},
 
     "[" <items:ExprList> "]" => RawExpr::List{items},
+    "{" <props:PropList> "}" => RawExpr::Object{props},
 }
 
 pub ExprList: Vec<Expr> = {
@@ -62,6 +63,12 @@ pub ExprList: Vec<Expr> = {
 
         values
     }
+}
+
+pub PropList: Vec<PropItem> = CommaSepList<PropItem>;
+
+pub PropItem: PropItem = {
+    <name:Expr> ":" <value:Expr> => PropItem::Pair{name, value},
 }
 
 Ident: String = {
@@ -89,9 +96,12 @@ extern {
         "null" => Token::Null,
         "true" => Token::True,
 
-        "," => Token::Comma,
+        "}" => Token::BraceClose,
+        "{" => Token::BraceOpen,
         "]" => Token::BracketClose,
         "[" => Token::BracketOpen,
+        ":" => Token::Colon,
+        "," => Token::Comma,
         ")" => Token::ParenClose,
         "(" => Token::ParenOpen,
         ";" => Token::Semicolon,

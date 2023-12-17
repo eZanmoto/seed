@@ -27,6 +27,19 @@ use self::value::ValRefWithSource;
 use self::value::Value;
 use self::value::ValWithSource;
 
+macro_rules! match_eval_expr {
+    (
+        ( $context:ident, $scopes:ident, $expr:expr )
+        { $( $key:pat => $value:expr , )* }
+    ) => {{
+        let value = eval_expr($context, $scopes, $expr)?;
+        let unlocked_value = &mut (*value.lock().unwrap()).v;
+        match unlocked_value {
+            $( $key => $value , )*
+        }
+    }};
+}
+
 pub struct EvaluationContext<'a> {
     pub builtins: &'a Builtins,
     pub cur_script_dir: PathBuf,
@@ -158,6 +171,28 @@ fn eval_expr(
             Ok(value::new_list(vals))
         },
 
+        RawExpr::Object{props} => {
+            let mut vals = HashMap::<String, ValRefWithSource>::new();
+
+            for prop in props {
+                match prop {
+                    PropItem::Pair{name: name_expr, value} => {
+                        let descr = "property name";
+                        let name =
+                            eval_expr_to_str(context, scopes, descr, name_expr)
+                                .context(EvalPropNameFailed)?;
+
+                        let v = eval_expr(context, scopes, value)
+                            .context(EvalPropValueFailed{name: name.clone()})?;
+
+                        vals.insert(name, v);
+                    },
+                }
+            }
+
+            Ok(value::new_object(vals))
+        },
+
         RawExpr::Call{expr, args} => {
             let arg_vals = eval_exprs(context, scopes, args)?;
 
@@ -220,4 +255,39 @@ pub fn eval_exprs(
     }
 
     Ok(vals)
+}
+
+fn eval_expr_to_str(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    descr: &str,
+    expr: &Expr,
+)
+    -> Result<String, Error>
+{
+    let (_, (line, col)) = expr;
+    let new_loc_err = |source| {
+        Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
+    };
+
+    let raw_str =
+        match_eval_expr!((context, scopes, expr) {
+            Value::Str(s) => s.clone(),
+            value => return new_loc_err(Error::IncorrectType{
+                descr: descr.to_string(),
+                exp_type: "string".to_string(),
+                value: value.clone(),
+            }),
+        });
+
+    let s =
+        match String::from_utf8(raw_str) {
+            Ok(s) => s,
+            Err(source) => return new_loc_err(Error::StringConstructionFailed{
+                source,
+                descr: descr.to_string(),
+            }),
+        };
+
+    Ok(s)
 }

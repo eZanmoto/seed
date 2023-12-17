@@ -27,6 +27,12 @@ pub enum RawExpr {
     Var{name: String},
 
     List{items: Vec<Expr>},
+    Object{props: Vec<PropItem>},
 
     Call{expr: Box<Expr>, args: Vec<Expr>},
+}
+
+#[derive(Clone,Debug)]
+pub enum PropItem {
+    Pair{name: Expr, value: Expr},
 }

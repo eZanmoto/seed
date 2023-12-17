@@ -65,6 +65,16 @@ fn render(v: &ValRefWithSource) -> Result<String, Error> {
             s += "]";
         },
 
+        Value::Object(props) => {
+            s += "{\n";
+            for (name, prop) in props {
+                let rendered_prop = render(prop)?;
+                let indented = rendered_prop.replace('\n', "\n    ");
+                s += &format!("    \"{}\": {},\n", name, indented);
+            }
+            s += "}";
+        },
+
         Value::BuiltInFunc{..} => {
             s += "<built-in function>";
         },

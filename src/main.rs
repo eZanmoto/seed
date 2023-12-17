@@ -192,9 +192,12 @@ fn render_token_as_char(t: Token) -> String {
         Token::Null => "`null`".to_string(),
         Token::True => "`true`".to_string(),
 
-        Token::Comma => ",".to_string(),
+        Token::BraceClose => "}".to_string(),
+        Token::BraceOpen => "{".to_string(),
         Token::BracketClose => "]".to_string(),
         Token::BracketOpen => "[".to_string(),
+        Token::Colon => ":".to_string(),
+        Token::Comma => ",".to_string(),
         Token::ParenClose => ")".to_string(),
         Token::ParenOpen => "(".to_string(),
         Token::Semicolon => ";".to_string(),
@@ -220,8 +223,12 @@ fn render_eval_error(error: EvalError) -> String {
         EvalError::EvalStmtsInNewScopeFailed{source} |
         EvalError::EvalStmtsWithScopeStackFailed{source} |
         EvalError::EvalStmtsFailed{source} |
-        EvalError::EvalStmtFailed{source} => render_eval_error(*source),
+        EvalError::EvalStmtFailed{source} |
+        EvalError::EvalPropNameFailed{source} |
+        EvalError::EvalPropValueFailed{source, ..} =>
+            render_eval_error(*source),
 
-        _ => format!("{}", error),
+        _ =>
+            format!("{}", error),
     }
 }

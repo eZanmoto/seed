@@ -37,6 +37,7 @@ pub enum Value {
     Str(Str),
 
     List(List),
+    Object(Object),
 
     BuiltInFunc{f: BuiltinFunc},
 }
@@ -116,6 +117,10 @@ pub fn new_str_from_string(s: String) -> ValRefWithSource {
 
 pub fn new_list(list: List) -> ValRefWithSource {
     new_val_ref(Value::List(list))
+}
+
+pub fn new_object(object: Object) -> ValRefWithSource {
+    new_val_ref(Value::Object(object))
 }
 
 pub fn new_built_in_func(f: BuiltinFunc) -> ValRefWithSource {

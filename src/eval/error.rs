@@ -2,6 +2,8 @@
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
+use std::string::FromUtf8Error;
+
 use snafu::Snafu;
 
 use eval::Value;
@@ -27,6 +29,15 @@ pub enum Error {
     AlreadyInBinding{name: String},
     #[snafu(display("'{}' is already defined in the current scope", name))]
     AlreadyInScope{name: String},
+    #[snafu(display(
+        "{} must be '{}', got '{}'",
+        descr,
+        exp_type,
+        render_type(value),
+    ))]
+    IncorrectType{descr: String, exp_type: String, value: Value},
+    #[snafu(display("couldn't create {} string: {}", descr, source))]
+    StringConstructionFailed{source: FromUtf8Error, descr: String},
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
@@ -63,4 +74,31 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
+    EvalPropNameFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalPropValueFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+        name: String,
+    },
+}
+
+fn render_type(v: &Value) -> String {
+    let s =
+        match v {
+            Value::Null => "null",
+
+            Value::Bool(_) => "bool",
+            Value::Int(_) => "int",
+            Value::Str(_) => "string",
+
+            Value::List(_) => "list",
+            Value::Object(_) => "object",
+
+            Value::BuiltInFunc{..} => "function",
+        };
+
+    s.to_string()
 }

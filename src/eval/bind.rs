@@ -48,6 +48,7 @@ fn bind_next(
         RawExpr::Int{..} => new_invalid_bind_error("an integer literal"),
         RawExpr::Str{..} => new_invalid_bind_error("a string literal"),
         RawExpr::List{..} => new_invalid_bind_error("a list literal"),
+        RawExpr::Object{..} => new_invalid_bind_error("an object literal"),
         RawExpr::Call{..} => new_invalid_bind_error("a function call"),
     }
 }

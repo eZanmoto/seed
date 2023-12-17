@@ -16,8 +16,11 @@ pub enum Token {
     Null,
     True,
 
+    BraceClose,
+    BraceOpen,
     BracketClose,
     BracketOpen,
+    Colon,
     Comma,
     ParenClose,
     ParenOpen,
@@ -161,9 +164,12 @@ impl<'input> Iterator for Lexer<'input> {
 
 fn match_single_symbol_token(c: char) -> Option<Token> {
     match c {
-        ',' => Some(Token::Comma),
+        '}' => Some(Token::BraceClose),
+        '{' => Some(Token::BraceOpen),
         ']' => Some(Token::BracketClose),
         '[' => Some(Token::BracketOpen),
+        ':' => Some(Token::Colon),
+        ',' => Some(Token::Comma),
         ')' => Some(Token::ParenClose),
         '(' => Some(Token::ParenOpen),
         ';' => Some(Token::Semicolon),

@@ -4,5 +4,5 @@ exit_code: 103
 print
 --------------------------------------------------
 --------------------------------------------------
-parse_errors/unexpected_eof.sd:2:0: unexpected EOF; expected "(", ")", ",", ";" or "]"
+parse_errors/unexpected_eof.sd:2:0: unexpected EOF; expected "(", ")", ",", ":", ";", "]" or "}"
 ==================================================

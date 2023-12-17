@@ -27,6 +27,9 @@ false
 
 # Lists:
 ["test", null, true, 1234, [null, true]]
+
+# Objects:
+{"hello": "world", "test": [1, 2, 3]}
 ```
 
 Functions
