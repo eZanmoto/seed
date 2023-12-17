@@ -11,6 +11,8 @@ pub type Block = Vec<Stmt>;
 
 #[derive(Clone, Debug)]
 pub enum Stmt {
+    Declare{lhs: Expr, rhs: Expr},
+
     Expr{expr: Expr},
 }
 

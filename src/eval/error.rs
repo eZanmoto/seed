@@ -74,6 +74,14 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
+    EvalDeclarationLhsFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    DeclarationBindFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
     EvalStmtFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,

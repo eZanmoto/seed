@@ -87,7 +87,7 @@ pub fn eval_stmts(
     let mut inner_scopes = scopes.new_from_push(HashMap::new());
 
     for (lhs, rhs) in new_bindings {
-        bind::bind(&mut inner_scopes, lhs.clone(), rhs)
+        bind::bind(&mut inner_scopes, &lhs, rhs)
             .context(BindFailed)?;
     }
 
@@ -122,6 +122,14 @@ fn eval_stmt(
     -> Result<(), Error>
 {
     match stmt {
+        Stmt::Declare{lhs, rhs} => {
+            let v = eval_expr(context, scopes, rhs)
+                .context(EvalDeclarationLhsFailed)?;
+
+            bind::bind(scopes, lhs, v)
+                .context(DeclarationBindFailed)?;
+        },
+
         Stmt::Expr{expr} => {
             eval_expr(context, scopes, expr)
                 .context(EvalStmtFailed)?;

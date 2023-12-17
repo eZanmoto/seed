@@ -25,6 +25,8 @@ pub enum Token {
     ParenClose,
     ParenOpen,
     Semicolon,
+
+    ColonEquals,
 }
 
 #[derive(Debug)]
@@ -113,13 +115,35 @@ impl<'input> Lexer<'input> {
     }
 
     fn next_symbol_token(&mut self, c: char) -> Option<Token> {
-        if let Some(t) = match_single_symbol_token(c) {
+        if let Some(initial_t) = match_single_symbol_token(c) {
+            self.scanner.next_char();
+
+            let next_char =
+                match self.scanner.peek_char() {
+                    Some(c) => c,
+                    None => return Some(initial_t),
+                };
+
+            let t =
+                match match_double_symbol_token(c, next_char) {
+                    Some(t) => t,
+                    None => return Some(initial_t),
+                };
+
             self.scanner.next_char();
 
             Some(t)
         } else {
-            None
+            self.next_double_symbol_token(c)
         }
+    }
+
+    fn next_double_symbol_token(&mut self, first_char: char) -> Option<Token> {
+        self.scanner.next_char();
+        let second_char = self.scanner.peek_char()?;
+        self.scanner.next_char();
+
+        match_double_symbol_token(first_char, second_char)
     }
 }
 
@@ -178,6 +202,14 @@ fn match_single_symbol_token(c: char) -> Option<Token> {
     }
 }
 
+fn match_double_symbol_token(a: char, b: char) -> Option<Token> {
+    match (a, b) {
+        (':', '=') => Some(Token::ColonEquals),
+
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod test {
     // The testing approach taken in this module is largely inspired by the
@@ -197,6 +229,16 @@ mod test {
                     Token::ParenOpen,
                     Token::StrLiteral("hello".to_string()),
                     Token::ParenClose,
+                ],
+            ),
+            (
+                r#"test := 1234 ;"#,
+                r#"(--) () (--) -"#,
+                vec![
+                    Token::Ident("test".to_string()),
+                    Token::ColonEquals,
+                    Token::IntLiteral(1234),
+                    Token::Semicolon,
                 ],
             ),
         ];

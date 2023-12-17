@@ -201,6 +201,8 @@ fn render_token_as_char(t: Token) -> String {
         Token::ParenClose => ")".to_string(),
         Token::ParenOpen => "(".to_string(),
         Token::Semicolon => ";".to_string(),
+
+        Token::ColonEquals => ":=".to_string(),
     }
 }
 
@@ -224,6 +226,8 @@ fn render_eval_error(error: EvalError) -> String {
         EvalError::EvalStmtsInNewScopeFailed{source} |
         EvalError::EvalStmtsWithScopeStackFailed{source} |
         EvalError::EvalStmtsFailed{source} |
+        EvalError::EvalDeclarationLhsFailed{source} |
+        EvalError::DeclarationBindFailed{source} |
         EvalError::EvalStmtFailed{source} |
         EvalError::EvalListItemFailed{source} |
         EvalError::EvalPropNameFailed{source} |

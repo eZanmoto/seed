@@ -14,7 +14,7 @@ use value::ValRefWithSource;
 // `lhs`.
 pub fn bind(
     scopes: &mut ScopeStack,
-    lhs: Expr,
+    lhs: &Expr,
     rhs: ValRefWithSource,
 )
     -> Result<(), Error>
@@ -27,7 +27,7 @@ pub fn bind(
 fn bind_next(
     scopes: &mut ScopeStack,
     names_in_binding: &mut HashSet<String>,
-    lhs: Expr,
+    lhs: &Expr,
     rhs: ValRefWithSource,
 )
     -> Result<(), Error>
@@ -36,12 +36,12 @@ fn bind_next(
     let new_invalid_bind_error = |s: &str| {
         let source = Error::InvalidBindTarget{descr: s.to_string()};
 
-        Err(Error::AtLoc{source: Box::new(source), line, col})
+        Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
     };
 
     match raw_lhs {
         RawExpr::Var{name} => {
-            bind_next_name(scopes, names_in_binding, name, (line, col), rhs)
+            bind_next_name(scopes, names_in_binding, name, (*line, *col), rhs)
         },
         RawExpr::Null => new_invalid_bind_error("`null`"),
         RawExpr::Bool{..} => new_invalid_bind_error("a boolean literal"),
@@ -56,7 +56,7 @@ fn bind_next(
 fn bind_next_name(
     scopes: &mut ScopeStack,
     names_in_binding: &mut HashSet<String>,
-    name: String,
+    name: &str,
     name_loc: (usize, usize),
     rhs: ValRefWithSource,
 )
@@ -67,13 +67,13 @@ fn bind_next_name(
         Err(Error::AtLoc{source: Box::new(source), line, col})
     };
 
-    if names_in_binding.contains(&name) {
-        return new_loc_error(Error::AlreadyInBinding{name});
+    if names_in_binding.contains(name) {
+        return new_loc_error(Error::AlreadyInBinding{name: name.to_string()});
     }
-    names_in_binding.insert(name.clone());
+    names_in_binding.insert(name.to_string());
 
-    if !scopes.declare(name.clone(), rhs) {
-        return new_loc_error(Error::AlreadyInScope{name});
+    if !scopes.declare(name, rhs) {
+        return new_loc_error(Error::AlreadyInScope{name: name.to_string()});
     }
 
     Ok(())

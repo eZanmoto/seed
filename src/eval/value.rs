@@ -62,7 +62,7 @@ impl ScopeStack {
 
     // `declare` returns `false` if `name` is already defined in the current
     // scope.
-    pub fn declare(&mut self, name: String, v: ValRefWithSource) -> bool
+    pub fn declare(&mut self, name: &str, v: ValRefWithSource) -> bool
     {
         let mut cur_scope =
             self.0.last()
@@ -70,10 +70,10 @@ impl ScopeStack {
                 .lock()
                 .unwrap();
 
-        if cur_scope.contains_key(&name) {
+        if cur_scope.contains_key(name) {
             return false;
         }
-        cur_scope.insert(name, v);
+        cur_scope.insert(name.to_string(), v);
 
         true
     }

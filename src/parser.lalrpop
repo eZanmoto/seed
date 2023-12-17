@@ -15,6 +15,8 @@ pub Prog: Prog = {
 
 pub Stmt: Stmt = {
     <expr:Expr> ";" => Stmt::Expr{expr},
+
+    <lhs:Expr> ":=" <rhs:Expr> ";" => Stmt::Declare{lhs, rhs},
 }
 
 pub Expr: Expr = {
@@ -105,5 +107,7 @@ extern {
         ")" => Token::ParenClose,
         "(" => Token::ParenOpen,
         ";" => Token::Semicolon,
+
+        ":=" => Token::ColonEquals,
     }
 }
