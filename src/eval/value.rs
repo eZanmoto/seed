@@ -36,6 +36,8 @@ pub enum Value {
     Int(i64),
     Str(Str),
 
+    List(List),
+
     BuiltInFunc{f: BuiltinFunc},
 }
 
@@ -110,6 +112,10 @@ pub fn new_int(n: i64) -> ValRefWithSource {
 
 pub fn new_str_from_string(s: String) -> ValRefWithSource {
     new_val_ref(Value::Str(s.into_bytes()))
+}
+
+pub fn new_list(list: List) -> ValRefWithSource {
+    new_val_ref(Value::List(list))
 }
 
 pub fn new_built_in_func(f: BuiltinFunc) -> ValRefWithSource {

@@ -6,9 +6,20 @@ print("Hello, world!");
 print(null);
 print(true);
 print(1234);
+print(["test", null, true, 1234, [null, true]]);
 --------------------------------------------------
 Hello, world!
 <null>
 true
 1234
+[
+    test,
+    <null>,
+    true,
+    1234,
+    [
+        <null>,
+        true,
+    ],
+]
 ==================================================

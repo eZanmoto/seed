@@ -61,6 +61,11 @@ fn bind_next(
                 descr: "a string literal".to_string(),
             })
         },
+        RawExpr::List{..} => {
+            new_loc_error(Error::InvalidBindTarget{
+                descr: "a list literal".to_string(),
+            })
+        },
         RawExpr::Call{..} => {
             new_loc_error(Error::InvalidBindTarget{
                 descr: "a function call".to_string(),

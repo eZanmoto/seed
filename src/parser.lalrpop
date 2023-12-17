@@ -30,6 +30,18 @@ pub ExprPrecedence1: RawExpr = {
     <expr:ExprPrecedence2> => expr,
 }
 
+pub ParamList: Vec<Expr> = CommaSepList<Expr>;
+
+CommaSepList<T>: Vec<T> = {
+    <mut values:(<T> ",")*> <last:T?> => {
+        if let Some(v) = last {
+            values.push(v);
+        }
+
+        values
+    }
+}
+
 pub ExprPrecedence2: RawExpr = {
     "null" => RawExpr::Null,
     "true" => RawExpr::Bool{b: true},
@@ -38,12 +50,12 @@ pub ExprPrecedence2: RawExpr = {
     <name:Ident> => RawExpr::Var{name},
     <n:IntLiteral> => RawExpr::Int{n},
     <s:StrLiteral> => RawExpr::Str{s},
+
+    "[" <items:ExprList> "]" => RawExpr::List{items},
 }
 
-pub ParamList: Vec<Expr> = CommaSepList<Expr>;
-
-CommaSepList<T>: Vec<T> = {
-    <mut values:(<T> ",")*> <last:T?> => {
+pub ExprList: Vec<Expr> = {
+    <mut values:(<Expr> ",")*> <last:Expr?> => {
         if let Some(v) = last {
             values.push(v);
         }
@@ -78,6 +90,8 @@ extern {
         "true" => Token::True,
 
         "," => Token::Comma,
+        "]" => Token::BracketClose,
+        "[" => Token::BracketOpen,
         ")" => Token::ParenClose,
         "(" => Token::ParenOpen,
         ";" => Token::Semicolon,

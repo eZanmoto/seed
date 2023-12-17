@@ -146,6 +146,18 @@ fn eval_expr(
             Ok(v)
         },
 
+        RawExpr::List{items} => {
+            let mut vals = vec![];
+
+            for item in items {
+                let v = eval_expr(context, scopes, item)?;
+
+                vals.push(v);
+            }
+
+            Ok(value::new_list(vals))
+        },
+
         RawExpr::Call{expr, args} => {
             let arg_vals = eval_exprs(context, scopes, args)?;
 

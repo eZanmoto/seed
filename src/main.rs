@@ -193,6 +193,8 @@ fn render_token_as_char(t: Token) -> String {
         Token::True => "`true`".to_string(),
 
         Token::Comma => ",".to_string(),
+        Token::BracketClose => "]".to_string(),
+        Token::BracketOpen => "[".to_string(),
         Token::ParenClose => ")".to_string(),
         Token::ParenOpen => "(".to_string(),
         Token::Semicolon => ";".to_string(),

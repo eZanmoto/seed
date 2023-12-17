@@ -24,6 +24,9 @@ false
 
 # Strings:
 "Hello, world!"
+
+# Lists:
+["test", null, true, 1234, [null, true]]
 ```
 
 Functions

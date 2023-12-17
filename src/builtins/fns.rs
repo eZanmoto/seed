@@ -55,6 +55,16 @@ fn render(v: &ValRefWithSource) -> Result<String, Error> {
             s += &s_;
         },
 
+        Value::List(items) => {
+            s += "[\n";
+            for item in items {
+                let r = render(item)?;
+                let indented = r.replace('\n', "\n    ");
+                s += &format!("    {},\n", indented);
+            }
+            s += "]";
+        },
+
         Value::BuiltInFunc{..} => {
             s += "<built-in function>";
         },

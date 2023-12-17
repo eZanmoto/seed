@@ -26,5 +26,7 @@ pub enum RawExpr {
 
     Var{name: String},
 
+    List{items: Vec<Expr>},
+
     Call{expr: Box<Expr>, args: Vec<Expr>},
 }
