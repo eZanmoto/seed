@@ -6,7 +6,7 @@
 extern crate assert_matches;
 extern crate snafu;
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::io::Error as IoError;
@@ -122,7 +122,7 @@ fn run(cur_rel_script_path: &Path) -> Result<(), Error> {
     eval::eval_prog(
         &EvaluationContext{
             builtins: &Builtins{
-                std: HashMap::new(),
+                std: BTreeMap::new(),
                 type_methods: type_methods::type_methods(),
             },
             global_bindings: &global_bindings,

@@ -2,6 +2,7 @@
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -175,7 +176,7 @@ fn eval_expr(
         },
 
         RawExpr::Object{props} => {
-            let mut vals = HashMap::<String, ValRefWithSource>::new();
+            let mut vals = BTreeMap::<String, ValRefWithSource>::new();
 
             for prop in props {
                 match prop {

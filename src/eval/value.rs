@@ -2,6 +2,7 @@
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -94,7 +95,10 @@ pub type Str = Vec<u8>;
 
 pub type List = Vec<ValRefWithSource>;
 
-pub type Object = HashMap<String, ValRefWithSource>;
+// We use a `BTreeMap` instead of a `HashMap` for representing `Object`s in
+// order to get a deterministic order when printing objects, which simplifies
+// "output" tests.
+pub type Object = BTreeMap<String, ValRefWithSource>;
 
 pub type BuiltinFunc =
     fn(Option<ValRefWithSource>, List) -> Result<ValRefWithSource, Error>;

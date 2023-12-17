@@ -2,14 +2,14 @@
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::eval::builtins::TypeMethods;
 use crate::eval::value::ValRefWithSource;
 
 pub fn type_methods() -> TypeMethods {
     TypeMethods{
-        strs: HashMap::<String, ValRefWithSource>::new(),
-        funcs: HashMap::<String, ValRefWithSource>::new(),
+        strs: BTreeMap::<String, ValRefWithSource>::new(),
+        funcs: BTreeMap::<String, ValRefWithSource>::new(),
     }
 }
