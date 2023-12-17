@@ -43,7 +43,7 @@ fn render(v: &ValRefWithSource) -> Result<String, Error> {
         },
 
         Value::Str(raw_str) => {
-            let s_ =
+            let rendered_str =
                 match String::from_utf8(raw_str.clone()) {
                     Ok(p) => p,
                     Err(e) => return Err(Error::BuiltinFuncErr{msg: format!(
@@ -52,14 +52,14 @@ fn render(v: &ValRefWithSource) -> Result<String, Error> {
                     )}),
                 };
 
-            s += &s_;
+            s += &rendered_str;
         },
 
         Value::List(items) => {
             s += "[\n";
             for item in items {
-                let r = render(item)?;
-                let indented = r.replace('\n', "\n    ");
+                let rendered_item = render(item)?;
+                let indented = rendered_item.replace('\n', "\n    ");
                 s += &format!("    {},\n", indented);
             }
             s += "]";
