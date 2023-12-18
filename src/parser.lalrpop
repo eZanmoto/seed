@@ -17,6 +17,7 @@ pub Stmt: Stmt = {
     <expr:Expr> ";" => Stmt::Expr{expr},
 
     <lhs:Expr> ":=" <rhs:Expr> ";" => Stmt::Declare{lhs, rhs},
+    <lhs:Expr> "=" <rhs:Expr> ";" => Stmt::Assign{lhs, rhs},
 }
 
 pub Expr: Expr = {
@@ -104,6 +105,7 @@ extern {
         "[" => Token::BracketOpen,
         ":" => Token::Colon,
         "," => Token::Comma,
+        "=" => Token::Equals,
         ")" => Token::ParenClose,
         "(" => Token::ParenOpen,
         ";" => Token::Semicolon,

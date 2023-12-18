@@ -15,6 +15,7 @@ use snafu::ResultExt;
 
 #[allow(clippy::wildcard_imports)]
 use ast::*;
+use self::bind::BindType;
 use self::builtins::Builtins;
 // We use a wildcard import for `error` to import the many error variant
 // constructors created by Snafu.
@@ -87,7 +88,7 @@ pub fn eval_stmts(
     let mut inner_scopes = scopes.new_from_push(HashMap::new());
 
     for (lhs, rhs) in new_bindings {
-        bind::bind(&mut inner_scopes, &lhs, rhs)
+        bind::bind(&mut inner_scopes, &lhs, rhs, BindType::Declaration)
             .context(BindFailed)?;
     }
 
@@ -126,8 +127,16 @@ fn eval_stmt(
             let v = eval_expr(context, scopes, rhs)
                 .context(EvalDeclarationLhsFailed)?;
 
-            bind::bind(scopes, lhs, v)
+            bind::bind(scopes, lhs, v, BindType::Declaration)
                 .context(DeclarationBindFailed)?;
+        },
+
+        Stmt::Assign{lhs, rhs} => {
+            let v = eval_expr(context, scopes, rhs)
+                .context(EvalAssignmentLhsFailed)?;
+
+            bind::bind(scopes, lhs, v, BindType::Assignment)
+                .context(AssignmentBindFailed)?;
         },
 
         Stmt::Expr{expr} => {

@@ -16,10 +16,17 @@ pub fn bind(
     scopes: &mut ScopeStack,
     lhs: &Expr,
     rhs: ValRefWithSource,
+    bind_type: BindType,
 )
     -> Result<(), Error>
 {
-    bind_next(scopes, &mut HashSet::new(), lhs, rhs)
+    bind_next(scopes, &mut HashSet::new(), lhs, rhs, bind_type)
+}
+
+#[derive(Clone, Copy)]
+pub enum BindType {
+    Declaration,
+    Assignment,
 }
 
 // `bind_next` performs a bind, but returns an error if a name that's in
@@ -29,6 +36,7 @@ fn bind_next(
     names_in_binding: &mut HashSet<String>,
     lhs: &Expr,
     rhs: ValRefWithSource,
+    bind_type: BindType,
 )
     -> Result<(), Error>
 {
@@ -41,7 +49,9 @@ fn bind_next(
 
     match raw_lhs {
         RawExpr::Var{name} => {
-            bind_next_name(scopes, names_in_binding, name, (*line, *col), rhs)
+            let pos = (*line, *col);
+
+            bind_next_name(scopes, names_in_binding, name, pos, rhs, bind_type)
         },
         RawExpr::Null => new_invalid_bind_error("`null`"),
         RawExpr::Bool{..} => new_invalid_bind_error("a boolean literal"),
@@ -59,6 +69,7 @@ fn bind_next_name(
     name: &str,
     name_loc: (usize, usize),
     rhs: ValRefWithSource,
+    bind_type: BindType,
 )
     -> Result<(), Error>
 {
@@ -72,9 +83,22 @@ fn bind_next_name(
     }
     names_in_binding.insert(name.to_string());
 
-    if !scopes.declare(name, rhs) {
-        return new_loc_error(Error::AlreadyInScope{name: name.to_string()});
-    }
+    match bind_type {
+        BindType::Declaration => {
+            if !scopes.declare(name, rhs) {
+                return new_loc_error(Error::AlreadyInScope{
+                    name: name.to_string(),
+                });
+            }
+        },
+        BindType::Assignment => {
+            if !scopes.assign(name, rhs) {
+                return new_loc_error(Error::Undefined{
+                    name: name.to_string(),
+                });
+            }
+        },
+    };
 
     Ok(())
 }

@@ -89,6 +89,29 @@ impl ScopeStack {
 
         None
     }
+
+
+    // `assign` replaces `name` in the topmost scope of this `ScopeStack` and
+    // returns `true`, or else it returns `false` if `name` wasn't found in
+    // this `ScopeStack`. `assign` returns an error if attempting to assign to
+    // a constant binding.
+    pub fn assign(&mut self, name: &str, v: ValRefWithSource) -> bool {
+        for scope in self.0.iter().rev() {
+            let mut unlocked_scope = scope.lock().unwrap();
+            if unlocked_scope.get(name).is_some() {
+                // This should ideally overwrite the value stored in this
+                // variable instead of introducing a new variable with a new
+                // binding, but this isn't possible at present with the current
+                // structure of `ValRefWithSource`; see the comment above
+                // `ValRefWithSource` for more details.
+                unlocked_scope.insert(name.to_string(), v);
+
+                return true;
+            }
+        }
+
+        false
+    }
 }
 
 pub type Str = Vec<u8>;

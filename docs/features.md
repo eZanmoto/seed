@@ -40,8 +40,11 @@ the declaration defines the scope of the variable.
 
 ```
 # Using `n` before this point will result in a "not defined" error.
-n := 1234
-print(n)
+n := 1
+print(n) # 1
+
+n = 2
+print(n) # 2
 ```
 
 Functions

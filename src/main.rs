@@ -198,6 +198,7 @@ fn render_token_as_char(t: Token) -> String {
         Token::BracketOpen => "[".to_string(),
         Token::Colon => ":".to_string(),
         Token::Comma => ",".to_string(),
+        Token::Equals => "=".to_string(),
         Token::ParenClose => ")".to_string(),
         Token::ParenOpen => "(".to_string(),
         Token::Semicolon => ";".to_string(),
@@ -228,6 +229,8 @@ fn render_eval_error(error: EvalError) -> String {
         EvalError::EvalStmtsFailed{source} |
         EvalError::EvalDeclarationLhsFailed{source} |
         EvalError::DeclarationBindFailed{source} |
+        EvalError::EvalAssignmentLhsFailed{source} |
+        EvalError::AssignmentBindFailed{source} |
         EvalError::EvalStmtFailed{source} |
         EvalError::EvalListItemFailed{source} |
         EvalError::EvalPropNameFailed{source} |
