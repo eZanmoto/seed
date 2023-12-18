@@ -7,7 +7,7 @@ use std::collections::HashSet;
 #[allow(clippy::wildcard_imports)]
 use ast::*;
 use super::error::Error;
-use value::ScopeStack;
+use super::scope::ScopeStack;
 use value::ValRefWithSource;
 
 // `bind` associates the values on `rhs` with the names deconstructed from

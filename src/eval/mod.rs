@@ -9,6 +9,7 @@ use std::path::PathBuf;
 pub mod bind;
 pub mod builtins;
 pub mod error;
+pub mod scope;
 pub mod value;
 
 use snafu::ResultExt;
@@ -22,9 +23,9 @@ use self::builtins::Builtins;
 #[allow(clippy::wildcard_imports)]
 use self::error::*;
 use self::error::Error;
+use self::scope::ScopeStack;
 use self::value::BuiltinFunc;
 use self::value::List;
-use self::value::ScopeStack;
 use self::value::ValRefWithSource;
 use self::value::Value;
 use self::value::ValWithSource;

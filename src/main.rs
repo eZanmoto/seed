@@ -30,7 +30,7 @@ use eval::builtins::Builtins;
 use eval::EvaluationContext;
 use eval::error::Error as EvalError;
 use eval::value;
-use eval::value::ScopeStack;
+use eval::scope::ScopeStack;
 use lexer::Lexer;
 use lexer::LexError;
 use lexer::Token;
