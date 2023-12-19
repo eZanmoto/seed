@@ -75,9 +75,7 @@ pub fn eval_prog(
 }
 
 // `eval_stmts` evaluates `stmts` in a new scope pushed onto `scopes`, with the
-// given `new_bindings` declared in the new scope. It returns `Some(v)` if one
-// of the statements is evaluates is a a `return` statement, otherwise it
-// returns `None`.
+// given `new_bindings` declared in the new scope.
 pub fn eval_stmts(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
@@ -114,8 +112,6 @@ pub fn eval_stmts_with_scope_stack(
     Ok(())
 }
 
-// `eval_stmt` returns `Some(v)` if a `return` value is evaluated, otherwise it
-// returns `None`.
 fn eval_stmt(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
@@ -124,6 +120,16 @@ fn eval_stmt(
     -> Result<(), Error>
 {
     match stmt {
+        Stmt::Block{block} => {
+            eval_stmts_in_new_scope(context, scopes, block)
+                .context(EvalBlockFailed)?;
+        },
+
+        Stmt::Expr{expr} => {
+            eval_expr(context, scopes, expr)
+                .context(EvalStmtFailed)?;
+        },
+
         Stmt::Declare{lhs, rhs} => {
             let v = eval_expr(context, scopes, rhs)
                 .context(EvalDeclarationLhsFailed)?;
@@ -139,14 +145,19 @@ fn eval_stmt(
             bind::bind(scopes, lhs, v, BindType::Assignment)
                 .context(AssignmentBindFailed)?;
         },
-
-        Stmt::Expr{expr} => {
-            eval_expr(context, scopes, expr)
-                .context(EvalStmtFailed)?;
-        },
     }
 
     Ok(())
+}
+
+pub fn eval_stmts_in_new_scope(
+    context: &EvaluationContext,
+    outer_scopes: &mut ScopeStack,
+    stmts: &Block,
+)
+    -> Result<(), Error>
+{
+    eval_stmts(context, outer_scopes, vec![], stmts)
 }
 
 fn eval_expr(

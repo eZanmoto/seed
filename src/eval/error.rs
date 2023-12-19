@@ -90,6 +90,10 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
+    EvalBlockFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
     EvalStmtFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,

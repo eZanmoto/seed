@@ -11,10 +11,12 @@ pub type Block = Vec<Stmt>;
 
 #[derive(Clone, Debug)]
 pub enum Stmt {
-    Declare{lhs: Expr, rhs: Expr},
-    Assign{lhs: Expr, rhs: Expr},
+    Block{block: Block},
 
     Expr{expr: Expr},
+
+    Declare{lhs: Expr, rhs: Expr},
+    Assign{lhs: Expr, rhs: Expr},
 }
 
 pub type Expr = (RawExpr, (usize, usize));

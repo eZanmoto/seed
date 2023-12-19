@@ -14,6 +14,16 @@ pub Prog: Prog = {
 }
 
 pub Stmt: Stmt = {
+    // We require at least one statement in a block to avoid ambiguity between
+    // empty blocks (`{}`) and empty objects (`{};`). Note that an empty object
+    // must be followed by a semicolon when it's used as an expression
+    // statement; however, because LALRPOP provides one lookahead token (LR(1)),
+    // the decision of whether the production is an empty block or an empty
+    // object needs to be made when the closing brace is encountered - the token
+    // after can't be checked. We require at least one statement in a block as a
+    // simple solution, rather than reworking the grammar to allow empty blocks.
+    "{" <block:Stmt+> "}" => Stmt::Block{block},
+
     <expr:Expr> ";" => Stmt::Expr{expr},
 
     <lhs:Expr> ":=" <rhs:Expr> ";" => Stmt::Declare{lhs, rhs},

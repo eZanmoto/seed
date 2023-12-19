@@ -231,6 +231,7 @@ fn render_eval_error(error: EvalError) -> String {
         EvalError::DeclarationBindFailed{source} |
         EvalError::EvalAssignmentLhsFailed{source} |
         EvalError::AssignmentBindFailed{source} |
+        EvalError::EvalBlockFailed{source} |
         EvalError::EvalStmtFailed{source} |
         EvalError::EvalListItemFailed{source} |
         EvalError::EvalPropNameFailed{source} |
