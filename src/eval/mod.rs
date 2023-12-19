@@ -69,7 +69,7 @@ pub fn eval_prog(
             .collect();
 
     eval_stmts(context, scopes, bindings, stmts)
-        .context(EvalProgFailed)?;
+        .context(EvalStmtsFailed)?;
 
     Ok(())
 }
@@ -92,7 +92,7 @@ pub fn eval_stmts(
     }
 
     eval_stmts_with_scope_stack(context, &mut inner_scopes, stmts)
-        .context(EvalStmtsFailed)?;
+        .context(EvalStmtsWithScopeStackFailed)?;
 
     Ok(())
 }
@@ -106,7 +106,7 @@ pub fn eval_stmts_with_scope_stack(
 {
     for stmt in stmts {
         eval_stmt(context, scopes, stmt)
-            .context(EvalStmtsWithScopeStackFailed)?;
+            .context(EvalStmtFailed)?;
     }
 
     Ok(())
@@ -127,12 +127,12 @@ fn eval_stmt(
 
         Stmt::Expr{expr} => {
             eval_expr(context, scopes, expr)
-                .context(EvalStmtFailed)?;
+                .context(EvalExprFailed)?;
         },
 
         Stmt::Declare{lhs, rhs} => {
             let v = eval_expr(context, scopes, rhs)
-                .context(EvalDeclarationLhsFailed)?;
+                .context(EvalDeclarationRhsFailed)?;
 
             bind::bind(scopes, lhs, v, BindType::Declaration)
                 .context(DeclarationBindFailed)?;
@@ -140,7 +140,7 @@ fn eval_stmt(
 
         Stmt::Assign{lhs, rhs} => {
             let v = eval_expr(context, scopes, rhs)
-                .context(EvalAssignmentLhsFailed)?;
+                .context(EvalAssignmentRhsFailed)?;
 
             bind::bind(scopes, lhs, v, BindType::Assignment)
                 .context(AssignmentBindFailed)?;

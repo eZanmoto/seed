@@ -227,9 +227,9 @@ fn render_eval_error(error: EvalError) -> String {
         EvalError::EvalStmtsInNewScopeFailed{source} |
         EvalError::EvalStmtsWithScopeStackFailed{source} |
         EvalError::EvalStmtsFailed{source} |
-        EvalError::EvalDeclarationLhsFailed{source} |
+        EvalError::EvalDeclarationRhsFailed{source} |
         EvalError::DeclarationBindFailed{source} |
-        EvalError::EvalAssignmentLhsFailed{source} |
+        EvalError::EvalAssignmentRhsFailed{source} |
         EvalError::AssignmentBindFailed{source} |
         EvalError::EvalBlockFailed{source} |
         EvalError::EvalStmtFailed{source} |
