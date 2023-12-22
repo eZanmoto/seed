@@ -145,6 +145,14 @@ fn eval_stmt(
             bind::bind(scopes, lhs, v, BindType::Assignment)
                 .context(AssignmentBindFailed)?;
         },
+
+        Stmt::Func{name: (name, loc), args, stmts} => {
+            let closure = scopes.clone();
+            let func = value::new_func(args.clone(), stmts.clone(), closure);
+
+            bind::bind_name(scopes, name, loc, func, BindType::Declaration)
+                .context(DeclareFunctionFailed)?;
+        },
     }
 
     Ok(())
@@ -160,6 +168,7 @@ pub fn eval_stmts_in_new_scope(
     eval_stmts(context, outer_scopes, vec![], stmts)
 }
 
+#[allow(clippy::too_many_lines)]
 fn eval_expr(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
@@ -226,11 +235,11 @@ fn eval_expr(
             Ok(value::new_object(vals))
         },
 
-        RawExpr::Call{expr, args} => {
+        RawExpr::Call{func, args} => {
             let arg_vals = eval_exprs(context, scopes, args)
                 .context(EvalCallArgsFailed)?;
 
-            let func_val = eval_expr(context, scopes, expr)
+            let func_val = eval_expr(context, scopes, func)
                 .context(EvalCallFuncFailed)?;
 
             let v =
@@ -247,6 +256,41 @@ fn eval_expr(
                             }
                         },
 
+                        Value::Func{args: arg_names, stmts, closure} => {
+                            let need = arg_names.len();
+                            let got = arg_vals.len();
+                            if got != need {
+                                return new_loc_error(
+                                    Error::ArgNumMismatch{need, got}
+                                );
+                            }
+
+                            let mut bindings: Vec<(Expr, ValRefWithSource)> =
+                                arg_names
+                                    .clone()
+                                    .into_iter()
+                                    .zip(arg_vals)
+                                    .collect();
+
+                            if let Some(this) = source {
+                                // TODO Consider how to avoid creating a
+                                // new AST variable node here.
+                                bindings.push((
+                                    (
+                                        RawExpr::Var{name: "this".to_string()},
+                                        (0, 0),
+                                    ),
+                                    this.clone(),
+                                ));
+                            }
+
+                            CallBinding::Func{
+                                bindings,
+                                closure: closure.clone(),
+                                stmts: stmts.clone(),
+                            }
+                        },
+
                         _ => {
                             return new_loc_error(
                                 Error::CannotCallNonFunc{v: v.clone()},
@@ -258,7 +302,20 @@ fn eval_expr(
             let v =
                 match v {
                     CallBinding::BuiltInFunc{f, this, args} => {
-                        f(this, args)?
+                        f(this, args)
+                            .context(CallBuiltInFuncFailed)?
+                    },
+
+                    CallBinding::Func{bindings, mut closure, stmts} => {
+                        eval_stmts(
+                            context,
+                            &mut closure,
+                            bindings,
+                            &stmts,
+                        )
+                            .context(EvalFuncStmtsFailed)?;
+
+                        value::new_null()
                     },
                 };
 
@@ -272,6 +329,11 @@ enum CallBinding {
         f: BuiltinFunc,
         this: Option<ValRefWithSource>,
         args: List,
+    },
+    Func{
+        bindings: Vec<(Expr, ValRefWithSource)>,
+        closure: ScopeStack,
+        stmts: Block,
     },
 }
 

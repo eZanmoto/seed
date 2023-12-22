@@ -13,6 +13,7 @@ pub enum Token {
     StrLiteral(String),
 
     False,
+    Fn,
     Null,
     True,
 
@@ -76,6 +77,7 @@ impl<'input> Lexer<'input> {
 
         match t {
             "false" => Token::False,
+            "fn" => Token::Fn,
             "null" => Token::Null,
             "true" => Token::True,
 

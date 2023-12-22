@@ -40,18 +40,17 @@ fn bind_next(
 )
     -> Result<(), Error>
 {
-    let (raw_lhs, (line, col)) = lhs;
+    let (raw_lhs, loc) = lhs;
     let new_invalid_bind_error = |s: &str| {
         let source = Error::InvalidBindTarget{descr: s.to_string()};
+        let (line, col) = loc;
 
         Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
     };
 
     match raw_lhs {
         RawExpr::Var{name} => {
-            let pos = (*line, *col);
-
-            bind_next_name(scopes, names_in_binding, name, pos, rhs, bind_type)
+            bind_next_name(scopes, names_in_binding, name, loc, rhs, bind_type)
         },
         RawExpr::Null => new_invalid_bind_error("`null`"),
         RawExpr::Bool{..} => new_invalid_bind_error("a boolean literal"),
@@ -63,11 +62,23 @@ fn bind_next(
     }
 }
 
+pub fn bind_name(
+    scopes: &mut ScopeStack,
+    name: &str,
+    name_loc: &(usize, usize),
+    rhs: ValRefWithSource,
+    bind_type: BindType,
+)
+    -> Result<(), Error>
+{
+    bind_next_name(scopes, &mut HashSet::new(), name, name_loc, rhs, bind_type)
+}
+
 fn bind_next_name(
     scopes: &mut ScopeStack,
     names_in_binding: &mut HashSet<String>,
     name: &str,
-    name_loc: (usize, usize),
+    name_loc: &(usize, usize),
     rhs: ValRefWithSource,
     bind_type: BindType,
 )
@@ -75,7 +86,7 @@ fn bind_next_name(
 {
     let (line, col) = name_loc;
     let new_loc_error = |source| {
-        Err(Error::AtLoc{source: Box::new(source), line, col})
+        Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
     };
 
     if names_in_binding.contains(name) {

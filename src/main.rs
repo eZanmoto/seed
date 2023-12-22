@@ -189,6 +189,7 @@ fn render_token_as_char(t: Token) -> String {
         Token::StrLiteral(s) => format!("\"{}\"", s),
 
         Token::False => "`false`".to_string(),
+        Token::Fn => "`fn`".to_string(),
         Token::Null => "`null`".to_string(),
         Token::True => "`true`".to_string(),
 
@@ -231,6 +232,7 @@ fn render_eval_error(error: EvalError) -> String {
         EvalError::DeclarationBindFailed{source} |
         EvalError::EvalAssignmentRhsFailed{source} |
         EvalError::AssignmentBindFailed{source} |
+        EvalError::DeclareFunctionFailed{source} |
         EvalError::EvalBlockFailed{source} |
         EvalError::EvalStmtFailed{source} |
         EvalError::EvalListItemFailed{source} |
@@ -238,6 +240,8 @@ fn render_eval_error(error: EvalError) -> String {
         EvalError::EvalPropValueFailed{source, ..} |
         EvalError::EvalCallArgsFailed{source} |
         EvalError::EvalCallFuncFailed{source} |
+        EvalError::CallBuiltInFuncFailed{source} |
+        EvalError::EvalFuncStmtsFailed{source} |
         EvalError::EvalExprFailed{source} => render_eval_error(*source),
 
         _ => format!("{}", error),

@@ -28,6 +28,13 @@ pub Stmt: Stmt = {
 
     <lhs:Expr> ":=" <rhs:Expr> ";" => Stmt::Declare{lhs, rhs},
     <lhs:Expr> "=" <rhs:Expr> ";" => Stmt::Assign{lhs, rhs},
+
+    "fn" <loc:@L> <name:Ident> "(" <args:ParamList> ")" <stmts:Block> =>
+        Stmt::Func{name: (name, loc), args, stmts},
+}
+
+pub Block: Block = {
+    "{" <stmts:Stmt*> "}" => stmts,
 }
 
 pub Expr: Expr = {
@@ -38,7 +45,7 @@ pub Expr: Expr = {
 // increasing precedence indicates a tighter binding.
 pub ExprPrecedence1: RawExpr = {
     <loc:@L> <expr:ExprPrecedence1> "(" <args:ParamList> ")" =>
-        RawExpr::Call{expr: Box::new((expr, loc)), args: args},
+        RawExpr::Call{func: Box::new((expr, loc)), args: args},
 
     <expr:ExprPrecedence2> => expr,
 }
@@ -106,6 +113,7 @@ extern {
         "str_literal" => Token::StrLiteral(<String>),
 
         "false" => Token::False,
+        "fn" => Token::Fn,
         "null" => Token::Null,
         "true" => Token::True,
 

@@ -70,5 +70,9 @@ Functions
 ---------
 
 ```
-print("Hello, world!");
+fn p(s) {
+    print(s);
+}
+
+p("Hello, world!");
 ```

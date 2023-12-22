@@ -17,9 +17,13 @@ pub enum Stmt {
 
     Declare{lhs: Expr, rhs: Expr},
     Assign{lhs: Expr, rhs: Expr},
+
+    Func{name: (String, Location), args: Vec<Expr>, stmts: Block},
 }
 
-pub type Expr = (RawExpr, (usize, usize));
+pub type Location = (usize, usize);
+
+pub type Expr = (RawExpr, Location);
 
 #[derive(Clone, Debug)]
 pub enum RawExpr {
@@ -34,7 +38,7 @@ pub enum RawExpr {
     List{items: Vec<Expr>},
     Object{props: Vec<PropItem>},
 
-    Call{expr: Box<Expr>, args: Vec<Expr>},
+    Call{func: Box<Expr>, args: Vec<Expr>},
 }
 
 #[derive(Clone,Debug)]

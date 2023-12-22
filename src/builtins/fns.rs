@@ -78,6 +78,10 @@ fn render(v: &ValRefWithSource) -> Result<String, Error> {
         Value::BuiltInFunc{..} => {
             s += "<built-in function>";
         },
+
+        Value::Func{..} => {
+            s += "<function>";
+        },
     }
 
     Ok(s.to_string())

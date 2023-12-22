@@ -38,6 +38,8 @@ pub enum Error {
     IncorrectType{descr: String, exp_type: String, value: Value},
     #[snafu(display("couldn't create {} string: {}", descr, source))]
     StringConstructionFailed{source: FromUtf8Error, descr: String},
+    #[snafu(display("expected {} arguments, got {}", need, got))]
+    ArgNumMismatch{need: usize, got: usize},
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
@@ -90,6 +92,10 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
+    DeclareFunctionFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
     EvalBlockFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
@@ -119,6 +125,14 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
+    CallBuiltInFuncFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalFuncStmtsFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
     EvalExprFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
@@ -137,7 +151,7 @@ fn render_type(v: &Value) -> String {
             Value::List(_) => "list",
             Value::Object(_) => "object",
 
-            Value::BuiltInFunc{..} => "function",
+            Value::BuiltInFunc{..} | Value::Func{..} => "function",
         };
 
     s.to_string()

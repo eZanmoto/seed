@@ -6,7 +6,10 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+use ast::Block;
 use eval::Error;
+use eval::Expr;
+use super::scope::ScopeStack;
 
 // TODO Consider renaming to `new_val_ref_with_no_source`.
 pub fn new_val_ref(v: Value) -> ValRefWithSource {
@@ -40,6 +43,7 @@ pub enum Value {
     Object(Object),
 
     BuiltInFunc{f: BuiltinFunc},
+    Func{args: Vec<Expr>, stmts: Block, closure: ScopeStack},
 }
 
 pub type Str = Vec<u8>;
@@ -76,6 +80,12 @@ pub fn new_list(list: List) -> ValRefWithSource {
 
 pub fn new_object(object: Object) -> ValRefWithSource {
     new_val_ref(Value::Object(object))
+}
+
+pub fn new_func(args: Vec<Expr>, stmts: Block, closure: ScopeStack)
+    -> ValRefWithSource
+{
+    new_val_ref(Value::Func{args, stmts, closure})
 }
 
 pub fn new_built_in_func(f: BuiltinFunc) -> ValRefWithSource {
