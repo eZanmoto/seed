@@ -76,3 +76,16 @@ fn p(s) {
 
 p("Hello, world!");
 ```
+
+Functions create a closure over the scope in which they're defined:
+
+```
+v := 1;
+fn set_v(new_v) {
+    v = new_v;
+}
+
+print(v); # 1
+set_v(2);
+print(v); # 2
+```
