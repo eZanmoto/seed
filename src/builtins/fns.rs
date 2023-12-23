@@ -75,7 +75,7 @@ fn render(v: &ValRefWithSource) -> Result<String, Error> {
             s += "}";
         },
 
-        Value::BuiltInFunc{..} => {
+        Value::BuiltinFunc{..} => {
             s += "<built-in function>";
         },
 

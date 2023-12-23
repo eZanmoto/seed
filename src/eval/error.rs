@@ -10,8 +10,8 @@ use eval::Value;
 
 // TODO Ideally `Error` would be defined in `src/eval/mod.rs`, since these are
 // errors that occur during evaluation. However, we define it here because
-// `value::Value::BuiltInFunc` refers to it. We could make the error type for
-// `value::Value::BuiltInFunc` generic, but this generic type would spread
+// `value::Value::BuiltinFunc` refers to it. We could make the error type for
+// `value::Value::BuiltinFunc` generic, but this generic type would spread
 // throughout the codebase for little benefit, so we take the current approach
 // for now.
 #[derive(Clone, Debug, Snafu)]
@@ -125,13 +125,17 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
-    CallBuiltInFuncFailed{
+    EvalBuiltinFuncCallFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
+        func_name: Option<String>,
+        call_loc: (usize, usize),
     },
-    EvalFuncStmtsFailed{
+    EvalFuncCallFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
+        func_name: Option<String>,
+        call_loc: (usize, usize),
     },
     EvalExprFailed{
         #[snafu(source(from(Error, Box::new)))]
@@ -151,7 +155,7 @@ fn render_type(v: &Value) -> String {
             Value::List(_) => "list",
             Value::Object(_) => "object",
 
-            Value::BuiltInFunc{..} | Value::Func{..} => "function",
+            Value::BuiltinFunc{..} | Value::Func{..} => "function",
         };
 
     s.to_string()

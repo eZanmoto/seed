@@ -66,7 +66,9 @@ fn main() {
             },
         };
 
-    if let Err(e) = run(Path::new(&raw_cur_rel_script_path)) {
+    let cur_rel_script_path = Path::new(&raw_cur_rel_script_path);
+
+    if let Err(e) = run(cur_rel_script_path) {
         let msg =
             match e {
                 Error::GetCurrentDirFailed{source} => {
@@ -82,8 +84,18 @@ fn main() {
 
                     format!("{}:{}: {}", ln, ch, msg)
                 },
-                Error::EvalFailed{source} => {
-                    render_eval_error(source)
+                Error::EvalFailed{source, path} => {
+                    let st = eval_err_to_stacktrace(&path, None, source);
+
+                    let mut rendered_stacktrace = "".to_string();
+                    if !st.stacktrace.is_empty() {
+                        rendered_stacktrace = format!(
+                            "\nStacktrace:\n  {}",
+                            st.stacktrace.join("\n  "),
+                        );
+                    }
+
+                    format!("{}{}", st.msg, rendered_stacktrace)
                 },
             };
         eprintln!("{}:{}", raw_cur_rel_script_path, msg);
@@ -98,12 +110,12 @@ fn run(cur_rel_script_path: &Path) -> Result<(), Error> {
     cur_script_path.push(cur_rel_script_path);
 
     let src = fs::read_to_string(&cur_script_path)
-        .context(ReadScriptFailed{path: cur_script_path})?;
+        .context(ReadScriptFailed{path: cur_script_path.clone()})?;
 
     let global_bindings = vec![
         (
             RawExpr::Var{name: "print".to_string()},
-            value::new_built_in_func(fns::print),
+            value::new_built_in_func("print".to_string(), fns::print),
         ),
     ];
 
@@ -132,7 +144,7 @@ fn run(cur_rel_script_path: &Path) -> Result<(), Error> {
         global_bindings.clone(),
         &ast,
     )
-        .context(EvalFailed)?;
+        .context(EvalFailed{path: cur_rel_script_path})?;
 
     Ok(())
 }
@@ -145,7 +157,7 @@ enum Error {
     // We add `ParseError` as a `src` value rather than `source` because it
     // doesn't satisfy the error constraints required by `Snafu`.
     ParseFailed{src: ParseError<(usize, usize), Token, LexError>},
-    EvalFailed{source: EvalError},
+    EvalFailed{source: EvalError, path: PathBuf},
 }
 
 fn render_parse_error(error: ParseError<(usize, usize), Token, LexError>)
@@ -221,7 +233,9 @@ fn join_strings(xs: &[String]) -> String {
     }
 }
 
-fn render_eval_error(error: EvalError) -> String {
+fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
+    -> StacktracedErrorMsg
+{
     match error {
         EvalError::BindFailed{source} |
         EvalError::EvalProgFailed{source} |
@@ -240,10 +254,63 @@ fn render_eval_error(error: EvalError) -> String {
         EvalError::EvalPropValueFailed{source, ..} |
         EvalError::EvalCallArgsFailed{source} |
         EvalError::EvalCallFuncFailed{source} |
-        EvalError::CallBuiltInFuncFailed{source} |
-        EvalError::EvalFuncStmtsFailed{source} |
-        EvalError::EvalExprFailed{source} => render_eval_error(*source),
+        EvalError::EvalExprFailed{source} => {
+            eval_err_to_stacktrace(path, func, *source)
+        },
 
-        _ => format!("{}", error),
+        EvalError::EvalBuiltinFuncCallFailed{source, func_name, call_loc} => {
+            let next_func =
+                func_name.unwrap_or_else(|| "<unnamed function>".to_string());
+            let mut st =
+                eval_err_to_stacktrace(path, Some(&next_func), *source);
+            let (line, col) = call_loc;
+            let sep =
+                if let Some(f) = func {
+                    format!(" in '{}':", f)
+                } else {
+                    "".to_string()
+                };
+
+            st.msg = format!("{}:{}:{} {}", line, col, sep, st.msg);
+
+            st
+        },
+
+        EvalError::EvalFuncCallFailed{source, func_name, call_loc} => {
+            let next_func =
+                func_name.unwrap_or_else(|| "<unnamed function>".to_string());
+            let mut st =
+                eval_err_to_stacktrace(path, Some(&next_func), *source);
+            let p = path.to_string_lossy();
+            let (line, col) = call_loc;
+            let f = func.unwrap_or("<root>");
+
+            st.stacktrace.push(format!("{}:{}:{}: in '{}'", p, line, col, f));
+
+            st
+        },
+
+        EvalError::AtLoc{source, line, col} => {
+            let mut st = eval_err_to_stacktrace(path, func, *source);
+            let sep =
+                if let Some(f) = func {
+                    format!(" in '{}':", f)
+                } else {
+                    "".to_string()
+                };
+
+            st.msg = format!("{}:{}:{} {}", line, col, sep, st.msg);
+
+            st
+        },
+
+        _ => {
+            StacktracedErrorMsg{stacktrace: vec![], msg: format!("{}", error)}
+        },
     }
+}
+
+struct StacktracedErrorMsg {
+    stacktrace: Vec<String>,
+    msg: String,
 }

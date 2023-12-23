@@ -42,8 +42,13 @@ pub enum Value {
     List(List),
     Object(Object),
 
-    BuiltInFunc{f: BuiltinFunc},
-    Func{args: Vec<Expr>, stmts: Block, closure: ScopeStack},
+    BuiltinFunc{name: String, f: BuiltinFunc},
+    Func{
+        name: Option<String>,
+        args: Vec<Expr>,
+        stmts: Block,
+        closure: ScopeStack,
+    },
 }
 
 pub type Str = Vec<u8>;
@@ -82,12 +87,17 @@ pub fn new_object(object: Object) -> ValRefWithSource {
     new_val_ref(Value::Object(object))
 }
 
-pub fn new_func(args: Vec<Expr>, stmts: Block, closure: ScopeStack)
+pub fn new_func(
+    name: Option<String>,
+    args: Vec<Expr>,
+    stmts: Block,
+    closure: ScopeStack,
+)
     -> ValRefWithSource
 {
-    new_val_ref(Value::Func{args, stmts, closure})
+    new_val_ref(Value::Func{name, args, stmts, closure})
 }
 
-pub fn new_built_in_func(f: BuiltinFunc) -> ValRefWithSource {
-    new_val_ref(Value::BuiltInFunc{f})
+pub fn new_built_in_func(name: String, f: BuiltinFunc) -> ValRefWithSource {
+    new_val_ref(Value::BuiltinFunc{name, f})
 }

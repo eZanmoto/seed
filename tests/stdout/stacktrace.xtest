@@ -1,0 +1,54 @@
+================================================== no_stacktrace
+exit_code: 103
+--------------------------------------------------
+1();
+--------------------------------------------------
+--------------------------------------------------
+stacktrace/no_stacktrace.sd:1:1: value is not a function
+================================================== stacktrace
+exit_code: 103
+--------------------------------------------------
+fn first() {
+    second();
+}
+
+fn second() {
+    third();
+}
+
+fn third() {
+    1();
+}
+
+first();
+--------------------------------------------------
+--------------------------------------------------
+stacktrace/stacktrace.sd:10:5: in 'third': value is not a function
+Stacktrace:
+  stacktrace/stacktrace.sd:6:5: in 'second'
+  stacktrace/stacktrace.sd:2:5: in 'first'
+  stacktrace/stacktrace.sd:13:1: in '<root>'
+================================================== stacktrace_builtin
+exit_code: 103
+--------------------------------------------------
+fn first() {
+    second();
+}
+
+fn second() {
+    third();
+}
+
+fn third() {
+    print(1, 2);
+}
+
+first();
+--------------------------------------------------
+--------------------------------------------------
+stacktrace/stacktrace_builtin.sd:10:5: in 'third': `print` only takes 1 argument (got 2)
+Stacktrace:
+  stacktrace/stacktrace_builtin.sd:6:5: in 'second'
+  stacktrace/stacktrace_builtin.sd:2:5: in 'first'
+  stacktrace/stacktrace_builtin.sd:13:1: in '<root>'
+==================================================

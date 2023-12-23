@@ -148,7 +148,12 @@ fn eval_stmt(
 
         Stmt::Func{name: (name, loc), args, stmts} => {
             let closure = scopes.clone();
-            let func = value::new_func(args.clone(), stmts.clone(), closure);
+            let func = value::new_func(
+                Some(name.clone()),
+                args.clone(),
+                stmts.clone(),
+                closure,
+            );
 
             bind::bind_name(scopes, name, loc, func, BindType::Declaration)
                 .context(DeclareFunctionFailed)?;
@@ -242,21 +247,24 @@ fn eval_expr(
             let func_val = eval_expr(context, scopes, func)
                 .context(EvalCallFuncFailed)?;
 
-            let v =
+            let (func_name, v) =
                 {
                     let ValWithSource{v, source} = &*func_val.lock().unwrap();
                     match v {
-                        Value::BuiltInFunc{f} => {
+                        Value::BuiltinFunc{name, f} => {
                             let this = source.as_ref().cloned();
 
-                            CallBinding::BuiltInFunc{
-                                f: *f,
-                                this,
-                                args: arg_vals,
-                            }
+                            (
+                                Some(name.clone()),
+                                CallBinding::BuiltinFunc{
+                                    f: *f,
+                                    this,
+                                    args: arg_vals,
+                                },
+                            )
                         },
 
-                        Value::Func{args: arg_names, stmts, closure} => {
+                        Value::Func{name, args: arg_names, stmts, closure} => {
                             let need = arg_names.len();
                             let got = arg_vals.len();
                             if got != need {
@@ -284,11 +292,14 @@ fn eval_expr(
                                 ));
                             }
 
-                            CallBinding::Func{
-                                bindings,
-                                closure: closure.clone(),
-                                stmts: stmts.clone(),
-                            }
+                            (
+                                name.clone(),
+                                CallBinding::Func{
+                                    bindings,
+                                    closure: closure.clone(),
+                                    stmts: stmts.clone(),
+                                },
+                            )
                         },
 
                         _ => {
@@ -301,9 +312,12 @@ fn eval_expr(
 
             let v =
                 match v {
-                    CallBinding::BuiltInFunc{f, this, args} => {
+                    CallBinding::BuiltinFunc{f, this, args} => {
                         f(this, args)
-                            .context(CallBuiltInFuncFailed)?
+                            .context(EvalBuiltinFuncCallFailed{
+                                func_name,
+                                call_loc: (*line, *col),
+                            })?
                     },
 
                     CallBinding::Func{bindings, mut closure, stmts} => {
@@ -313,7 +327,10 @@ fn eval_expr(
                             bindings,
                             &stmts,
                         )
-                            .context(EvalFuncStmtsFailed)?;
+                            .context(EvalFuncCallFailed{
+                                func_name,
+                                call_loc: (*line, *col),
+                            })?;
 
                         value::new_null()
                     },
@@ -325,7 +342,7 @@ fn eval_expr(
 }
 
 enum CallBinding {
-    BuiltInFunc{
+    BuiltinFunc{
         f: BuiltinFunc,
         this: Option<ValRefWithSource>,
         args: List,
