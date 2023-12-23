@@ -23,10 +23,15 @@ pub enum Token {
     BracketOpen,
     Colon,
     Comma,
+    Div,
     Equals,
+    Mod,
+    Mul,
     ParenClose,
     ParenOpen,
     Semicolon,
+    Sub,
+    Sum,
 
     ColonEquals,
 }
@@ -197,10 +202,15 @@ fn match_single_symbol_token(c: char) -> Option<Token> {
         '[' => Some(Token::BracketOpen),
         ':' => Some(Token::Colon),
         ',' => Some(Token::Comma),
+        '/' => Some(Token::Div),
         '=' => Some(Token::Equals),
+        '%' => Some(Token::Mod),
+        '*' => Some(Token::Mul),
         ')' => Some(Token::ParenClose),
         '(' => Some(Token::ParenOpen),
         ';' => Some(Token::Semicolon),
+        '-' => Some(Token::Sub),
+        '+' => Some(Token::Sum),
 
         _ => None,
     }

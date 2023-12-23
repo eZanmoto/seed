@@ -211,10 +211,15 @@ fn render_token_as_char(t: Token) -> String {
         Token::BracketOpen => "[".to_string(),
         Token::Colon => ":".to_string(),
         Token::Comma => ",".to_string(),
+        Token::Div => "/".to_string(),
         Token::Equals => "=".to_string(),
+        Token::Mod => "%".to_string(),
+        Token::Mul => "*".to_string(),
         Token::ParenClose => ")".to_string(),
         Token::ParenOpen => "(".to_string(),
         Token::Semicolon => ";".to_string(),
+        Token::Sub => "-".to_string(),
+        Token::Sum => "+".to_string(),
 
         Token::ColonEquals => ":=".to_string(),
     }
@@ -249,6 +254,9 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::DeclareFunctionFailed{source} |
         EvalError::EvalBlockFailed{source} |
         EvalError::EvalStmtFailed{source} |
+        EvalError::EvalBinOpLhsFailed{source} |
+        EvalError::EvalBinOpRhsFailed{source} |
+        EvalError::ApplyBinOpFailed{source} |
         EvalError::EvalListItemFailed{source} |
         EvalError::EvalPropNameFailed{source} |
         EvalError::EvalPropValueFailed{source, ..} |

@@ -33,23 +33,6 @@ pub Stmt: Stmt = {
         Stmt::Func{name: (name, loc), args, stmts},
 }
 
-pub Block: Block = {
-    "{" <stmts:Stmt*> "}" => stmts,
-}
-
-pub Expr: Expr = {
-    <loc:@L> <expr:ExprPrecedence1> => (expr, loc),
-}
-
-// `ExprPrecedence1` defines the most loosely binding expressions. Each
-// increasing precedence indicates a tighter binding.
-pub ExprPrecedence1: RawExpr = {
-    <loc:@L> <expr:ExprPrecedence1> "(" <args:ParamList> ")" =>
-        RawExpr::Call{func: Box::new((expr, loc)), args: args},
-
-    <expr:ExprPrecedence2> => expr,
-}
-
 pub ParamList: Vec<Expr> = CommaSepList<Expr>;
 
 CommaSepList<T>: Vec<T> = {
@@ -62,7 +45,53 @@ CommaSepList<T>: Vec<T> = {
     }
 }
 
-pub ExprPrecedence2: RawExpr = {
+pub Block: Block = {
+    "{" <stmts:Stmt*> "}" => stmts,
+}
+
+pub Expr: Expr = {
+    <loc:@L> <expr:ExprPrecedence1> => (expr, loc),
+}
+
+ExprTier<Op, NextTier>: RawExpr = {
+    <l_loc:@L> <l: ExprTier<Op, NextTier>>
+    <op_loc:@L> <op: Op>
+    <r_loc:@L> <r: NextTier> =>
+        RawExpr::BinaryOp{
+            op,
+            op_loc,
+            lhs: Box::new((l, l_loc)),
+            rhs: Box::new((r, r_loc)),
+        },
+
+    NextTier
+}
+
+// `ExprPrecedence1` defines the most loosely binding expressions. Each
+// increasing precedence indicates a tighter binding.
+pub ExprPrecedence1 = ExprTier<ExprOp1, ExprPrecedence2>;
+
+pub ExprOp1: BinaryOp = {
+    "+" => BinaryOp::Sum,
+    "-" => BinaryOp::Sub,
+};
+
+pub ExprPrecedence2 = ExprTier<ExprOp2, ExprPrecedence3>;
+
+pub ExprOp2: BinaryOp = {
+    "*" => BinaryOp::Mul,
+    "/" => BinaryOp::Div,
+    "%" => BinaryOp::Mod,
+};
+
+pub ExprPrecedence3: RawExpr = {
+    <loc:@L> <expr:ExprPrecedence4> "(" <args:ParamList> ")" =>
+        RawExpr::Call{func: Box::new((expr, loc)), args: args},
+
+    <expr:ExprPrecedence4> => expr,
+}
+
+pub ExprPrecedence4: RawExpr = {
     "null" => RawExpr::Null,
     "true" => RawExpr::Bool{b: true},
     "false" => RawExpr::Bool{b: false},
@@ -123,10 +152,15 @@ extern {
         "[" => Token::BracketOpen,
         ":" => Token::Colon,
         "," => Token::Comma,
+        "/" => Token::Div,
         "=" => Token::Equals,
+        "%" => Token::Mod,
+        "*" => Token::Mul,
         ")" => Token::ParenClose,
         "(" => Token::ParenOpen,
         ";" => Token::Semicolon,
+        "-" => Token::Sub,
+        "+" => Token::Sum,
 
         ":=" => Token::ColonEquals,
     }

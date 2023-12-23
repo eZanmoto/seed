@@ -35,13 +35,29 @@ pub enum RawExpr {
 
     Var{name: String},
 
+    BinaryOp{
+        op: BinaryOp,
+        op_loc: Location,
+        lhs: Box<Expr>,
+        rhs: Box<Expr>,
+    },
+
     List{items: Vec<Expr>},
     Object{props: Vec<PropItem>},
 
     Call{func: Box<Expr>, args: Vec<Expr>},
 }
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
+pub enum BinaryOp {
+    Sum,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+}
+
+#[derive(Clone, Debug)]
 pub enum PropItem {
     Pair{name: Expr, value: Expr},
 }

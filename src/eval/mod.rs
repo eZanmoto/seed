@@ -205,6 +205,30 @@ fn eval_expr(
             Ok(v)
         },
 
+        RawExpr::BinaryOp{op, op_loc, lhs, rhs} => {
+            let lhs_val = eval_expr(context, scopes, lhs)
+                .context(EvalBinOpLhsFailed)?;
+
+            let rhs_val = eval_expr(context, scopes, rhs)
+                .context(EvalBinOpRhsFailed)?;
+
+            // We clone the value from inside the `lhs_val` `Mutex` in a
+            // separate scope instead of using `&lhs_val.lock().unwrap().v`.
+            // This is because, with the latter approach, if `lhs_val` and
+            // `rhs_val` refer to the same `Mutex` value, the first lock on it
+            // (`lhs_val.lock()`) will cause a deadlock when a second lock
+            // (`rhs_val.lock()`) is attempted in the same scope.
+            let v = apply_binary_operation(
+                op,
+                op_loc,
+                &clone_value(&lhs_val),
+                &rhs_val.lock().unwrap().v,
+            )
+                .context(ApplyBinOpFailed)?;
+
+            Ok(value::new_val_ref(v))
+        },
+
         RawExpr::List{items} => {
             let mut vals = vec![];
 
@@ -352,6 +376,72 @@ enum CallBinding {
         closure: ScopeStack,
         stmts: Block,
     },
+}
+
+fn clone_value(v: &ValRefWithSource) -> Value {
+    let unlocked_v = &(*v.lock().unwrap()).v;
+
+    unlocked_v.clone()
+}
+
+fn apply_binary_operation(
+    op: &BinaryOp,
+    op_loc: &Location,
+    lhs: &Value,
+    rhs: &Value,
+)
+    -> Result<Value, Error>
+{
+    let (line, col) = op_loc;
+    let new_invalid_op_types = || {
+        Error::AtLoc{
+            source: Box::new(Error::InvalidOpTypes{
+                op: op.clone(),
+                lhs: lhs.clone(),
+                rhs: rhs.clone(),
+            }),
+            line: *line,
+            col: *col,
+        }
+    };
+
+    match op {
+        BinaryOp::Sum => {
+            match (lhs, rhs) {
+                (Value::Int(a), Value::Int(b)) =>
+                    Ok(Value::Int(a + b)),
+                (Value::Str(a), Value::Str(b)) =>
+                    Ok(Value::Str([a.clone(), b.clone()].concat())),
+                _ =>
+                    Err(new_invalid_op_types()),
+            }
+        },
+
+        BinaryOp::Sub |
+        BinaryOp::Mul |
+        BinaryOp::Div |
+        BinaryOp::Mod => {
+            match (lhs, rhs) {
+                (Value::Int(a), Value::Int(b)) => {
+                    let v =
+                        match op {
+                            BinaryOp::Sub => a - b,
+                            BinaryOp::Mul => a * b,
+                            BinaryOp::Div => a / b,
+                            BinaryOp::Mod => a % b,
+
+                            BinaryOp::Sum => panic!("unexpected operation"),
+                        };
+
+                    Ok(Value::Int(v))
+                },
+
+                _ => {
+                    Err(new_invalid_op_types())
+                },
+            }
+        },
+    }
 }
 
 pub fn eval_exprs(

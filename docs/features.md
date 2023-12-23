@@ -32,6 +32,28 @@ false
 {"hello": "world", "test": [1, 2, 3]}
 ```
 
+Operations
+----------
+
+### Integers
+
+```
+print(1 + 2); # 3
+print(5 - 2); # 3
+print(2 - 5); # -3
+print(2 * 3); # 6
+print(5 / 2); # 2
+print(5 % 2); # 1
+```
+
+Note that division only performs integer division.
+
+### Strings
+
+```
+print("Hello," + " world!"); # Hello, world!
+```
+
 Variables
 ---------
 
@@ -54,6 +76,8 @@ a variable defined in a surrounding scope will shadow the outer variable.
 ```
 n := 1;
 {
+    print(n); # 1
+
     n = 2;
     print(n); # 2
 
@@ -81,11 +105,11 @@ Functions create a closure over the scope in which they're defined:
 
 ```
 v := 1;
-fn set_v(new_v) {
-    v = new_v;
+fn inc_v() {
+    v = v + 1;
 }
 
 print(v); # 1
-set_v(2);
+inc_v();
 print(v); # 2
 ```

@@ -6,6 +6,7 @@ use std::string::FromUtf8Error;
 
 use snafu::Snafu;
 
+use ast::BinaryOp;
 use eval::Value;
 
 // TODO Ideally `Error` would be defined in `src/eval/mod.rs`, since these are
@@ -46,6 +47,13 @@ pub enum Error {
     StringConstructionFailed{source: FromUtf8Error, descr: String},
     #[snafu(display("expected {} arguments, got {}", need, got))]
     ArgNumMismatch{need: usize, got: usize},
+    #[snafu(display(
+        "can't apply '{}' to '{}' and '{}'",
+        op_symbol(op),
+        render_type(lhs),
+        render_type(rhs),
+    ))]
+    InvalidOpTypes{op: BinaryOp, lhs: Value, rhs: Value},
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
@@ -110,6 +118,18 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
+    EvalBinOpLhsFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalBinOpRhsFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    ApplyBinOpFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
     EvalListItemFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
@@ -165,4 +185,14 @@ fn render_type(v: &Value) -> String {
         };
 
     s.to_string()
+}
+
+fn op_symbol(op: &BinaryOp) -> char {
+    match op {
+        BinaryOp::Sum => '+',
+        BinaryOp::Sub => '-',
+        BinaryOp::Mul => '*',
+        BinaryOp::Div => '/',
+        BinaryOp::Mod => '%',
+    }
 }
