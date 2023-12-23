@@ -96,9 +96,11 @@ fn bind_next_name(
 
     match bind_type {
         BindType::Declaration => {
-            if !scopes.declare(name, rhs) {
+            if let Err((line, col)) = scopes.declare(name, *name_loc, rhs) {
                 return new_loc_error(Error::AlreadyInScope{
                     name: name.to_string(),
+                    prev_line: line,
+                    prev_col: col,
                 });
             }
         },

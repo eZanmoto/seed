@@ -25,10 +25,16 @@ pub enum Error {
     Undefined{name: String},
     #[snafu(display("cannot bind to {}", descr))]
     InvalidBindTarget{descr: String},
+    // TODO Add the location of the previous definition of this name.
     #[snafu(display("'{}' is bound multiple times in this binding", name))]
     AlreadyInBinding{name: String},
-    #[snafu(display("'{}' is already defined in the current scope", name))]
-    AlreadyInScope{name: String},
+    #[snafu(display(
+        "'{}' is already defined in the current scope at [{}:{}]",
+        name,
+        prev_line,
+        prev_col,
+    ))]
+    AlreadyInScope{name: String, prev_line: usize, prev_col: usize},
     #[snafu(display(
         "{} must be '{}', got '{}'",
         descr,
