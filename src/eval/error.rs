@@ -19,7 +19,7 @@ use eval::Value;
 pub enum Error {
     // TODO Consider adding a rendered version of the source expression to
     // highlight what the interpreter attempted to evaluate.
-    #[snafu(display("value is not a function"))]
+    #[snafu(display("can't call '{}' as a function", render_type(v)))]
     CannotCallNonFunc{v: Value},
     #[snafu(display("'{}' is not defined", name))]
     Undefined{name: String},

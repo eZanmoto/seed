@@ -4,7 +4,7 @@ exit_code: 103
 1();
 --------------------------------------------------
 --------------------------------------------------
-stacktrace/no_stacktrace.sd:1:1: value is not a function
+stacktrace/no_stacktrace.sd:1:1: can't call 'int' as a function
 ================================================== stacktrace
 exit_code: 103
 --------------------------------------------------
@@ -23,7 +23,7 @@ fn third() {
 first();
 --------------------------------------------------
 --------------------------------------------------
-stacktrace/stacktrace.sd:10:5: in 'third': value is not a function
+stacktrace/stacktrace.sd:10:5: in 'third': can't call 'int' as a function
 Stacktrace:
   stacktrace/stacktrace.sd:6:5: in 'second'
   stacktrace/stacktrace.sd:2:5: in 'first'

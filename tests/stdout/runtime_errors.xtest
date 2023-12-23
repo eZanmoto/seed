@@ -4,7 +4,7 @@ exit_code: 103
 "test"();
 --------------------------------------------------
 --------------------------------------------------
-runtime_errors/cannot_call_non_func.sd:1:1: value is not a function
+runtime_errors/cannot_call_non_func.sd:1:1: can't call 'string' as a function
 ================================================== undefined
 exit_code: 103
 --------------------------------------------------
