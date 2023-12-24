@@ -114,6 +114,8 @@ pub ExprPrecedence5: RawExpr = {
     <n:IntLiteral> => RawExpr::Int{n},
     <s:StrLiteral> => RawExpr::Str{s},
 
+    "(" <expr:ExprPrecedence1> ")" => expr,
+
     "[" <items:ExprList> "]" => RawExpr::List{items},
     "{" <props:PropList> "}" => RawExpr::Object{props},
 }

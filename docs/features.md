@@ -46,7 +46,15 @@ print(5 / 2); # 2
 print(5 % 2); # 1
 ```
 
-Note that division only performs integer division.
+Note that division only performs integer division. Operations follow standard
+precedence rules:
+
+```
+print(2 + 3 * 4); # 14
+print((2 + 3) * 4); # 20
+print(2 * 3 + 4); # 10
+print(2 * (3 + 4)); # 14
+```
 
 ### Strings
 
