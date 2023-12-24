@@ -406,6 +406,18 @@ fn apply_binary_operation(
     };
 
     match op {
+        BinaryOp::Eq |
+        BinaryOp::Ne => {
+            if let Some(v) = eq(lhs, rhs) {
+                match op {
+                    BinaryOp::Eq => Ok(Value::Bool(v)),
+                    _ => Ok(Value::Bool(!v)),
+                }
+            } else {
+                Err(new_invalid_op_types())
+            }
+        },
+
         BinaryOp::Sum => {
             match (lhs, rhs) {
                 (Value::Int(a), Value::Int(b)) =>
@@ -487,6 +499,79 @@ fn apply_binary_operation(
                 },
             }
         },
+    }
+}
+
+// `eq` returns `None` if `lhs` and `rhs` are of different types.
+fn eq(lhs: &Value, rhs: &Value) -> Option<bool> {
+    match (lhs, rhs) {
+        (Value::Null, Value::Null) =>
+            Some(true),
+
+        (Value::Bool(a), Value::Bool(b)) =>
+            Some(a == b),
+
+        (Value::Int(a), Value::Int(b)) =>
+            Some(a == b),
+
+        (Value::Str(a), Value::Str(b)) =>
+            Some(a == b),
+
+        (Value::List(xs), Value::List(ys)) => {
+            if xs.len() != ys.len() {
+                return Some(false);
+            }
+
+            for (i, x) in xs.iter().enumerate() {
+                let y = &ys[i];
+
+                // See comment above call to `apply_binary_operation` in
+                // `eval_expr` for details on why we clone the value from
+                // inside the `lhs` `Mutex`.
+                let equal = eq(
+                    &clone_value(x),
+                    &y.lock().unwrap().v,
+                )?;
+
+                if !equal {
+                    return Some(false);
+                }
+            }
+
+            Some(true)
+        },
+
+        (Value::Object(xs), Value::Object(ys)) => {
+            if xs.len() != ys.len() {
+                return Some(false);
+            }
+
+            for (k, x) in xs.iter() {
+                let y =
+                    if let Some(y) = ys.get(k) {
+                        y
+                    } else {
+                        return Some(false);
+                    };
+
+                // See comment above call to `apply_binary_operation` in
+                // `eval_expr` for details on why we clone the value from
+                // inside the `lhs` `Mutex`.
+                let equal = eq(
+                    &clone_value(x),
+                    &y.lock().unwrap().v,
+                )?;
+
+                if !equal {
+                    return Some(false);
+                }
+            }
+
+            Some(true)
+        },
+
+        _ =>
+            None,
     }
 }
 

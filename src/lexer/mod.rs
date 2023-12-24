@@ -36,7 +36,9 @@ pub enum Token {
     Sum,
 
     AmpAmp,
+    BangEquals,
     ColonEquals,
+    EqualsEquals,
     GreaterThanEquals,
     LessThanEquals,
     PipePipe,
@@ -227,7 +229,9 @@ fn match_single_symbol_token(c: char) -> Option<Token> {
 fn match_double_symbol_token(a: char, b: char) -> Option<Token> {
     match (a, b) {
         ('&', '&') => Some(Token::AmpAmp),
+        ('!', '=') => Some(Token::BangEquals),
         (':', '=') => Some(Token::ColonEquals),
+        ('=', '=') => Some(Token::EqualsEquals),
         ('>', '=') => Some(Token::GreaterThanEquals),
         ('<', '=') => Some(Token::LessThanEquals),
         ('|', '|') => Some(Token::PipePipe),

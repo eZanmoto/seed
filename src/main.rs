@@ -224,7 +224,9 @@ fn render_token_as_char(t: Token) -> String {
         Token::Sum => "+".to_string(),
 
         Token::AmpAmp => "&&".to_string(),
+        Token::BangEquals => "!=".to_string(),
         Token::ColonEquals => ":=".to_string(),
+        Token::EqualsEquals => "==".to_string(),
         Token::GreaterThanEquals => ">=".to_string(),
         Token::LessThanEquals => "<=".to_string(),
         Token::PipePipe => "||".to_string(),

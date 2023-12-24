@@ -50,11 +50,6 @@ pub enum RawExpr {
 
 #[derive(Clone, Debug)]
 pub enum BinaryOp {
-    Gt,
-    Gte,
-    Lt,
-    Lte,
-
     Sum,
     Sub,
     Mul,
@@ -63,6 +58,13 @@ pub enum BinaryOp {
 
     And,
     Or,
+
+    Eq,
+    Ne,
+    Gt,
+    Gte,
+    Lt,
+    Lte,
 }
 
 #[derive(Clone, Debug)]

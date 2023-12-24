@@ -90,6 +90,8 @@ pub ExprOp3: BinaryOp = {
     "/" => BinaryOp::Div,
     "%" => BinaryOp::Mod,
 
+    "==" => BinaryOp::Eq,
+    "!=" => BinaryOp::Ne,
     ">" => BinaryOp::Gt,
     ">=" => BinaryOp::Gte,
     "<" => BinaryOp::Lt,
@@ -177,6 +179,8 @@ extern {
         "+" => Token::Sum,
 
         "&&" => Token::AmpAmp,
+        "!=" => Token::BangEquals,
+        "==" => Token::EqualsEquals,
         ">=" => Token::GreaterThanEquals,
         "<=" => Token::LessThanEquals,
         "||" => Token::PipePipe,

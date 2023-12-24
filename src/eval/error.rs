@@ -199,6 +199,8 @@ fn op_symbol(op: &BinaryOp) -> String {
             BinaryOp::And => "&&",
             BinaryOp::Or => "||",
 
+            BinaryOp::Eq => "==",
+            BinaryOp::Ne => "!=",
             BinaryOp::Gt => ">",
             BinaryOp::Gte => ">=",
             BinaryOp::Lt => "<",

@@ -61,6 +61,27 @@ print(true && false); # false
 print(true || false); # true
 ```
 
+### Equality
+
+```
+print(1 == 1); # true
+print(1 == 2); # false
+print(1 != 1); # false
+print(1 != 2); # true
+```
+
+Equality on compound types (lists and objects) perform structural equality:
+
+```
+print([] == []); # true
+print([] == [1, 2]); # false
+print([1, 2] == [1, 2]); # true
+
+print({} == {}); # true
+print({} == {"a": 1}); # false
+print({"a": 1} == {"a": 1}); # true
+```
+
 ### Comparison
 
 ```
