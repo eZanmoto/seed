@@ -187,12 +187,23 @@ fn render_type(v: &Value) -> String {
     s.to_string()
 }
 
-fn op_symbol(op: &BinaryOp) -> char {
-    match op {
-        BinaryOp::Sum => '+',
-        BinaryOp::Sub => '-',
-        BinaryOp::Mul => '*',
-        BinaryOp::Div => '/',
-        BinaryOp::Mod => '%',
-    }
+fn op_symbol(op: &BinaryOp) -> String {
+    let s =
+        match op {
+            BinaryOp::Sum => "+",
+            BinaryOp::Sub => "-",
+            BinaryOp::Mul => "*",
+            BinaryOp::Div => "/",
+            BinaryOp::Mod => "%",
+
+            BinaryOp::And => "&&",
+            BinaryOp::Or => "||",
+
+            BinaryOp::Gt => ">",
+            BinaryOp::Gte => ">=",
+            BinaryOp::Lt => "<",
+            BinaryOp::Lte => "<=",
+        };
+
+    s.to_string()
 }

@@ -72,26 +72,38 @@ ExprTier<Op, NextTier>: RawExpr = {
 pub ExprPrecedence1 = ExprTier<ExprOp1, ExprPrecedence2>;
 
 pub ExprOp1: BinaryOp = {
-    "+" => BinaryOp::Sum,
-    "-" => BinaryOp::Sub,
+    "&&" => BinaryOp::And,
+    "||" => BinaryOp::Or,
 };
 
 pub ExprPrecedence2 = ExprTier<ExprOp2, ExprPrecedence3>;
 
 pub ExprOp2: BinaryOp = {
+    "+" => BinaryOp::Sum,
+    "-" => BinaryOp::Sub,
+};
+
+pub ExprPrecedence3 = ExprTier<ExprOp3, ExprPrecedence4>;
+
+pub ExprOp3: BinaryOp = {
     "*" => BinaryOp::Mul,
     "/" => BinaryOp::Div,
     "%" => BinaryOp::Mod,
+
+    ">" => BinaryOp::Gt,
+    ">=" => BinaryOp::Gte,
+    "<" => BinaryOp::Lt,
+    "<=" => BinaryOp::Lte,
 };
 
-pub ExprPrecedence3: RawExpr = {
-    <loc:@L> <expr:ExprPrecedence4> "(" <args:ParamList> ")" =>
+pub ExprPrecedence4: RawExpr = {
+    <loc:@L> <expr:ExprPrecedence5> "(" <args:ParamList> ")" =>
         RawExpr::Call{func: Box::new((expr, loc)), args: args},
 
-    <expr:ExprPrecedence4> => expr,
+    <expr:ExprPrecedence5> => expr,
 }
 
-pub ExprPrecedence4: RawExpr = {
+pub ExprPrecedence5: RawExpr = {
     "null" => RawExpr::Null,
     "true" => RawExpr::Bool{b: true},
     "false" => RawExpr::Bool{b: false},
@@ -154,6 +166,8 @@ extern {
         "," => Token::Comma,
         "/" => Token::Div,
         "=" => Token::Equals,
+        ">" => Token::GreaterThan,
+        "<" => Token::LessThan,
         "%" => Token::Mod,
         "*" => Token::Mul,
         ")" => Token::ParenClose,
@@ -161,6 +175,11 @@ extern {
         ";" => Token::Semicolon,
         "-" => Token::Sub,
         "+" => Token::Sum,
+
+        "&&" => Token::AmpAmp,
+        ">=" => Token::GreaterThanEquals,
+        "<=" => Token::LessThanEquals,
+        "||" => Token::PipePipe,
 
         ":=" => Token::ColonEquals,
     }

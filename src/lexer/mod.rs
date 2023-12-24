@@ -25,6 +25,8 @@ pub enum Token {
     Comma,
     Div,
     Equals,
+    GreaterThan,
+    LessThan,
     Mod,
     Mul,
     ParenClose,
@@ -33,7 +35,11 @@ pub enum Token {
     Sub,
     Sum,
 
+    AmpAmp,
     ColonEquals,
+    GreaterThanEquals,
+    LessThanEquals,
+    PipePipe,
 }
 
 #[derive(Debug)]
@@ -204,6 +210,8 @@ fn match_single_symbol_token(c: char) -> Option<Token> {
         ',' => Some(Token::Comma),
         '/' => Some(Token::Div),
         '=' => Some(Token::Equals),
+        '>' => Some(Token::GreaterThan),
+        '<' => Some(Token::LessThan),
         '%' => Some(Token::Mod),
         '*' => Some(Token::Mul),
         ')' => Some(Token::ParenClose),
@@ -218,7 +226,11 @@ fn match_single_symbol_token(c: char) -> Option<Token> {
 
 fn match_double_symbol_token(a: char, b: char) -> Option<Token> {
     match (a, b) {
+        ('&', '&') => Some(Token::AmpAmp),
         (':', '=') => Some(Token::ColonEquals),
+        ('>', '=') => Some(Token::GreaterThanEquals),
+        ('<', '=') => Some(Token::LessThanEquals),
+        ('|', '|') => Some(Token::PipePipe),
 
         _ => None,
     }

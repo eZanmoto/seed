@@ -213,6 +213,8 @@ fn render_token_as_char(t: Token) -> String {
         Token::Comma => ",".to_string(),
         Token::Div => "/".to_string(),
         Token::Equals => "=".to_string(),
+        Token::GreaterThan => ">".to_string(),
+        Token::LessThan => "<".to_string(),
         Token::Mod => "%".to_string(),
         Token::Mul => "*".to_string(),
         Token::ParenClose => ")".to_string(),
@@ -221,7 +223,11 @@ fn render_token_as_char(t: Token) -> String {
         Token::Sub => "-".to_string(),
         Token::Sum => "+".to_string(),
 
+        Token::AmpAmp => "&&".to_string(),
         Token::ColonEquals => ":=".to_string(),
+        Token::GreaterThanEquals => ">=".to_string(),
+        Token::LessThanEquals => "<=".to_string(),
+        Token::PipePipe => "||".to_string(),
     }
 }
 

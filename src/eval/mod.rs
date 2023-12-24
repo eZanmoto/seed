@@ -430,10 +430,56 @@ fn apply_binary_operation(
                             BinaryOp::Div => a / b,
                             BinaryOp::Mod => a % b,
 
-                            BinaryOp::Sum => panic!("unexpected operation"),
+                            _ => panic!("unexpected operation"),
                         };
 
                     Ok(Value::Int(v))
+                },
+
+                _ => {
+                    Err(new_invalid_op_types())
+                },
+            }
+        },
+
+        BinaryOp::And |
+        BinaryOp::Or => {
+            match (lhs, rhs) {
+                (Value::Bool(a), Value::Bool(b)) => {
+                    let v =
+                        match op {
+                            BinaryOp::And => *a && *b,
+                            BinaryOp::Or => *a || *b,
+
+                            _ => panic!("unexpected operation"),
+                        };
+
+                    Ok(Value::Bool(v))
+                },
+
+                _ => {
+                    Err(new_invalid_op_types())
+                },
+            }
+        },
+
+        BinaryOp::Gt |
+        BinaryOp::Gte |
+        BinaryOp::Lt |
+        BinaryOp::Lte => {
+            match (lhs, rhs) {
+                (Value::Int(a), Value::Int(b)) => {
+                    let v =
+                        match op {
+                            BinaryOp::Gt => a > b,
+                            BinaryOp::Gte => a >= b,
+                            BinaryOp::Lt => a < b,
+                            BinaryOp::Lte => a <= b,
+
+                            _ => panic!("unexpected operation"),
+                        };
+
+                    Ok(Value::Bool(v))
                 },
 
                 _ => {

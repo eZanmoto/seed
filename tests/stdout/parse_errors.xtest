@@ -1,8 +1,8 @@
 ================================================== unexpected_eof
 exit_code: 103
 --------------------------------------------------
-print
+1 +
 --------------------------------------------------
 --------------------------------------------------
-parse_errors/unexpected_eof.sd:2:0: unexpected EOF; expected "%", "(", ")", "*", "+", ",", "-", "/", ":", ":=", ";", "=", "]" or "}"
+parse_errors/unexpected_eof.sd:2:0: unexpected EOF; expected "[", "false", "identifier", "int_literal", "null", "str_literal", "true" or "{"
 ==================================================

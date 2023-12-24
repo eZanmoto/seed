@@ -54,6 +54,22 @@ Note that division only performs integer division.
 print("Hello," + " world!"); # Hello, world!
 ```
 
+### Boolean
+
+```
+print(true && false); # false
+print(true || false); # true
+```
+
+### Comparison
+
+```
+print(1 < 2); # true
+print(3 <= 2); # false
+print(1 > 2); # false
+print(3 >= 2); # true
+```
+
 Variables
 ---------
 
