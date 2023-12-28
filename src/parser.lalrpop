@@ -29,6 +29,17 @@ pub Stmt: Stmt = {
     <lhs:Expr> ":=" <rhs:Expr> ";" => Stmt::Declare{lhs, rhs},
     <lhs:Expr> "=" <rhs:Expr> ";" => Stmt::Assign{lhs, rhs},
 
+    <lhs_loc:@L> <lhs:Expr> <op_loc:@L> "+=" <rhs:Expr> ";" =>
+        Stmt::OpAssign{lhs, lhs_loc, op: BinaryOp::Sum, op_loc, rhs},
+    <lhs_loc:@L> <lhs:Expr> <op_loc:@L> "-=" <rhs:Expr> ";" =>
+        Stmt::OpAssign{lhs, lhs_loc, op: BinaryOp::Sub, op_loc, rhs},
+    <lhs_loc:@L> <lhs:Expr> <op_loc:@L> "*=" <rhs:Expr> ";" =>
+        Stmt::OpAssign{lhs, lhs_loc, op: BinaryOp::Mul, op_loc, rhs},
+    <lhs_loc:@L> <lhs:Expr> <op_loc:@L> "/=" <rhs:Expr> ";" =>
+        Stmt::OpAssign{lhs, lhs_loc, op: BinaryOp::Div, op_loc, rhs},
+    <lhs_loc:@L> <lhs:Expr> <op_loc:@L> "%=" <rhs:Expr> ";" =>
+        Stmt::OpAssign{lhs, lhs_loc, op: BinaryOp::Mod, op_loc, rhs},
+
     "fn" <loc:@L> <name:Ident> "(" <args:ParamList> ")" <stmts:Block> =>
         Stmt::Func{name: (name, loc), args, stmts},
 }
@@ -182,10 +193,15 @@ extern {
 
         "&&" => Token::AmpAmp,
         "!=" => Token::BangEquals,
+        "/=" => Token::DivEquals,
         "==" => Token::EqualsEquals,
         ">=" => Token::GreaterThanEquals,
         "<=" => Token::LessThanEquals,
+        "%=" => Token::ModEquals,
+        "*=" => Token::MulEquals,
         "||" => Token::PipePipe,
+        "-=" => Token::SubEquals,
+        "+=" => Token::SumEquals,
 
         ":=" => Token::ColonEquals,
     }

@@ -54,6 +54,8 @@ pub enum Error {
         render_type(rhs),
     ))]
     InvalidOpTypes{op: BinaryOp, lhs: Value, rhs: Value},
+    #[snafu(display("the LHS of an operation-assignment must be a variable"))]
+    OpAssignLhsNotVar,
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
@@ -103,6 +105,10 @@ pub enum Error {
         source: Box<Error>,
     },
     AssignmentBindFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    OpAssignmentBindFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },

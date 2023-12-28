@@ -226,10 +226,15 @@ fn render_token_as_char(t: Token) -> String {
         Token::AmpAmp => "&&".to_string(),
         Token::BangEquals => "!=".to_string(),
         Token::ColonEquals => ":=".to_string(),
+        Token::DivEquals => "/=".to_string(),
         Token::EqualsEquals => "==".to_string(),
         Token::GreaterThanEquals => ">=".to_string(),
         Token::LessThanEquals => "<=".to_string(),
+        Token::ModEquals => "%=".to_string(),
+        Token::MulEquals => "*=".to_string(),
         Token::PipePipe => "||".to_string(),
+        Token::SubEquals => "-=".to_string(),
+        Token::SumEquals => "+=".to_string(),
     }
 }
 
@@ -259,6 +264,7 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::DeclarationBindFailed{source} |
         EvalError::EvalAssignmentRhsFailed{source} |
         EvalError::AssignmentBindFailed{source} |
+        EvalError::OpAssignmentBindFailed{source} |
         EvalError::DeclareFunctionFailed{source} |
         EvalError::EvalBlockFailed{source} |
         EvalError::EvalStmtFailed{source} |

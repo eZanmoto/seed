@@ -58,7 +58,6 @@ impl ScopeStack {
         None
     }
 
-
     // `assign` replaces `name` in the topmost scope of this `ScopeStack` and
     // returns `true`, or else it returns `false` if `name` wasn't found in
     // this `ScopeStack`. `assign` returns an error if attempting to assign to

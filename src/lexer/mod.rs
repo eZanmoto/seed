@@ -38,10 +38,15 @@ pub enum Token {
     AmpAmp,
     BangEquals,
     ColonEquals,
+    DivEquals,
     EqualsEquals,
     GreaterThanEquals,
     LessThanEquals,
+    ModEquals,
+    MulEquals,
     PipePipe,
+    SubEquals,
+    SumEquals,
 }
 
 #[derive(Debug)]
@@ -231,10 +236,15 @@ fn match_double_symbol_token(a: char, b: char) -> Option<Token> {
         ('&', '&') => Some(Token::AmpAmp),
         ('!', '=') => Some(Token::BangEquals),
         (':', '=') => Some(Token::ColonEquals),
+        ('/', '=') => Some(Token::DivEquals),
         ('=', '=') => Some(Token::EqualsEquals),
         ('>', '=') => Some(Token::GreaterThanEquals),
         ('<', '=') => Some(Token::LessThanEquals),
+        ('%', '=') => Some(Token::ModEquals),
+        ('*', '=') => Some(Token::MulEquals),
         ('|', '|') => Some(Token::PipePipe),
+        ('-', '=') => Some(Token::SubEquals),
+        ('+', '=') => Some(Token::SumEquals),
 
         _ => None,
     }

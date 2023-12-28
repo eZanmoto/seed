@@ -146,6 +146,43 @@ fn eval_stmt(
                 .context(AssignmentBindFailed)?;
         },
 
+        Stmt::OpAssign{lhs, lhs_loc, op, op_loc, rhs} => {
+            let (name, name_loc) =
+                if let (RawExpr::Var{name}, name_loc) = lhs {
+                    (name, name_loc)
+                } else {
+                    let (line, col) = lhs_loc;
+
+                    return Err(Error::AtLoc{
+                        source: Box::new(Error::OpAssignLhsNotVar),
+                        line: *line,
+                        col: *col,
+                    })
+                };
+
+            let lhs_val = eval_expr(context, scopes, lhs)
+                .context(EvalBinOpLhsFailed)?;
+
+            let rhs_val = eval_expr(context, scopes, rhs)
+                .context(EvalBinOpRhsFailed)?;
+
+            // See comment above call to `apply_binary_operation` in
+            // `eval_expr` for details on why we clone the value from inside
+            // the `lhs` `Mutex`.
+            let raw_v = apply_binary_operation(
+                op,
+                op_loc,
+                &clone_value(&lhs_val),
+                &rhs_val.lock().unwrap().v,
+            )
+                .context(ApplyBinOpFailed)?;
+
+            let v = value::new_val_ref(raw_v);
+
+            bind::bind_name(scopes, name, name_loc, v, BindType::Assignment)
+                .context(OpAssignmentBindFailed)?;
+        },
+
         Stmt::Func{name: (name, loc), args, stmts} => {
             let closure = scopes.clone();
             let func = value::new_func(

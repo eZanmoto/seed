@@ -56,10 +56,35 @@ print(2 * 3 + 4); # 10
 print(2 * (3 + 4)); # 14
 ```
 
+Assignment-operations can be used as a shorthand for assigning the result of an
+operation to a variable:
+
+```
+x := 1;
+
+x += 2; # x = x + 2
+print(x); # 3
+
+x *= 3; # x = x * 3
+print(x); # 9
+
+x %= 2; # x = x % 2
+print(x); # 1
+```
+
 ### Strings
 
 ```
 print("Hello," + " world!"); # Hello, world!
+```
+
+An assignment-operation can be used as a shorthand for assigning the result of
+concatenation to a variable:
+
+```
+x := "Hello";
+x += ", world!";
+print(x); # Hello, world!
 ```
 
 ### Boolean

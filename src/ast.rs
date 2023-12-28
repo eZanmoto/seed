@@ -17,6 +17,13 @@ pub enum Stmt {
 
     Declare{lhs: Expr, rhs: Expr},
     Assign{lhs: Expr, rhs: Expr},
+    OpAssign{
+        lhs: Expr,
+        lhs_loc: Location,
+        op: BinaryOp,
+        op_loc: Location,
+        rhs: Expr,
+    },
 
     Func{name: (String, Location), args: Vec<Expr>, stmts: Block},
 }
