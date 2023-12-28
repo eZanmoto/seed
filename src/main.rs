@@ -205,6 +205,7 @@ fn render_token(t: Token) -> String {
         Token::Fn => "`fn`".to_string(),
         Token::If => "`if`".to_string(),
         Token::Null => "`null`".to_string(),
+        Token::Return => "`return`".to_string(),
         Token::True => "`true`".to_string(),
 
         Token::BraceClose => "}".to_string(),

@@ -183,11 +183,11 @@ Functions
 ---------
 
 ```
-fn p(s) {
-    print(s);
+fn add(a, b) {
+    return a + b;
 }
 
-p("Hello, world!");
+print(add(1, 2)); # 3
 ```
 
 Functions create a closure over the scope in which they're defined:

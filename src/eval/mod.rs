@@ -68,10 +68,21 @@ pub fn eval_prog(
             .map(|(raw_expr, v)| ((raw_expr, (0, 0)), v))
             .collect();
 
-    eval_stmts(context, scopes, bindings, stmts)
+    let v = eval_stmts(context, scopes, bindings, stmts)
         .context(EvalStmtsFailed)?;
 
-    Ok(())
+    match v {
+        Escape::None => Ok(()),
+        Escape::Return{loc, ..} => {
+            let (line, col) = loc;
+
+            Err(Error::AtLoc{
+                source: Box::new(Error::ReturnOutsideFunction),
+                line,
+                col,
+            })
+        },
+    }
 }
 
 // `eval_stmts` evaluates `stmts` in a new scope pushed onto `scopes`, with the
@@ -82,7 +93,7 @@ pub fn eval_stmts(
     new_bindings: Vec<(Expr, ValRefWithSource)>,
     stmts: &Block,
 )
-    -> Result<(), Error>
+    -> Result<Escape, Error>
 {
     let mut inner_scopes = scopes.new_from_push(HashMap::new());
 
@@ -91,10 +102,10 @@ pub fn eval_stmts(
             .context(BindFailed)?;
     }
 
-    eval_stmts_with_scope_stack(context, &mut inner_scopes, stmts)
+    let v = eval_stmts_with_scope_stack(context, &mut inner_scopes, stmts)
         .context(EvalStmtsWithScopeStackFailed)?;
 
-    Ok(())
+    Ok(v)
 }
 
 pub fn eval_stmts_with_scope_stack(
@@ -102,14 +113,24 @@ pub fn eval_stmts_with_scope_stack(
     scopes: &mut ScopeStack,
     stmts: &Block,
 )
-    -> Result<(), Error>
+    -> Result<Escape, Error>
 {
     for stmt in stmts {
-        eval_stmt(context, scopes, stmt)
+        let v = eval_stmt(context, scopes, stmt)
             .context(EvalStmtFailed)?;
+
+        match v {
+            Escape::None => {},
+            Escape::Return{..} => return Ok(v),
+        }
     }
 
-    Ok(())
+    Ok(Escape::None)
+}
+
+pub enum Escape {
+    None,
+    Return{value: ValRefWithSource, loc: Location},
 }
 
 fn eval_stmt(
@@ -117,7 +138,7 @@ fn eval_stmt(
     scopes: &mut ScopeStack,
     stmt: &Stmt,
 )
-    -> Result<(), Error>
+    -> Result<Escape, Error>
 {
     match stmt {
         Stmt::Block{block} => {
@@ -189,14 +210,18 @@ fn eval_stmt(
                     .context(EvalConditionFailed)?;
 
                 if b {
-                    return eval_stmts_in_new_scope(context, scopes, stmts)
-                        .context(EvalIfStatementsFailed);
+                    let v = eval_stmts_in_new_scope(context, scopes, stmts)
+                        .context(EvalIfStatementsFailed)?;
+
+                    return Ok(v);
                 }
             }
 
             if let Some(stmts) = else_stmts {
-                return eval_stmts_in_new_scope(context, scopes, stmts)
-                    .context(EvalElseStatementsFailed);
+                let v = eval_stmts_in_new_scope(context, scopes, stmts)
+                    .context(EvalElseStatementsFailed)?;
+
+                return Ok(v);
             }
         },
 
@@ -212,9 +237,16 @@ fn eval_stmt(
             bind::bind_name(scopes, name, loc, func, BindType::Declaration)
                 .context(DeclareFunctionFailed)?;
         },
+
+        Stmt::Return{loc, expr} => {
+            let v = eval_expr(context, scopes, expr)
+                .context(EvalReturnExprFailed)?;
+
+            return Ok(Escape::Return{value: v, loc: *loc});
+        },
     }
 
-    Ok(())
+    Ok(Escape::None)
 }
 
 pub fn eval_stmts_in_new_scope(
@@ -222,7 +254,7 @@ pub fn eval_stmts_in_new_scope(
     outer_scopes: &mut ScopeStack,
     stmts: &Block,
 )
-    -> Result<(), Error>
+    -> Result<Escape, Error>
 {
     eval_stmts(context, outer_scopes, vec![], stmts)
 }
@@ -399,7 +431,7 @@ fn eval_expr(
                     },
 
                     CallBinding::Func{bindings, mut closure, stmts} => {
-                        eval_stmts(
+                        let v = eval_stmts(
                             context,
                             &mut closure,
                             bindings,
@@ -410,7 +442,10 @@ fn eval_expr(
                                 call_loc: (*line, *col),
                             })?;
 
-                        value::new_null()
+                        match v {
+                            Escape::None => value::new_null(),
+                            Escape::Return{value, ..} => value,
+                        }
                     },
                 };
 

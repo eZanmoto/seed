@@ -17,6 +17,7 @@ pub enum Token {
     Fn,
     If,
     Null,
+    Return,
     True,
 
     BraceClose,
@@ -101,6 +102,7 @@ impl<'input> Lexer<'input> {
             "fn" => Token::Fn,
             "if" => Token::If,
             "null" => Token::Null,
+            "return" => Token::Return,
             "true" => Token::True,
 
             _ => Token::Ident(t.to_string()),

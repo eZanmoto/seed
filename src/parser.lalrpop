@@ -52,6 +52,8 @@ pub Stmt: Stmt = {
 
     "fn" <loc:@L> <name:Ident> "(" <args:ParamList> ")" <stmts:Block> =>
         Stmt::Func{name: (name, loc), args, stmts},
+    <loc:@L> "return" <expr:Expr> ";" =>
+        Stmt::Return{loc, expr},
 }
 
 pub ParamList: Vec<Expr> = CommaSepList<Expr>;
@@ -200,6 +202,7 @@ extern {
         "fn" => Token::Fn,
         "if" => Token::If,
         "null" => Token::Null,
+        "return" => Token::Return,
         "true" => Token::True,
 
         "}" => Token::BraceClose,

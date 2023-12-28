@@ -28,6 +28,7 @@ pub enum Stmt {
     If{branches: Vec<Branch>, else_stmts: Option<Block>},
 
     Func{name: (String, Location), args: Vec<Expr>, stmts: Block},
+    Return{loc: Location, expr: Expr},
 }
 
 #[derive(Clone,Debug)]

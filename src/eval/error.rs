@@ -56,6 +56,8 @@ pub enum Error {
     InvalidOpTypes{op: BinaryOp, lhs: Value, rhs: Value},
     #[snafu(display("the LHS of an operation-assignment must be a variable"))]
     OpAssignLhsNotVar,
+    #[snafu(display("'return' can't be used outside of a function"))]
+    ReturnOutsideFunction,
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
@@ -125,6 +127,10 @@ pub enum Error {
         source: Box<Error>,
     },
     DeclareFunctionFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalReturnExprFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
