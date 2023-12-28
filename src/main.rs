@@ -180,7 +180,7 @@ fn render_parse_error(error: ParseError<(usize, usize), Token, LexError>)
                 loc,
                 format!(
                     "unexpected '{}'; expected {}",
-                    render_token_as_char(tok),
+                    render_token(tok),
                     join_strings(&expected),
                 ),
             ),
@@ -194,14 +194,16 @@ fn render_parse_error(error: ParseError<(usize, usize), Token, LexError>)
     }
 }
 
-fn render_token_as_char(t: Token) -> String {
+fn render_token(t: Token) -> String {
     match t {
         Token::Ident(s) => format!("`{}`", s),
         Token::IntLiteral(n) => format!("{}", n),
         Token::StrLiteral(s) => format!("\"{}\"", s),
 
+        Token::Else => "`else`".to_string(),
         Token::False => "`false`".to_string(),
         Token::Fn => "`fn`".to_string(),
+        Token::If => "`if`".to_string(),
         Token::Null => "`null`".to_string(),
         Token::True => "`true`".to_string(),
 
@@ -265,6 +267,9 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::EvalAssignmentRhsFailed{source} |
         EvalError::AssignmentBindFailed{source} |
         EvalError::OpAssignmentBindFailed{source} |
+        EvalError::EvalConditionFailed{source} |
+        EvalError::EvalIfStatementsFailed{source} |
+        EvalError::EvalElseStatementsFailed{source} |
         EvalError::DeclareFunctionFailed{source} |
         EvalError::EvalBlockFailed{source} |
         EvalError::EvalStmtFailed{source} |

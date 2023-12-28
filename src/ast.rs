@@ -25,7 +25,15 @@ pub enum Stmt {
         rhs: Expr,
     },
 
+    If{branches: Vec<Branch>, else_stmts: Option<Block>},
+
     Func{name: (String, Location), args: Vec<Expr>, stmts: Block},
+}
+
+#[derive(Clone,Debug)]
+pub struct Branch {
+    pub cond: Expr,
+    pub stmts: Block,
 }
 
 pub type Location = (usize, usize);

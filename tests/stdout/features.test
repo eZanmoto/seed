@@ -104,6 +104,16 @@ print(n);
 3
 4
 2
+================================================== if_statements
+if true {
+    print("expected");
+} else if false {
+    print("unexpected");
+} else {
+    print("unexpected");
+}
+--------------------------------------------------
+expected
 ================================================== functions
 fn p(s) {
     print(s);

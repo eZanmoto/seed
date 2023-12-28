@@ -22,12 +22,16 @@ pub Stmt: Stmt = {
     // object needs to be made when the closing brace is encountered - the token
     // after can't be checked. We require at least one statement in a block as a
     // simple solution, rather than reworking the grammar to allow empty blocks.
-    "{" <block:Stmt+> "}" => Stmt::Block{block},
+    "{" <block:Stmt+> "}" =>
+        Stmt::Block{block},
 
-    <expr:Expr> ";" => Stmt::Expr{expr},
+    <expr:Expr> ";" =>
+        Stmt::Expr{expr},
 
-    <lhs:Expr> ":=" <rhs:Expr> ";" => Stmt::Declare{lhs, rhs},
-    <lhs:Expr> "=" <rhs:Expr> ";" => Stmt::Assign{lhs, rhs},
+    <lhs:Expr> ":=" <rhs:Expr> ";" =>
+        Stmt::Declare{lhs, rhs},
+    <lhs:Expr> "=" <rhs:Expr> ";" =>
+        Stmt::Assign{lhs, rhs},
 
     <lhs_loc:@L> <lhs:Expr> <op_loc:@L> "+=" <rhs:Expr> ";" =>
         Stmt::OpAssign{lhs, lhs_loc, op: BinaryOp::Sum, op_loc, rhs},
@@ -39,6 +43,12 @@ pub Stmt: Stmt = {
         Stmt::OpAssign{lhs, lhs_loc, op: BinaryOp::Div, op_loc, rhs},
     <lhs_loc:@L> <lhs:Expr> <op_loc:@L> "%=" <rhs:Expr> ";" =>
         Stmt::OpAssign{lhs, lhs_loc, op: BinaryOp::Mod, op_loc, rhs},
+
+    <stmt:IfStmt> => {
+        let (branches, else_stmts) = stmt;
+
+        Stmt::If{branches, else_stmts}
+    },
 
     "fn" <loc:@L> <name:Ident> "(" <args:ParamList> ")" <stmts:Block> =>
         Stmt::Func{name: (name, loc), args, stmts},
@@ -58,6 +68,23 @@ CommaSepList<T>: Vec<T> = {
 
 pub Block: Block = {
     "{" <stmts:Stmt*> "}" => stmts,
+}
+
+pub IfStmt: (Vec<Branch>, Option<Block>) = {
+    "if" <cond:Expr> <if_stmts:Block> => {
+        (vec![Branch{cond, stmts: if_stmts}], None)
+    },
+
+    "if" <cond:Expr> <if_stmts:Block> "else" <else_stmts:Block> => {
+        (vec![Branch{cond, stmts: if_stmts}], Some(else_stmts))
+    },
+
+    "if" <cond:Expr> <if_stmts:Block> "else" <if_else_stmts:IfStmt> => {
+        let (mut branches, else_stmts) = if_else_stmts;
+        branches.insert(0, Branch{cond, stmts: if_stmts});
+
+        (branches, else_stmts)
+    },
 }
 
 pub Expr: Expr = {
@@ -168,8 +195,10 @@ extern {
         "int_literal" => Token::IntLiteral(<i64>),
         "str_literal" => Token::StrLiteral(<String>),
 
+        "else" => Token::Else,
         "false" => Token::False,
         "fn" => Token::Fn,
+        "if" => Token::If,
         "null" => Token::Null,
         "true" => Token::True,
 

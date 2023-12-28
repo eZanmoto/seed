@@ -183,6 +183,23 @@ fn eval_stmt(
                 .context(OpAssignmentBindFailed)?;
         },
 
+        Stmt::If{branches, else_stmts} => {
+            for Branch{cond, stmts} in branches {
+                let b = eval_expr_to_bool(context, scopes, "condition", cond)
+                    .context(EvalConditionFailed)?;
+
+                if b {
+                    return eval_stmts_in_new_scope(context, scopes, stmts)
+                        .context(EvalIfStatementsFailed);
+                }
+            }
+
+            if let Some(stmts) = else_stmts {
+                return eval_stmts_in_new_scope(context, scopes, stmts)
+                    .context(EvalElseStatementsFailed);
+            }
+        },
+
         Stmt::Func{name: (name, loc), args, stmts} => {
             let closure = scopes.clone();
             let func = value::new_func(
@@ -664,4 +681,30 @@ fn eval_expr_to_str(
         };
 
     Ok(s)
+}
+
+fn eval_expr_to_bool(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    descr: &str,
+    expr: &Expr,
+)
+    -> Result<bool, Error>
+{
+    let (_, (line, col)) = expr;
+    let new_loc_err = |source| {
+        Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
+    };
+
+    match_eval_expr!((context, scopes, expr) {
+        Value::Bool(b) =>
+            Ok(*b),
+
+        value =>
+            new_loc_err(Error::IncorrectType{
+                descr: descr.to_string(),
+                exp_type: "bool".to_string(),
+                value: value.clone(),
+            }),
+    })
 }

@@ -160,6 +160,25 @@ n := 1;
 print(n); # 2
 ```
 
+Control Flow
+------------
+
+### If Statements
+
+`if` statements don't require parentheses:
+
+```
+if true {
+    print("expected");
+} else if false {
+    print("unexpected");
+} else {
+    print("unexpected");
+}
+```
+
+`if` statements aren't expressions, and so can't be assigned to values.
+
 Functions
 ---------
 

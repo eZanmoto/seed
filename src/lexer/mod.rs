@@ -12,8 +12,10 @@ pub enum Token {
     IntLiteral(i64),
     StrLiteral(String),
 
+    Else,
     False,
     Fn,
+    If,
     Null,
     True,
 
@@ -94,8 +96,10 @@ impl<'input> Lexer<'input> {
         let t = self.scanner.range(start, end);
 
         match t {
+            "else" => Token::Else,
             "false" => Token::False,
             "fn" => Token::Fn,
+            "if" => Token::If,
             "null" => Token::Null,
             "true" => Token::True,
 
