@@ -58,6 +58,8 @@ pub enum Error {
     OpAssignLhsNotVar,
     #[snafu(display("'break' can't be used outside of a loop"))]
     BreakOutsideLoop,
+    #[snafu(display("'continue' can't be used outside of a loop"))]
+    ContinueOutsideLoop,
     #[snafu(display("'return' can't be used outside of a function"))]
     ReturnOutsideFunction,
     #[snafu(display("'for' iterator must be a 'list', 'object' or 'string'"))]

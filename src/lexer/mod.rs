@@ -13,6 +13,7 @@ pub enum Token {
     StrLiteral(String),
 
     Break,
+    Continue,
     Else,
     False,
     Fn,
@@ -102,6 +103,7 @@ impl<'input> Lexer<'input> {
 
         match t {
             "break" => Token::Break,
+            "continue" => Token::Continue,
             "else" => Token::Else,
             "false" => Token::False,
             "fn" => Token::Fn,

@@ -56,6 +56,8 @@ pub Stmt: Stmt = {
         Stmt::For{lhs, iter, stmts},
     <loc:@L> "break" ";" =>
         Stmt::Break{loc},
+    <loc:@L> "continue" ";" =>
+        Stmt::Continue{loc},
 
     "fn" <loc:@L> <name:Ident> "(" <args:ParamList> ")" <stmts:Block> =>
         Stmt::Func{name: (name, loc), args, stmts},
@@ -205,6 +207,7 @@ extern {
         "str_literal" => Token::StrLiteral(<String>),
 
         "break" => Token::Break,
+        "continue" => Token::Continue,
         "else" => Token::Else,
         "false" => Token::False,
         "fn" => Token::Fn,

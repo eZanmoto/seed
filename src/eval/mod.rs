@@ -82,6 +82,15 @@ pub fn eval_prog(
                 col,
             })
         },
+        Escape::Continue{loc} => {
+            let (line, col) = loc;
+
+            Err(Error::AtLoc{
+                source: Box::new(Error::ContinueOutsideLoop),
+                line,
+                col,
+            })
+        },
         Escape::Return{loc, ..} => {
             let (line, col) = loc;
 
@@ -140,6 +149,7 @@ pub fn eval_stmts_with_scope_stack(
 pub enum Escape {
     None,
     Break{loc: Location},
+    Continue{loc: Location},
     Return{value: ValRefWithSource, loc: Location},
 }
 
@@ -251,6 +261,7 @@ fn eval_stmt(
                 match escape {
                     Escape::None => {},
                     Escape::Break{..} => break,
+                    Escape::Continue{..} => continue,
                     Escape::Return{..} => return Ok(escape),
                 }
             }
@@ -274,6 +285,7 @@ fn eval_stmt(
                 match escape {
                     Escape::None => {},
                     Escape::Break{..} => break,
+                    Escape::Continue{..} => continue,
                     Escape::Return{..} => return Ok(escape),
                 }
             }
@@ -281,6 +293,10 @@ fn eval_stmt(
 
         Stmt::Break{loc} => {
             return Ok(Escape::Break{loc: *loc});
+        },
+
+        Stmt::Continue{loc} => {
+            return Ok(Escape::Continue{loc: *loc});
         },
 
         Stmt::Func{name: (name, loc), args, stmts} => {
@@ -550,6 +566,8 @@ fn eval_expr(
                                 value::new_null(),
                             Escape::Break{..} =>
                                 return Err(Error::BreakOutsideLoop),
+                            Escape::Continue{..} =>
+                                return Err(Error::ContinueOutsideLoop),
                             Escape::Return{value, ..} =>
                                 value,
                         }

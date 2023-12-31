@@ -30,6 +30,7 @@ pub enum Stmt {
     While{cond: Expr, stmts: Block},
     For{lhs: Expr, iter: Expr, stmts: Block},
     Break{loc: Location},
+    Continue{loc: Location},
 
     Func{name: (String, Location), args: Vec<Expr>, stmts: Block},
     Return{loc: Location, expr: Expr},

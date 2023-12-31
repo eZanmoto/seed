@@ -205,6 +205,21 @@ while true {
 print(i); # 3
 ```
 
+`continue`s can be used to skip loop iterations:
+
+```
+i := 0;
+while i < 6 {
+    i += 1;
+
+    if i == 3 || i == 4 {
+        continue;
+    }
+
+    print(i);
+}
+```
+
 ### For loops
 
 `for` can be used to iterate over an iterable value. Iterable values are those
@@ -222,6 +237,17 @@ for ic in "abc" {
 for iv in [1, 2, 3, 4] {
     if iv == [2, 3] {
         break;
+    }
+    print(iv);
+}
+```
+
+`continue`s can be used to skip loop iterations:
+
+```
+for iv in [1, 2, 3, 4] {
+    if iv == [1, 2] || iv == [2, 3] {
+        continue;
     }
     print(iv);
 }
