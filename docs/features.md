@@ -160,6 +160,23 @@ n := 1;
 print(n); # 2
 ```
 
+### Indexing
+
+`list`s, `string`s and `object`s can be indexed:
+
+```
+xs := null;
+
+xs = ["a", "b", "c"];
+print(xs[1]); # b
+
+xs = "abc";
+print(xs[1]); # b
+
+xs = {"a": 1, "b": 2, "c": 3};
+print(xs["b"]); # 2
+```
+
 Control Flow
 ------------
 

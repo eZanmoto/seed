@@ -19,6 +19,15 @@ pub fn new_val_ref(v: Value) -> ValRefWithSource {
     }))
 }
 
+pub fn new_val_ref_with_source(v: Value, source: ValRefWithSource)
+    -> ValRefWithSource
+{
+    Arc::new(Mutex::new(ValWithSource{
+        v,
+        source: Some(source),
+    }))
+}
+
 // `ValRefWithSource` is intended to be used as a regular `ValRef` would, but
 // it includes the most recent object it was referenced from. For example, in
 // the case of `x['f']`, the `ValRef` is the value stored at the location

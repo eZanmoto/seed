@@ -64,6 +64,8 @@ pub enum RawExpr {
     },
 
     List{items: Vec<Expr>},
+    Index{expr: Box<Expr>, location: Box<Expr>},
+
     Object{props: Vec<PropItem>},
 
     Call{func: Box<Expr>, args: Vec<Expr>},

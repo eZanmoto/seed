@@ -4,6 +4,7 @@
 
 use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::path::PathBuf;
 
 pub mod bind;
@@ -447,6 +448,81 @@ fn eval_expr(
             Ok(value::new_list(vals))
         },
 
+        RawExpr::Index{expr, location: locat} => {
+            // We don't use `match_eval_expr` here because we need to maintain
+            // a reference to `source` for use in object lookups.
+            let source_val = eval_expr(context, scopes, expr)
+                .context(EvalIndexExprFailed)?;
+
+            let unlocked_source_val = &(*source_val.lock().unwrap()).v;
+
+            match unlocked_source_val {
+                Value::Str(s) => {
+                    let i = eval_expr_to_i64(context, scopes, "index", locat)
+                        .context(EvalStringIndexFailed)?;
+
+                    // TODO Handle conversion issues.
+                    let index: usize = i.try_into().unwrap();
+
+                    let v =
+                        match s.get(index) {
+                            Some(v) => value::new_str(vec![*v]),
+                            None => return new_loc_error(
+                                Error::OutOfStringBounds{index},
+                            ),
+                        };
+
+                    Ok(v)
+                },
+
+                Value::List(list) => {
+                    let i = eval_expr_to_i64(context, scopes, "index", locat)
+                        .context(EvalListIndexFailed)?;
+
+                    // TODO Handle conversion issues.
+                    let index: usize = i.try_into().unwrap();
+
+                    let v =
+                        match list.get(index) {
+                            Some(v) => v.clone(),
+                            None => return new_loc_error(
+                                Error::OutOfListBounds{index},
+                            ),
+                        };
+
+                    Ok(v)
+                },
+
+                Value::Object(props) => {
+                    // TODO Consider whether non-UTF-8 strings can be used to
+                    // perform key lookups on objects.
+                    let key = eval_expr_to_str(context, scopes, "key", locat)
+                        .context(EvalObjectIndexFailed)?;
+
+                    let v =
+                        match props.get(&key) {
+                            Some(v) => {
+                                let prop_val = &(*v.lock().unwrap()).v;
+
+                                value::new_val_ref_with_source(
+                                    prop_val.clone(),
+                                    source_val.clone(),
+                                )
+                            },
+                            None => {
+                                return new_loc_error(Error::NoSuchKey{key});
+                            },
+                        };
+
+                    Ok(v)
+                },
+
+                _ => {
+                    new_loc_error(Error::ValueNotIndexable)
+                },
+            }
+        },
+
         RawExpr::Object{props} => {
             let mut vals = BTreeMap::<String, ValRefWithSource>::new();
 
@@ -864,6 +940,32 @@ fn eval_expr_to_bool(
             new_loc_err(Error::IncorrectType{
                 descr: descr.to_string(),
                 exp_type: "bool".to_string(),
+                value: value.clone(),
+            }),
+    })
+}
+
+fn eval_expr_to_i64(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    descr: &str,
+    expr: &Expr,
+)
+    -> Result<i64, Error>
+{
+    let (_, (line, col)) = expr;
+    let new_loc_err = |source| {
+        Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
+    };
+
+    match_eval_expr!((context, scopes, expr) {
+        Value::Int(n) =>
+            Ok(*n),
+
+        value =>
+            new_loc_err(Error::IncorrectType{
+                descr: descr.to_string(),
+                exp_type: "int".to_string(),
                 value: value.clone(),
             }),
     })

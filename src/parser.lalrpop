@@ -151,6 +151,9 @@ pub ExprPrecedence4: RawExpr = {
     <loc:@L> <expr:ExprPrecedence5> "(" <args:ParamList> ")" =>
         RawExpr::Call{func: Box::new((expr, loc)), args: args},
 
+    <loc:@L> <expr:ExprPrecedence4> "[" <locat:Expr> "]" =>
+        RawExpr::Index{expr: Box::new((expr, loc)), location: Box::new(locat)},
+
     <expr:ExprPrecedence5> => expr,
 }
 

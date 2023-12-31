@@ -64,6 +64,14 @@ pub enum Error {
     ReturnOutsideFunction,
     #[snafu(display("'for' iterator must be a 'list', 'object' or 'string'"))]
     ForIterNotIterable,
+    #[snafu(display("only 'list's, 'object's or 'string's can be indexed"))]
+    ValueNotIndexable,
+    #[snafu(display("index '{}' is outside the string bounds", index))]
+    OutOfStringBounds{index: usize},
+    #[snafu(display("index '{}' is outside the list bounds", index))]
+    OutOfListBounds{index: usize},
+    #[snafu(display("object doesn't contain the key '{}'", key))]
+    NoSuchKey{key: String},
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
@@ -181,6 +189,22 @@ pub enum Error {
         source: Box<Error>,
     },
     EvalListItemFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalIndexExprFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalStringIndexFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalListIndexFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalObjectIndexFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },

@@ -58,6 +58,7 @@ fn bind_next(
         RawExpr::Str{..} => new_invalid_bind_error("a string literal"),
         RawExpr::BinaryOp{..} => new_invalid_bind_error("a binary operation"),
         RawExpr::List{..} => new_invalid_bind_error("a list literal"),
+        RawExpr::Index{..} => new_invalid_bind_error("an index operation"),
         RawExpr::Object{..} => new_invalid_bind_error("an object literal"),
         RawExpr::Call{..} => new_invalid_bind_error("a function call"),
     }
