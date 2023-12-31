@@ -148,7 +148,7 @@ pub ExprOp3: BinaryOp = {
 };
 
 pub ExprPrecedence4: RawExpr = {
-    <loc:@L> <expr:ExprPrecedence5> "(" <args:ParamList> ")" =>
+    <loc:@L> <expr:ExprPrecedence4> "(" <args:ParamList> ")" =>
         RawExpr::Call{func: Box::new((expr, loc)), args: args},
 
     <loc:@L> <expr:ExprPrecedence4> "[" <locat:Expr> "]" =>
