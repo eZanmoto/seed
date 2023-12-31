@@ -19,6 +19,7 @@ pub enum Token {
     Null,
     Return,
     True,
+    While,
 
     BraceClose,
     BraceOpen,
@@ -104,6 +105,7 @@ impl<'input> Lexer<'input> {
             "null" => Token::Null,
             "return" => Token::Return,
             "true" => Token::True,
+            "while" => Token::While,
 
             _ => Token::Ident(t.to_string()),
         }

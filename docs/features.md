@@ -179,6 +179,17 @@ if true {
 
 `if` statements aren't expressions, and so can't be assigned to values.
 
+### While Loops
+
+```
+i := 0;
+while i < 3 {
+    print(i);
+    i += 1;
+}
+print(i); # 3
+```
+
 Functions
 ---------
 

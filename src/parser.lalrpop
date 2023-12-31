@@ -49,6 +49,8 @@ pub Stmt: Stmt = {
 
         Stmt::If{branches, else_stmts}
     },
+    "while" <cond:Expr> <stmts:Block> =>
+        Stmt::While{cond, stmts},
 
     "fn" <loc:@L> <name:Ident> "(" <args:ParamList> ")" <stmts:Block> =>
         Stmt::Func{name: (name, loc), args, stmts},
@@ -204,6 +206,7 @@ extern {
         "null" => Token::Null,
         "return" => Token::Return,
         "true" => Token::True,
+        "while" => Token::While,
 
         "}" => Token::BraceClose,
         "{" => Token::BraceOpen,

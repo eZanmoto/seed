@@ -207,6 +207,7 @@ fn render_token(t: Token) -> String {
         Token::Null => "`null`".to_string(),
         Token::Return => "`return`".to_string(),
         Token::True => "`true`".to_string(),
+        Token::While => "`while`".to_string(),
 
         Token::BraceClose => "}".to_string(),
         Token::BraceOpen => "{".to_string(),
@@ -268,9 +269,11 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::EvalAssignmentRhsFailed{source} |
         EvalError::AssignmentBindFailed{source} |
         EvalError::OpAssignmentBindFailed{source} |
-        EvalError::EvalConditionFailed{source} |
+        EvalError::EvalIfConditionFailed{source} |
         EvalError::EvalIfStatementsFailed{source} |
         EvalError::EvalElseStatementsFailed{source} |
+        EvalError::EvalWhileConditionFailed{source} |
+        EvalError::EvalWhileStatementsFailed{source} |
         EvalError::DeclareFunctionFailed{source} |
         EvalError::EvalBlockFailed{source} |
         EvalError::EvalStmtFailed{source} |

@@ -114,7 +114,7 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
-    EvalConditionFailed{
+    EvalIfConditionFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
@@ -123,6 +123,14 @@ pub enum Error {
         source: Box<Error>,
     },
     EvalElseStatementsFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalWhileConditionFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalWhileStatementsFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },

@@ -207,7 +207,7 @@ fn eval_stmt(
         Stmt::If{branches, else_stmts} => {
             for Branch{cond, stmts} in branches {
                 let b = eval_expr_to_bool(context, scopes, "condition", cond)
-                    .context(EvalConditionFailed)?;
+                    .context(EvalIfConditionFailed)?;
 
                 if b {
                     let v = eval_stmts_in_new_scope(context, scopes, stmts)
@@ -222,6 +222,25 @@ fn eval_stmt(
                     .context(EvalElseStatementsFailed)?;
 
                 return Ok(v);
+            }
+        },
+
+        Stmt::While{cond, stmts} => {
+            loop {
+                let b = eval_expr_to_bool(context, scopes, "condition", cond)
+                    .context(EvalWhileConditionFailed)?;
+
+                if !b {
+                    break;
+                }
+
+                let escape = eval_stmts_in_new_scope(context, scopes, stmts)
+                    .context(EvalWhileStatementsFailed)?;
+
+                match escape {
+                    Escape::None => {},
+                    Escape::Return{..} => return Ok(escape),
+                }
             }
         },
 
