@@ -163,7 +163,7 @@ print(n); # 2
 Control Flow
 ------------
 
-### If Statements
+### If statements
 
 `if` statements don't require parentheses:
 
@@ -179,7 +179,7 @@ if true {
 
 `if` statements aren't expressions, and so can't be assigned to values.
 
-### While Loops
+### While loops
 
 ```
 i := 0;
@@ -188,6 +188,17 @@ while i < 3 {
     i += 1;
 }
 print(i); # 3
+```
+
+### For loops
+
+`for` can be used to iterate over an iterable value. Iterable values are those
+of type `list`, `string` or `object`.
+
+```
+for ic in "abc" {
+    print(ic);
+}
 ```
 
 Functions

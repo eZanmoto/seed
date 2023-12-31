@@ -133,6 +133,7 @@ pub enum Escape {
     Return{value: ValRefWithSource, loc: Location},
 }
 
+#[allow(clippy::too_many_lines)]
 fn eval_stmt(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
@@ -244,6 +245,28 @@ fn eval_stmt(
             }
         },
 
+        Stmt::For{lhs, iter, stmts} => {
+            let iter_val = eval_expr(context, scopes, iter)
+                    .context(EvalForIterFailed)?;
+
+            let pairs = value_to_pairs(&(*iter_val.lock().unwrap()).v)
+                    .context(ConvertForIterToPairsFailed)?;
+
+            for (key, value) in pairs {
+                let entry = value::new_list(vec![key, value]);
+
+                let new_bindings = vec![(lhs.clone(), entry)];
+
+                let escape = eval_stmts(context, scopes, new_bindings, stmts)
+                    .context(EvalForStatementsFailed)?;
+
+                match escape {
+                    Escape::None => {},
+                    Escape::Return{..} => return Ok(escape),
+                }
+            }
+        },
+
         Stmt::Func{name: (name, loc), args, stmts} => {
             let closure = scopes.clone();
             let func = value::new_func(
@@ -266,6 +289,51 @@ fn eval_stmt(
     }
 
     Ok(Escape::None)
+}
+
+// `value_to_pairs` returns the "index, value" pairs in `v`, if `v` represents
+// an "iterable" type.
+fn value_to_pairs(v: &Value)
+    -> Result<Vec<(ValRefWithSource, ValRefWithSource)>, Error>
+{
+    let pairs =
+        match v {
+            Value::Str(s) =>
+                s
+                    .iter()
+                    .enumerate()
+                    .map(|(i, c)| {
+                        // TODO Handle issues caused by casting.
+                        (value::new_int(i as i64), value::new_str(vec![*c]))
+                    })
+                    .collect(),
+
+            Value::List(items) =>
+                items
+                    .iter()
+                    .enumerate()
+                    .map(|(i, value)| {
+                        // TODO Handle issues caused by casting.
+                        (value::new_int(i as i64), value.clone())
+                    })
+                    .collect(),
+
+            Value::Object(props) =>
+                props
+                    .iter()
+                    .map(|(key, value)| {
+                        (
+                            value::new_str_from_string(key.to_string()),
+                            value.clone(),
+                        )
+                    })
+                    .collect(),
+
+            _ =>
+                return Err(Error::ForIterNotIterable),
+        };
+
+    Ok(pairs)
 }
 
 pub fn eval_stmts_in_new_scope(

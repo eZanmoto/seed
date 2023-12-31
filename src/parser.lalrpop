@@ -51,6 +51,8 @@ pub Stmt: Stmt = {
     },
     "while" <cond:Expr> <stmts:Block> =>
         Stmt::While{cond, stmts},
+    "for" <lhs:Expr> "in" <iter:Expr> <stmts:Block> =>
+        Stmt::For{lhs, iter, stmts},
 
     "fn" <loc:@L> <name:Ident> "(" <args:ParamList> ")" <stmts:Block> =>
         Stmt::Func{name: (name, loc), args, stmts},
@@ -202,7 +204,9 @@ extern {
         "else" => Token::Else,
         "false" => Token::False,
         "fn" => Token::Fn,
+        "for" => Token::For,
         "if" => Token::If,
+        "in" => Token::In,
         "null" => Token::Null,
         "return" => Token::Return,
         "true" => Token::True,

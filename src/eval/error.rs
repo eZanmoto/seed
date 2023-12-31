@@ -58,6 +58,8 @@ pub enum Error {
     OpAssignLhsNotVar,
     #[snafu(display("'return' can't be used outside of a function"))]
     ReturnOutsideFunction,
+    #[snafu(display("'for' iterator must be a 'list', 'object' or 'string'"))]
+    ForIterNotIterable,
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
@@ -131,6 +133,18 @@ pub enum Error {
         source: Box<Error>,
     },
     EvalWhileStatementsFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalForIterFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    ConvertForIterToPairsFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalForStatementsFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },

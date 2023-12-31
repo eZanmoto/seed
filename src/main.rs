@@ -203,7 +203,9 @@ fn render_token(t: Token) -> String {
         Token::Else => "`else`".to_string(),
         Token::False => "`false`".to_string(),
         Token::Fn => "`fn`".to_string(),
+        Token::For => "`for`".to_string(),
         Token::If => "`if`".to_string(),
+        Token::In => "`in`".to_string(),
         Token::Null => "`null`".to_string(),
         Token::Return => "`return`".to_string(),
         Token::True => "`true`".to_string(),
@@ -274,6 +276,9 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::EvalElseStatementsFailed{source} |
         EvalError::EvalWhileConditionFailed{source} |
         EvalError::EvalWhileStatementsFailed{source} |
+        EvalError::EvalForIterFailed{source} |
+        EvalError::ConvertForIterToPairsFailed{source} |
+        EvalError::EvalForStatementsFailed{source} |
         EvalError::DeclareFunctionFailed{source} |
         EvalError::EvalBlockFailed{source} |
         EvalError::EvalStmtFailed{source} |
