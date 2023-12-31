@@ -49,10 +49,13 @@ pub Stmt: Stmt = {
 
         Stmt::If{branches, else_stmts}
     },
+
     "while" <cond:Expr> <stmts:Block> =>
         Stmt::While{cond, stmts},
     "for" <lhs:Expr> "in" <iter:Expr> <stmts:Block> =>
         Stmt::For{lhs, iter, stmts},
+    <loc:@L> "break" ";" =>
+        Stmt::Break{loc},
 
     "fn" <loc:@L> <name:Ident> "(" <args:ParamList> ")" <stmts:Block> =>
         Stmt::Func{name: (name, loc), args, stmts},
@@ -201,6 +204,7 @@ extern {
         "int_literal" => Token::IntLiteral(<i64>),
         "str_literal" => Token::StrLiteral(<String>),
 
+        "break" => Token::Break,
         "else" => Token::Else,
         "false" => Token::False,
         "fn" => Token::Fn,

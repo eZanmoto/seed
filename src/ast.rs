@@ -26,8 +26,10 @@ pub enum Stmt {
     },
 
     If{branches: Vec<Branch>, else_stmts: Option<Block>},
+
     While{cond: Expr, stmts: Block},
     For{lhs: Expr, iter: Expr, stmts: Block},
+    Break{loc: Location},
 
     Func{name: (String, Location), args: Vec<Expr>, stmts: Block},
     Return{loc: Location, expr: Expr},

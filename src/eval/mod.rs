@@ -73,6 +73,15 @@ pub fn eval_prog(
 
     match v {
         Escape::None => Ok(()),
+        Escape::Break{loc} => {
+            let (line, col) = loc;
+
+            Err(Error::AtLoc{
+                source: Box::new(Error::BreakOutsideLoop),
+                line,
+                col,
+            })
+        },
         Escape::Return{loc, ..} => {
             let (line, col) = loc;
 
@@ -121,7 +130,7 @@ pub fn eval_stmts_with_scope_stack(
 
         match v {
             Escape::None => {},
-            Escape::Return{..} => return Ok(v),
+            _ => return Ok(v),
         }
     }
 
@@ -130,6 +139,7 @@ pub fn eval_stmts_with_scope_stack(
 
 pub enum Escape {
     None,
+    Break{loc: Location},
     Return{value: ValRefWithSource, loc: Location},
 }
 
@@ -240,6 +250,7 @@ fn eval_stmt(
 
                 match escape {
                     Escape::None => {},
+                    Escape::Break{..} => break,
                     Escape::Return{..} => return Ok(escape),
                 }
             }
@@ -253,18 +264,23 @@ fn eval_stmt(
                     .context(ConvertForIterToPairsFailed)?;
 
             for (key, value) in pairs {
-                let entry = value::new_list(vec![key, value]);
+                let pair = value::new_list(vec![key, value]);
 
-                let new_bindings = vec![(lhs.clone(), entry)];
+                let new_bindings = vec![(lhs.clone(), pair)];
 
                 let escape = eval_stmts(context, scopes, new_bindings, stmts)
                     .context(EvalForStatementsFailed)?;
 
                 match escape {
                     Escape::None => {},
+                    Escape::Break{..} => break,
                     Escape::Return{..} => return Ok(escape),
                 }
             }
+        },
+
+        Stmt::Break{loc} => {
+            return Ok(Escape::Break{loc: *loc});
         },
 
         Stmt::Func{name: (name, loc), args, stmts} => {
@@ -530,8 +546,12 @@ fn eval_expr(
                             })?;
 
                         match v {
-                            Escape::None => value::new_null(),
-                            Escape::Return{value, ..} => value,
+                            Escape::None =>
+                                value::new_null(),
+                            Escape::Break{..} =>
+                                return Err(Error::BreakOutsideLoop),
+                            Escape::Return{value, ..} =>
+                                value,
                         }
                     },
                 };

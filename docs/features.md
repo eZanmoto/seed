@@ -190,6 +190,21 @@ while i < 3 {
 print(i); # 3
 ```
 
+`break`s can be used to exit a loop early:
+
+```
+i := 0;
+while true {
+    if i >= 3 {
+        break;
+    }
+
+    print(i);
+    i += 1;
+}
+print(i); # 3
+```
+
 ### For loops
 
 `for` can be used to iterate over an iterable value. Iterable values are those
@@ -198,6 +213,17 @@ of type `list`, `string` or `object`.
 ```
 for ic in "abc" {
     print(ic);
+}
+```
+
+`break`s can be used to exit a loop early:
+
+```
+for iv in [1, 2, 3, 4] {
+    if iv == [2, 3] {
+        break;
+    }
+    print(iv);
 }
 ```
 

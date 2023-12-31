@@ -56,6 +56,8 @@ pub enum Error {
     InvalidOpTypes{op: BinaryOp, lhs: Value, rhs: Value},
     #[snafu(display("the LHS of an operation-assignment must be a variable"))]
     OpAssignLhsNotVar,
+    #[snafu(display("'break' can't be used outside of a loop"))]
+    BreakOutsideLoop,
     #[snafu(display("'return' can't be used outside of a function"))]
     ReturnOutsideFunction,
     #[snafu(display("'for' iterator must be a 'list', 'object' or 'string'"))]

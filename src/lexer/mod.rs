@@ -12,6 +12,7 @@ pub enum Token {
     IntLiteral(i64),
     StrLiteral(String),
 
+    Break,
     Else,
     False,
     Fn,
@@ -100,6 +101,7 @@ impl<'input> Lexer<'input> {
         let t = self.scanner.range(start, end);
 
         match t {
+            "break" => Token::Break,
             "else" => Token::Else,
             "false" => Token::False,
             "fn" => Token::Fn,

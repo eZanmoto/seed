@@ -200,6 +200,7 @@ fn render_token(t: Token) -> String {
         Token::IntLiteral(n) => format!("{}", n),
         Token::StrLiteral(s) => format!("\"{}\"", s),
 
+        Token::Break => "`break`".to_string(),
         Token::Else => "`else`".to_string(),
         Token::False => "`false`".to_string(),
         Token::Fn => "`fn`".to_string(),
