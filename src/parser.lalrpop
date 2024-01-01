@@ -164,6 +164,7 @@ pub ExprPrecedence5: RawExpr = {
 
     <name:Ident> => RawExpr::Var{name},
     <n:IntLiteral> => RawExpr::Int{n},
+    "-" <n:IntLiteral> => RawExpr::Int{n: -n},
     <s:StrLiteral> => RawExpr::Str{s},
 
     "(" <expr:ExprPrecedence1> ")" => expr,
