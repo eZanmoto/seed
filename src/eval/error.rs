@@ -2,6 +2,7 @@
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
+use std::num::TryFromIntError;
 use std::string::FromUtf8Error;
 
 use snafu::Snafu;
@@ -72,6 +73,10 @@ pub enum Error {
     OutOfListBounds{index: usize},
     #[snafu(display("object doesn't contain the key '{}'", key))]
     NoSuchKey{key: String},
+    #[snafu(display("string index can't be negative"))]
+    NegativeStringIndex{index: i64},
+    #[snafu(display("list index can't be negative"))]
+    NegativeListIndex{index: i64},
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
@@ -87,6 +92,9 @@ pub enum Error {
         line: usize,
         col: usize,
     },
+
+    ConvertStringIndexToUsizeFailed{source: TryFromIntError},
+    ConvertListIndexToUsizeFailed{source: TryFromIntError},
 
     BindFailed{
         #[snafu(source(from(Error, Box::new)))]

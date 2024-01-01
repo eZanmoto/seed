@@ -461,8 +461,14 @@ fn eval_expr(
                     let i = eval_expr_to_i64(context, scopes, "index", locat)
                         .context(EvalStringIndexFailed)?;
 
-                    // TODO Handle conversion issues.
-                    let index: usize = i.try_into().unwrap();
+                    if i < 0 {
+                        return new_loc_error(
+                            Error::NegativeStringIndex{index: i},
+                        );
+                    }
+
+                    let index: usize = i.try_into()
+                        .context(ConvertStringIndexToUsizeFailed)?;
 
                     let v =
                         match s.get(index) {
@@ -479,8 +485,14 @@ fn eval_expr(
                     let i = eval_expr_to_i64(context, scopes, "index", locat)
                         .context(EvalListIndexFailed)?;
 
-                    // TODO Handle conversion issues.
-                    let index: usize = i.try_into().unwrap();
+                    if i < 0 {
+                        return new_loc_error(
+                            Error::NegativeListIndex{index: i},
+                        );
+                    }
+
+                    let index: usize = i.try_into()
+                        .context(ConvertListIndexToUsizeFailed)?;
 
                     let v =
                         match list.get(index) {
