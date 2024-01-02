@@ -387,7 +387,7 @@ fn eval_expr(
     expr: &Expr,
 ) -> Result<ValRefWithSource, Error> {
     let (raw_expr, (line, col)) = expr;
-    let new_loc_error = |source| {
+    let new_loc_err = |source| {
         Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
     };
 
@@ -404,7 +404,7 @@ fn eval_expr(
             let v =
                 match scopes.get(name) {
                     Some(v) => v,
-                    None => return new_loc_error(
+                    None => return new_loc_err(
                         Error::Undefined{name: name.clone()},
                     ),
                 };
@@ -465,7 +465,7 @@ fn eval_expr(
                     let v =
                         match s.get(index) {
                             Some(v) => value::new_str(vec![*v]),
-                            None => return new_loc_error(
+                            None => return new_loc_err(
                                 Error::OutOfStringBounds{index},
                             ),
                         };
@@ -480,7 +480,7 @@ fn eval_expr(
                     let v =
                         match list.get(index) {
                             Some(v) => v.clone(),
-                            None => return new_loc_error(
+                            None => return new_loc_err(
                                 Error::OutOfListBounds{index},
                             ),
                         };
@@ -505,7 +505,7 @@ fn eval_expr(
                                 )
                             },
                             None => {
-                                return new_loc_error(Error::NoSuchKey{key});
+                                return new_loc_err(Error::NoSuchKey{key});
                             },
                         };
 
@@ -513,7 +513,7 @@ fn eval_expr(
                 },
 
                 _ => {
-                    new_loc_error(Error::ValueNotIndexable)
+                    new_loc_err(Error::ValueNotIndexable)
                 },
             }
         },
@@ -547,11 +547,11 @@ fn eval_expr(
                         match get_str_range_index(s, start_val, end_val) {
                             Ok(v) => v,
 
-                            // TODO Instead of using `new_loc_error`, check
+                            // TODO Instead of using `new_loc_err`, check
                             // whether the `start` or `end` is out of bounds,
                             // and output the index of the expression that
                             // corresponds to the error.
-                            Err(source) => return new_loc_error(
+                            Err(source) => return new_loc_err(
                                 Error::EvalStringRangeIndexFailed{
                                     source: Box::new(source),
                                 },
@@ -562,7 +562,7 @@ fn eval_expr(
                 },
 
                 _ => {
-                    new_loc_error(Error::ValueNotRangeIndexable)
+                    new_loc_err(Error::ValueNotRangeIndexable)
                 },
             })
         },
@@ -617,7 +617,7 @@ fn eval_expr(
                             let need = arg_names.len();
                             let got = arg_vals.len();
                             if got != need {
-                                return new_loc_error(
+                                return new_loc_err(
                                     Error::ArgNumMismatch{need, got}
                                 );
                             }
@@ -652,7 +652,7 @@ fn eval_expr(
                         },
 
                         _ => {
-                            return new_loc_error(
+                            return new_loc_err(
                                 Error::CannotCallNonFunc{v: v.clone()},
                             );
                         },
