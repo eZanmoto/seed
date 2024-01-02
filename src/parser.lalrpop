@@ -161,7 +161,7 @@ pub ExprPrecedence4: RawExpr = {
             end: end.map(|v| Box::new(v)),
         },
 
-    <expr:ExprPrecedence5> => expr,
+    ExprPrecedence5
 }
 
 pub ExprPrecedence5: RawExpr = {
