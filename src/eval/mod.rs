@@ -519,30 +519,28 @@ fn eval_expr(
         },
 
         RawExpr::RangeIndex{expr, start: maybe_start, end: maybe_end} => {
+            let start_val =
+                if let Some(start) = maybe_start {
+                    let start_val = eval_expr_to_index(context, scopes, start)
+                            .context(EvalStartIndexFailed)?;
+
+                    Some(start_val)
+                } else {
+                    None
+                };
+
+            let end_val =
+                if let Some(end) = maybe_end {
+                    let end_val = eval_expr_to_index(context, scopes, end)
+                            .context(EvalEndIndexFailed)?;
+
+                    Some(end_val)
+                } else {
+                    None
+                };
+
             match_eval_expr!((context, scopes, expr) {
                 Value::Str(s) => {
-                    let start_val =
-                        if let Some(start) = maybe_start {
-                            let start_val =
-                                eval_expr_to_index(context, scopes, start)
-                                    .context(EvalStringStartIndexFailed)?;
-
-                            Some(start_val)
-                        } else {
-                            None
-                        };
-
-                    let end_val =
-                        if let Some(end) = maybe_end {
-                            let end_val =
-                                eval_expr_to_index(context, scopes, end)
-                                    .context(EvalStringEndIndexFailed)?;
-
-                            Some(end_val)
-                        } else {
-                            None
-                        };
-
                     let v =
                         match get_str_range_index(s, start_val, end_val) {
                             Ok(v) => v,
@@ -553,6 +551,25 @@ fn eval_expr(
                             // corresponds to the error.
                             Err(source) => return new_loc_err(
                                 Error::EvalStringRangeIndexFailed{
+                                    source: Box::new(source),
+                                },
+                            ),
+                        };
+
+                    Ok(v)
+                },
+
+                Value::List(items) => {
+                    let v =
+                        match get_list_range_index(items, start_val, end_val) {
+                            Ok(v) => v,
+
+                            // TODO Instead of using `new_loc_err`, check
+                            // whether the `start` or `end` is out of bounds,
+                            // and output the index of the expression that
+                            // corresponds to the error.
+                            Err(source) => return new_loc_err(
+                                Error::EvalListRangeIndexFailed{
                                     source: Box::new(source),
                                 },
                             ),
@@ -1030,7 +1047,6 @@ fn eval_expr_to_index(
     let index = eval_expr_to_i64(context, scopes, "index", expr)
         .context(EvalIndexToI64Failed)?;
 
-
     if index < 0 {
         return new_loc_err(Error::NegativeIndex{index});
     }
@@ -1056,4 +1072,21 @@ fn get_str_range_index(
     }
 
     Err(Error::RangeOutOfStringBounds{start: *start, end: *end})
+}
+
+fn get_list_range_index(
+    list: &List,
+    mut maybe_start: Option<usize>,
+    mut maybe_end: Option<usize>,
+)
+    -> Result<ValRefWithSource, Error>
+{
+    let start = maybe_start.get_or_insert(0);
+    let end = maybe_end.get_or_insert(list.len());
+
+    if let Some(vs) = list.get(*start .. *end) {
+        return Ok(value::new_list(vs.to_vec()));
+    }
+
+    Err(Error::RangeOutOfListBounds{start: *start, end: *end})
 }

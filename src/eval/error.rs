@@ -73,6 +73,8 @@ pub enum Error {
     OutOfListBounds{index: usize},
     #[snafu(display("range [{}:{}] is outside the string bounds", start, end))]
     RangeOutOfStringBounds{start: usize, end: usize},
+    #[snafu(display("range [{}:{}] is outside the list bounds", start, end))]
+    RangeOutOfListBounds{start: usize, end: usize},
     #[snafu(display("only 'list's or 'string's can be range-indexed"))]
     ValueNotRangeIndexable,
     #[snafu(display("object doesn't contain the key '{}'", key))]
@@ -221,15 +223,19 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
-    EvalStringStartIndexFailed{
+    EvalStartIndexFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
-    EvalStringEndIndexFailed{
+    EvalEndIndexFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
     EvalStringRangeIndexFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalListRangeIndexFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
