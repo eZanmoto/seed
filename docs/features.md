@@ -177,6 +177,23 @@ xs = {"a": 1, "b": 2, "c": 3};
 print(xs["b"]); # 2
 ```
 
+### Range-indexing
+
+`list`s and `string`s can be range-indexed:
+
+```
+print("abcdef"[2:4]); # cd
+```
+
+The start and end of a range index operation can be omitted, in which case `0`
+and the length of the value will be used, respectively:
+
+```
+print("abcdef"[:4]); # abcd
+print("abcdef"[2:]); # cdef
+print("abcdef"[:]); # abcdef
+```
+
 Control Flow
 ------------
 

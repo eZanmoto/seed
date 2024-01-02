@@ -149,15 +149,50 @@ runtime_errors/no_such_key.sd:1:1: object doesn't contain the key 'a'
 ================================================== negative_string_index
 exit_code: 103
 --------------------------------------------------
-"abc"[0-1];
+"abc"[-1];
 --------------------------------------------------
 --------------------------------------------------
-runtime_errors/negative_string_index.sd:1:1: string index can't be negative
+runtime_errors/negative_string_index.sd:1:7: index can't be negative
 ================================================== negative_list_index
 exit_code: 103
 --------------------------------------------------
-[1, 2, 3][0-1];
+[1, 2, 3][-1];
 --------------------------------------------------
 --------------------------------------------------
-runtime_errors/negative_list_index.sd:1:1: list index can't be negative
+runtime_errors/negative_list_index.sd:1:11: index can't be negative
+================================================== value_not_range_indexable
+exit_code: 103
+--------------------------------------------------
+1[2:];
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/value_not_range_indexable.sd:1:1: only 'list's or 'string's can be range-indexed
+================================================== negative_string_range_start
+exit_code: 103
+--------------------------------------------------
+"abc"[-1:];
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/negative_string_range_start.sd:1:7: index can't be negative
+================================================== negative_string_range_end
+exit_code: 103
+--------------------------------------------------
+"abc"[:-1];
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/negative_string_range_end.sd:1:8: index can't be negative
+================================================== bad_string_range_start
+exit_code: 103
+--------------------------------------------------
+"abc"[5:];
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/bad_string_range_start.sd:1:1: range [5:3] is outside the string bounds
+================================================== bad_string_range_end
+exit_code: 103
+--------------------------------------------------
+"abc"[:5];
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/bad_string_range_end.sd:1:1: range [0:5] is outside the string bounds
 ==================================================

@@ -1,4 +1,4 @@
-// Copyright 2023 Sean Kelleher. All rights reserved.
+// Copyright 2023-2024 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -71,12 +71,14 @@ pub enum Error {
     OutOfStringBounds{index: usize},
     #[snafu(display("index '{}' is outside the list bounds", index))]
     OutOfListBounds{index: usize},
+    #[snafu(display("range [{}:{}] is outside the string bounds", start, end))]
+    RangeOutOfStringBounds{start: usize, end: usize},
+    #[snafu(display("only 'list's or 'string's can be range-indexed"))]
+    ValueNotRangeIndexable,
     #[snafu(display("object doesn't contain the key '{}'", key))]
     NoSuchKey{key: String},
-    #[snafu(display("string index can't be negative"))]
-    NegativeStringIndex{index: i64},
-    #[snafu(display("list index can't be negative"))]
-    NegativeListIndex{index: i64},
+    #[snafu(display("index can't be negative"))]
+    NegativeIndex{index: i64},
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
@@ -93,8 +95,7 @@ pub enum Error {
         col: usize,
     },
 
-    ConvertStringIndexToUsizeFailed{source: TryFromIntError},
-    ConvertListIndexToUsizeFailed{source: TryFromIntError},
+    ConvertIndexToUsizeFailed{source: TryFromIntError},
 
     BindFailed{
         #[snafu(source(from(Error, Box::new)))]
@@ -200,7 +201,11 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
-    EvalIndexExprFailed{
+    EvalSourceExprFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalIndexToI64Failed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
@@ -213,6 +218,18 @@ pub enum Error {
         source: Box<Error>,
     },
     EvalObjectIndexFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalStringStartIndexFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalStringEndIndexFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalStringRangeIndexFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },

@@ -1,4 +1,4 @@
-// Copyright 2023 Sean Kelleher. All rights reserved.
+// Copyright 2023-2024 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -27,6 +27,7 @@ use self::error::Error;
 use self::scope::ScopeStack;
 use self::value::BuiltinFunc;
 use self::value::List;
+use self::value::Str;
 use self::value::ValRefWithSource;
 use self::value::Value;
 use self::value::ValWithSource;
@@ -452,23 +453,14 @@ fn eval_expr(
             // We don't use `match_eval_expr` here because we need to maintain
             // a reference to `source` for use in object lookups.
             let source_val = eval_expr(context, scopes, expr)
-                .context(EvalIndexExprFailed)?;
+                .context(EvalSourceExprFailed)?;
 
             let unlocked_source_val = &(*source_val.lock().unwrap()).v;
 
             match unlocked_source_val {
                 Value::Str(s) => {
-                    let i = eval_expr_to_i64(context, scopes, "index", locat)
+                    let index = eval_expr_to_index(context, scopes, locat)
                         .context(EvalStringIndexFailed)?;
-
-                    if i < 0 {
-                        return new_loc_error(
-                            Error::NegativeStringIndex{index: i},
-                        );
-                    }
-
-                    let index: usize = i.try_into()
-                        .context(ConvertStringIndexToUsizeFailed)?;
 
                     let v =
                         match s.get(index) {
@@ -482,17 +474,8 @@ fn eval_expr(
                 },
 
                 Value::List(list) => {
-                    let i = eval_expr_to_i64(context, scopes, "index", locat)
+                    let index = eval_expr_to_index(context, scopes, locat)
                         .context(EvalListIndexFailed)?;
-
-                    if i < 0 {
-                        return new_loc_error(
-                            Error::NegativeListIndex{index: i},
-                        );
-                    }
-
-                    let index: usize = i.try_into()
-                        .context(ConvertListIndexToUsizeFailed)?;
 
                     let v =
                         match list.get(index) {
@@ -533,6 +516,55 @@ fn eval_expr(
                     new_loc_error(Error::ValueNotIndexable)
                 },
             }
+        },
+
+        RawExpr::RangeIndex{expr, start: maybe_start, end: maybe_end} => {
+            match_eval_expr!((context, scopes, expr) {
+                Value::Str(s) => {
+                    let start_val =
+                        if let Some(start) = maybe_start {
+                            let start_val =
+                                eval_expr_to_index(context, scopes, start)
+                                    .context(EvalStringStartIndexFailed)?;
+
+                            Some(start_val)
+                        } else {
+                            None
+                        };
+
+                    let end_val =
+                        if let Some(end) = maybe_end {
+                            let end_val =
+                                eval_expr_to_index(context, scopes, end)
+                                    .context(EvalStringEndIndexFailed)?;
+
+                            Some(end_val)
+                        } else {
+                            None
+                        };
+
+                    let v =
+                        match get_str_range_index(s, start_val, end_val) {
+                            Ok(v) => v,
+
+                            // TODO Instead of using `new_loc_error`, check
+                            // whether the `start` or `end` is out of bounds,
+                            // and output the index of the expression that
+                            // corresponds to the error.
+                            Err(source) => return new_loc_error(
+                                Error::EvalStringRangeIndexFailed{
+                                    source: Box::new(source),
+                                },
+                            ),
+                        };
+
+                    Ok(v)
+                },
+
+                _ => {
+                    new_loc_error(Error::ValueNotRangeIndexable)
+                },
+            })
         },
 
         RawExpr::Object{props} => {
@@ -981,4 +1013,47 @@ fn eval_expr_to_i64(
                 value: value.clone(),
             }),
     })
+}
+
+fn eval_expr_to_index(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    expr: &Expr,
+)
+    -> Result<usize, Error>
+{
+    let (_, (line, col)) = expr;
+    let new_loc_err = |source| {
+        Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
+    };
+
+    let index = eval_expr_to_i64(context, scopes, "index", expr)
+        .context(EvalIndexToI64Failed)?;
+
+
+    if index < 0 {
+        return new_loc_err(Error::NegativeIndex{index});
+    }
+
+    let i: usize = index.try_into()
+        .context(ConvertIndexToUsizeFailed)?;
+
+    Ok(i)
+}
+
+fn get_str_range_index(
+    s: &Str,
+    mut maybe_start: Option<usize>,
+    mut maybe_end: Option<usize>,
+)
+    -> Result<ValRefWithSource, Error>
+{
+    let start = maybe_start.get_or_insert(0);
+    let end = maybe_end.get_or_insert(s.len());
+
+    if let Some(vs) = s.get(*start .. *end) {
+        return Ok(value::new_str(vs.to_vec()));
+    }
+
+    Err(Error::RangeOutOfStringBounds{start: *start, end: *end})
 }

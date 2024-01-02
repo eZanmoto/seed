@@ -1,4 +1,4 @@
-// Copyright 2023 Sean Kelleher. All rights reserved.
+// Copyright 2023-2024 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -65,6 +65,11 @@ pub enum RawExpr {
 
     List{items: Vec<Expr>},
     Index{expr: Box<Expr>, location: Box<Expr>},
+    RangeIndex{
+        expr: Box<Expr>,
+        start: Option<Box<Expr>>,
+        end: Option<Box<Expr>>,
+    },
 
     Object{props: Vec<PropItem>},
 

@@ -1,4 +1,4 @@
-// Copyright 2023 Sean Kelleher. All rights reserved.
+// Copyright 2023-2024 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -153,6 +153,13 @@ pub ExprPrecedence4: RawExpr = {
 
     <loc:@L> <expr:ExprPrecedence4> "[" <locat:Expr> "]" =>
         RawExpr::Index{expr: Box::new((expr, loc)), location: Box::new(locat)},
+
+    <loc:@L> <expr:ExprPrecedence4> "[" <start:Expr?> ":" <end:Expr?> "]" =>
+        RawExpr::RangeIndex{
+            expr: Box::new((expr, loc)),
+            start: start.map(|v| Box::new(v)),
+            end: end.map(|v| Box::new(v)),
+        },
 
     <expr:ExprPrecedence5> => expr,
 }

@@ -1,4 +1,4 @@
-// Copyright 2023 Sean Kelleher. All rights reserved.
+// Copyright 2023-2024 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -52,15 +52,26 @@ fn bind_next(
         RawExpr::Var{name} => {
             bind_next_name(scopes, names_in_binding, name, loc, rhs, bind_type)
         },
-        RawExpr::Null => new_invalid_bind_error("`null`"),
-        RawExpr::Bool{..} => new_invalid_bind_error("a boolean literal"),
-        RawExpr::Int{..} => new_invalid_bind_error("an integer literal"),
-        RawExpr::Str{..} => new_invalid_bind_error("a string literal"),
-        RawExpr::BinaryOp{..} => new_invalid_bind_error("a binary operation"),
-        RawExpr::List{..} => new_invalid_bind_error("a list literal"),
-        RawExpr::Index{..} => new_invalid_bind_error("an index operation"),
-        RawExpr::Object{..} => new_invalid_bind_error("an object literal"),
-        RawExpr::Call{..} => new_invalid_bind_error("a function call"),
+        RawExpr::Null =>
+            new_invalid_bind_error("`null`"),
+        RawExpr::Bool{..} =>
+            new_invalid_bind_error("a boolean literal"),
+        RawExpr::Int{..} =>
+            new_invalid_bind_error("an integer literal"),
+        RawExpr::Str{..} =>
+            new_invalid_bind_error("a string literal"),
+        RawExpr::BinaryOp{..} =>
+            new_invalid_bind_error("a binary operation"),
+        RawExpr::List{..} =>
+            new_invalid_bind_error("a list literal"),
+        RawExpr::Index{..} =>
+            new_invalid_bind_error("an index operation"),
+        RawExpr::RangeIndex{..} =>
+            new_invalid_bind_error("a range-index operation"),
+        RawExpr::Object{..} =>
+            new_invalid_bind_error("an object literal"),
+        RawExpr::Call{..} =>
+            new_invalid_bind_error("a function call"),
     }
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2023 Sean Kelleher. All rights reserved.
+// Copyright 2023-2024 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -288,10 +288,14 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::EvalBinOpRhsFailed{source} |
         EvalError::ApplyBinOpFailed{source} |
         EvalError::EvalListItemFailed{source} |
-        EvalError::EvalIndexExprFailed{source} |
+        EvalError::EvalSourceExprFailed{source} |
         EvalError::EvalStringIndexFailed{source} |
         EvalError::EvalListIndexFailed{source} |
         EvalError::EvalObjectIndexFailed{source} |
+        EvalError::EvalIndexToI64Failed{source} |
+        EvalError::EvalStringStartIndexFailed{source} |
+        EvalError::EvalStringEndIndexFailed{source} |
+        EvalError::EvalStringRangeIndexFailed{source} |
         EvalError::EvalPropNameFailed{source} |
         EvalError::EvalPropValueFailed{source, ..} |
         EvalError::EvalCallArgsFailed{source} |
