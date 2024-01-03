@@ -103,9 +103,9 @@ pub Expr: Expr = {
 }
 
 ExprTier<Op, NextTier>: RawExpr = {
-    <l_loc:@L> <l: ExprTier<Op, NextTier>>
-    <op_loc:@L> <op: Op>
-    <r_loc:@L> <r: NextTier> =>
+    <l_loc:@L> <l:ExprTier<Op, NextTier>>
+    <op_loc:@L> <op:Op>
+    <r_loc:@L> <r:NextTier> =>
         RawExpr::BinaryOp{
             op,
             op_loc,
