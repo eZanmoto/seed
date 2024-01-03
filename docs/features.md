@@ -177,6 +177,18 @@ n := 1;
 print(n); # 2
 ```
 
+### Object property names
+
+In an object literal, the evaluated name of a property must be a string. That
+means that the property name must be given as a string literal - a standalone
+variable name will be evaluated:
+
+```
+name := "a";
+names := ["b"];
+print({name: "Hello", names[0]: "World"}); # { "a": "Hello", "b": "World" }
+```
+
 ### Object shorthand
 
 In an object literal, providing a variable name without a value will add the
