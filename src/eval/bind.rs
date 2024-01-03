@@ -68,6 +68,8 @@ fn bind_next(
             new_invalid_bind_error("an index operation"),
         RawExpr::RangeIndex{..} =>
             new_invalid_bind_error("a range-index operation"),
+        RawExpr::Range{..} =>
+            new_invalid_bind_error("a range operation"),
         RawExpr::Object{..} =>
             new_invalid_bind_error("an object literal"),
         RawExpr::Call{..} =>

@@ -125,16 +125,23 @@ pub ExprOp1: BinaryOp = {
     "||" => BinaryOp::Or,
 };
 
-pub ExprPrecedence2 = ExprTier<ExprOp2, ExprPrecedence3>;
+pub ExprPrecedence2: RawExpr = {
+    <sl:@L> <start:ExprPrecedence2> ".." <el:@L> <end:ExprPrecedence3> =>
+        RawExpr::Range{start: Box::new((start, sl)), end: Box::new((end, el))},
 
-pub ExprOp2: BinaryOp = {
-    "+" => BinaryOp::Sum,
-    "-" => BinaryOp::Sub,
-};
+    ExprPrecedence3
+}
 
 pub ExprPrecedence3 = ExprTier<ExprOp3, ExprPrecedence4>;
 
 pub ExprOp3: BinaryOp = {
+    "+" => BinaryOp::Sum,
+    "-" => BinaryOp::Sub,
+};
+
+pub ExprPrecedence4 = ExprTier<ExprOp4, ExprPrecedence5>;
+
+pub ExprOp4: BinaryOp = {
     "*" => BinaryOp::Mul,
     "/" => BinaryOp::Div,
     "%" => BinaryOp::Mod,
@@ -147,24 +154,24 @@ pub ExprOp3: BinaryOp = {
     "<=" => BinaryOp::Lte,
 };
 
-pub ExprPrecedence4: RawExpr = {
-    <loc:@L> <expr:ExprPrecedence4> "(" <args:ParamList> ")" =>
+pub ExprPrecedence5: RawExpr = {
+    <loc:@L> <expr:ExprPrecedence5> "(" <args:ParamList> ")" =>
         RawExpr::Call{func: Box::new((expr, loc)), args: args},
 
-    <loc:@L> <expr:ExprPrecedence4> "[" <locat:Expr> "]" =>
+    <loc:@L> <expr:ExprPrecedence5> "[" <locat:Expr> "]" =>
         RawExpr::Index{expr: Box::new((expr, loc)), location: Box::new(locat)},
 
-    <loc:@L> <expr:ExprPrecedence4> "[" <start:Expr?> ":" <end:Expr?> "]" =>
+    <loc:@L> <expr:ExprPrecedence5> "[" <start:Expr?> ":" <end:Expr?> "]" =>
         RawExpr::RangeIndex{
             expr: Box::new((expr, loc)),
             start: start.map(|v| Box::new(v)),
             end: end.map(|v| Box::new(v)),
         },
 
-    ExprPrecedence5
+    ExprPrecedence6
 }
 
-pub ExprPrecedence5: RawExpr = {
+pub ExprPrecedence6: RawExpr = {
     "null" => RawExpr::Null,
     "true" => RawExpr::Bool{b: true},
     "false" => RawExpr::Bool{b: false},
@@ -251,6 +258,7 @@ extern {
         "&&" => Token::AmpAmp,
         "!=" => Token::BangEquals,
         "/=" => Token::DivEquals,
+        ".." => Token::DotDot,
         "==" => Token::EqualsEquals,
         ">=" => Token::GreaterThanEquals,
         "<=" => Token::LessThanEquals,

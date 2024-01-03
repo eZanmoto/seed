@@ -235,6 +235,7 @@ fn render_token(t: Token) -> String {
         Token::BangEquals => "!=".to_string(),
         Token::ColonEquals => ":=".to_string(),
         Token::DivEquals => "/=".to_string(),
+        Token::DotDot => "..".to_string(),
         Token::EqualsEquals => "==".to_string(),
         Token::GreaterThanEquals => ">=".to_string(),
         Token::LessThanEquals => "<=".to_string(),
@@ -297,6 +298,8 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::EvalEndIndexFailed{source} |
         EvalError::EvalStringRangeIndexFailed{source} |
         EvalError::EvalListRangeIndexFailed{source} |
+        EvalError::EvalRangeStartFailed{source} |
+        EvalError::EvalRangeEndFailed{source} |
         EvalError::EvalPropNameFailed{source} |
         EvalError::EvalPropValueFailed{source, ..} |
         EvalError::EvalCallArgsFailed{source} |

@@ -584,6 +584,21 @@ fn eval_expr(
             })
         },
 
+        RawExpr::Range{start, end} => {
+            let start = eval_expr_to_i64(context, scopes, "range start", start)
+                .context(EvalRangeStartFailed)?;
+
+            let end = eval_expr_to_i64(context, scopes, "range end", end)
+                .context(EvalRangeEndFailed)?;
+
+            let range =
+                (start..end)
+                    .map(value::new_int)
+                    .collect();
+
+            Ok(value::new_list(range))
+        },
+
         RawExpr::Object{props} => {
             let mut vals = BTreeMap::<String, ValRefWithSource>::new();
 

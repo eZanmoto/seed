@@ -70,6 +70,7 @@ pub enum RawExpr {
         start: Option<Box<Expr>>,
         end: Option<Box<Expr>>,
     },
+    Range{start: Box<Expr>, end: Box<Expr>},
 
     Object{props: Vec<PropItem>},
 

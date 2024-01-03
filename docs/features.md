@@ -124,6 +124,23 @@ print(1 > 2); # false
 print(3 >= 2); # true
 ```
 
+### Range
+
+The range operator can be used to generate a list of integers from an inclusive
+start to an exclusive end:
+
+```
+print(0 .. 4); # [0, 1, 2, 3]
+print(-1 .. 2); # [-1, 0, 1]
+```
+
+If the start is greater than or equal to the end then the resulting list will be
+empty:
+
+```
+print(4 .. 0); # []
+```
+
 Variables
 ---------
 
