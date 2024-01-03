@@ -42,5 +42,10 @@ check_lint:
         --allow clippy::manual-assert \
         --allow clippy::module-name-repetitions
 
+# Run unit tests.
 check_unit tests='':
     cargo test {{tests}}
+
+# Install project dependencies.
+install_deps:
+    dpnd install

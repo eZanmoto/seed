@@ -71,6 +71,11 @@ environment by running `dock`.
 
 ### Building
 
+The dependencies for the project must first be installed using
+`just install_deps`, or can be installed using `dock` by running the following:
+
+    dock run-in build-env: just install_deps
+
 The project can be built locally using `cargo build --locked`, or can be built
 using `dock` by running the following:
 
