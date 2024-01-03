@@ -201,6 +201,7 @@ pub PropList: Vec<PropItem> = CommaSepList<PropItem>;
 
 pub PropItem: PropItem = {
     <name:Expr> ":" <value:Expr> => PropItem::Pair{name, value},
+    <expr:Expr> => PropItem::Single{expr},
 }
 
 Ident: String = {

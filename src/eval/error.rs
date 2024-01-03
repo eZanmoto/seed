@@ -25,6 +25,8 @@ pub enum Error {
     CannotCallNonFunc{v: Value},
     #[snafu(display("'{}' is not defined", name))]
     Undefined{name: String},
+    #[snafu(display("object property name isn't a variable"))]
+    ObjectPropShorthandNotVar,
     #[snafu(display("cannot bind to {}", descr))]
     InvalidBindTarget{descr: String},
     // TODO Add the location of the previous definition of this name.

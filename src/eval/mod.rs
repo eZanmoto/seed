@@ -615,6 +615,33 @@ fn eval_expr(
 
                         vals.insert(name, v);
                     },
+
+                    PropItem::Single{expr} => {
+                        let (raw_expr, (line, col)) = expr;
+
+                        if let RawExpr::Var{name} = raw_expr {
+                            let v =
+                                match scopes.get(name) {
+                                    Some(v) => v.clone(),
+                                    None => return Err(Error::AtLoc{
+                                        source: Box::new(Error::Undefined{
+                                            name: name.clone()
+                                        }),
+                                        line: *line,
+                                        col: *col,
+                                    }),
+                                };
+
+                            vals.insert(name.to_string(), v);
+                        } else {
+                            return Err(Error::AtLoc{
+                                source:
+                                    Box::new(Error::ObjectPropShorthandNotVar),
+                                line: *line,
+                                col: *col,
+                            });
+                        }
+                    },
                 }
             }
 

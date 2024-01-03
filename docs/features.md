@@ -177,6 +177,18 @@ n := 1;
 print(n); # 2
 ```
 
+### Object shorthand
+
+In an object literal, providing a variable name without a value will add the
+value of that variable (from the current scope) to a new property in the object
+with the given name:
+
+```
+a := 1;
+c := 3;
+print({a, "b": 2, c}); # { a: 1, b: 2, c: 3}
+```
+
 ### Indexing
 
 `list`s, `string`s and `object`s can be indexed:

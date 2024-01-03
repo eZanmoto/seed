@@ -99,4 +99,5 @@ pub enum BinaryOp {
 #[derive(Clone, Debug)]
 pub enum PropItem {
     Pair{name: Expr, value: Expr},
+    Single{expr: Expr},
 }
