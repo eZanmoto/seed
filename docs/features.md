@@ -201,6 +201,28 @@ c := 3;
 print({a, "b": 2, c}); # { a: 1, b: 2, c: 3}
 ```
 
+### Spread
+
+The items of a list can be inlined into a new list using the spread operator:
+
+```
+xs := [1, 2];
+print([xs.., 3, xs..]); # [ 1, 2, 3, 1, 2 ]
+```
+
+Arguments to a function can also use the spread operator:
+
+```
+fn f(a, b) {
+    print(a);
+    print(b);
+}
+
+xs := [1, 2];
+
+f(xs..);
+```
+
 ### Indexing
 
 `list`s, `string`s and `object`s can be indexed:

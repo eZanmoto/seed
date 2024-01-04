@@ -437,14 +437,8 @@ fn eval_expr(
         },
 
         RawExpr::List{items} => {
-            let mut vals = vec![];
-
-            for item in items {
-                let v = eval_expr(context, scopes, item)
-                    .context(EvalListItemFailed)?;
-
-                vals.push(v);
-            }
+            let vals = eval_list_items(context, scopes, items)
+                .context(EvalListItemsFailed)?;
 
             Ok(value::new_list(vals))
         },
@@ -649,7 +643,7 @@ fn eval_expr(
         },
 
         RawExpr::Call{func, args} => {
-            let arg_vals = eval_exprs(context, scopes, args)
+            let arg_vals = eval_list_items(context, scopes, args)
                 .context(EvalCallArgsFailed)?;
 
             let func_val = eval_expr(context, scopes, func)
@@ -968,25 +962,6 @@ fn eq(lhs: &Value, rhs: &Value) -> Option<bool> {
     }
 }
 
-pub fn eval_exprs(
-    context: &EvaluationContext,
-    scopes: &mut ScopeStack,
-    exprs: &Vec<Expr>,
-)
-    -> Result<List, Error>
-{
-    let mut vals = vec![];
-
-    for expr in exprs {
-        let v = eval_expr(context, scopes, expr)
-            .context(EvalExprFailed)?;
-
-        vals.push(v);
-    }
-
-    Ok(vals)
-}
-
 fn eval_expr_to_str(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
@@ -1131,4 +1106,47 @@ fn get_list_range_index(
     }
 
     Err(Error::RangeOutOfListBounds{start: *start, end: *end})
+}
+
+fn eval_list_items(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    items: &Vec<ListItem>,
+)
+    -> Result<Vec<ValRefWithSource>, Error>
+{
+    let mut vals = vec![];
+
+    for item in items {
+        let v = eval_expr(context, scopes, &item.expr)
+            .context(EvalListItemFailed)?;
+
+        if !item.is_spread {
+            vals.push(v);
+
+            continue;
+        }
+
+        match &(*v.lock().unwrap()).v {
+            Value::List(items) => {
+                for item in items {
+                    vals.push(item.clone());
+                }
+            },
+
+            value => {
+                let (_, (line, col)) = item.expr;
+
+                return Err(Error::AtLoc{
+                    source: Box::new(Error::SpreadNonList{
+                        value: value.clone(),
+                    }),
+                    line,
+                    col,
+                })
+            },
+        };
+    }
+
+    Ok(vals)
 }

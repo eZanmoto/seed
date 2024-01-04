@@ -118,19 +118,33 @@ ExprTier<Op, NextTier>: RawExpr = {
 
 // `ExprPrecedence1` defines the most loosely binding expressions. Each
 // increasing precedence indicates a tighter binding.
-pub ExprPrecedence1 = ExprTier<ExprOp1, ExprPrecedence2>;
+pub ExprPrecedence1: RawExpr = {
+    // `Expr` can only be used on the LHS of this production because the
+    // production is being defined in the `ExprPrecedence1` block. If the
+    // production were defined at another precedence level then the LHS would
+    // need to use `ExprPrecedenceN`, where `N` is the precedence level it's
+    // being defined in; using `Expr` in such a case would result in an
+    // ambiguity in the grammar, unless a prefix token were used to resolve the
+    // ambiguity (such as the case with `"(" <Expr> ")"`, which isn't ambiguous.
+    //
+    // We also need to use `Expr` on the LHS of this production so that it has
+    // the same prefix as the productions in `ExprList`, i.e. `<Expr> ".."`. If
+    // this production had a different LHS, like `ExprPrecedence1`, then this
+    // difference would result in an ambiguity, because the generated parser
+    // would need to choose a production when `..` is encountered, rather than
+    // being able to check the element after the `..`.
+    <start:Expr> ".." <el:@L> <end:ExprPrecedence2> =>
+        RawExpr::Range{start: Box::new(start), end: Box::new((end, el))},
 
-pub ExprOp1: BinaryOp = {
+    ExprPrecedence2
+}
+
+pub ExprPrecedence2 = ExprTier<ExprOp2, ExprPrecedence3>;
+
+pub ExprOp2: BinaryOp = {
     "&&" => BinaryOp::And,
     "||" => BinaryOp::Or,
 };
-
-pub ExprPrecedence2: RawExpr = {
-    <sl:@L> <start:ExprPrecedence2> ".." <el:@L> <end:ExprPrecedence3> =>
-        RawExpr::Range{start: Box::new((start, sl)), end: Box::new((end, el))},
-
-    ExprPrecedence3
-}
 
 pub ExprPrecedence3 = ExprTier<ExprOp3, ExprPrecedence4>;
 
@@ -155,8 +169,8 @@ pub ExprOp4: BinaryOp = {
 };
 
 pub ExprPrecedence5: RawExpr = {
-    <loc:@L> <expr:ExprPrecedence5> "(" <args:ParamList> ")" =>
-        RawExpr::Call{func: Box::new((expr, loc)), args: args},
+    <loc:@L> <expr:ExprPrecedence5> "(" <args:ExprList> ")" =>
+        RawExpr::Call{func: Box::new((expr, loc)), args},
 
     <loc:@L> <expr:ExprPrecedence5> "[" <locat:Expr> "]" =>
         RawExpr::Index{expr: Box::new((expr, loc)), location: Box::new(locat)},
@@ -187,14 +201,29 @@ pub ExprPrecedence6: RawExpr = {
     "{" <props:PropList> "}" => RawExpr::Object{props},
 }
 
-pub ExprList: Vec<Expr> = {
-    <mut values:(<Expr> ",")*> <last:Expr?> => {
-        if let Some(v) = last {
-            values.push(v);
-        }
+pub ExprList: Vec<ListItem> = {
+    <list:ReverseExprList> => {
+        list
+            .into_iter()
+            .rev()
+            .collect()
+    },
+}
 
-        values
-    }
+pub ReverseExprList: Vec<ListItem> = {
+    () => vec![],
+
+    <expr:Expr> <spread:".."?> => vec![ListItem{
+        expr,
+        is_spread: spread.is_some(),
+    }],
+
+    <expr:Expr> <spread:".."?> "," <mut tail:ReverseExprList> => {
+        let is_spread = spread.is_some();
+        tail.push(ListItem{expr, is_spread});
+
+        tail
+    },
 }
 
 pub PropList: Vec<PropItem> = CommaSepList<PropItem>;

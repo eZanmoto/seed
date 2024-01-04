@@ -63,7 +63,7 @@ pub enum RawExpr {
         rhs: Box<Expr>,
     },
 
-    List{items: Vec<Expr>},
+    List{items: Vec<ListItem>},
     Index{expr: Box<Expr>, location: Box<Expr>},
     RangeIndex{
         expr: Box<Expr>,
@@ -74,7 +74,7 @@ pub enum RawExpr {
 
     Object{props: Vec<PropItem>},
 
-    Call{func: Box<Expr>, args: Vec<Expr>},
+    Call{func: Box<Expr>, args: Vec<ListItem>},
 }
 
 #[derive(Clone, Debug)]
@@ -94,6 +94,12 @@ pub enum BinaryOp {
     Gte,
     Lt,
     Lte,
+}
+
+#[derive(Clone,Debug)]
+pub struct ListItem {
+    pub expr: Expr,
+    pub is_spread: bool,
 }
 
 #[derive(Clone, Debug)]

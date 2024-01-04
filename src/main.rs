@@ -288,6 +288,7 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::EvalBinOpLhsFailed{source} |
         EvalError::EvalBinOpRhsFailed{source} |
         EvalError::ApplyBinOpFailed{source} |
+        EvalError::EvalListItemsFailed{source} |
         EvalError::EvalListItemFailed{source} |
         EvalError::EvalSourceExprFailed{source} |
         EvalError::EvalStringIndexFailed{source} |

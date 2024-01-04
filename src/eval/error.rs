@@ -83,6 +83,8 @@ pub enum Error {
     NoSuchKey{key: String},
     #[snafu(display("index can't be negative"))]
     NegativeIndex{index: i64},
+    #[snafu(display("only lists can be spread, got '{}'", render_type(value)))]
+    SpreadNonList{value: Value},
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
@@ -198,6 +200,10 @@ pub enum Error {
         source: Box<Error>,
     },
     ApplyBinOpFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    EvalListItemsFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
