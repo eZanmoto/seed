@@ -610,30 +610,58 @@ fn eval_expr(
                         vals.insert(name, v);
                     },
 
-                    PropItem::Single{expr} => {
-                        let (raw_expr, (line, col)) = expr;
+                    PropItem::Single{expr, is_spread} => {
+                        if *is_spread {
+                            match_eval_expr!((context, scopes, expr) {
+                                Value::Object(props) => {
+                                    for (name, value) in props.iter() {
+                                        vals.insert(
+                                            name.to_string(),
+                                            value.clone(),
+                                        );
+                                    }
+                                },
 
-                        if let RawExpr::Var{name} = raw_expr {
-                            let v =
-                                match scopes.get(name) {
-                                    Some(v) => v.clone(),
-                                    None => return Err(Error::AtLoc{
-                                        source: Box::new(Error::Undefined{
-                                            name: name.clone()
-                                        }),
+                                value => {
+                                    let (_, (line, col)) = expr;
+
+                                    return Err(Error::AtLoc{
+                                        source: Box::new(
+                                            Error::SpreadNonObjectInObject{
+                                                value: value.clone(),
+                                            },
+                                        ),
                                         line: *line,
                                         col: *col,
-                                    }),
-                                };
-
-                            vals.insert(name.to_string(), v);
-                        } else {
-                            return Err(Error::AtLoc{
-                                source:
-                                    Box::new(Error::ObjectPropShorthandNotVar),
-                                line: *line,
-                                col: *col,
+                                    });
+                                },
                             });
+                        } else {
+                            let (raw_expr, (line, col)) = expr;
+
+                            if let RawExpr::Var{name} = raw_expr {
+                                let v =
+                                    match scopes.get(name) {
+                                        Some(v) => v.clone(),
+                                        None => return Err(Error::AtLoc{
+                                            source: Box::new(Error::Undefined{
+                                                name: name.clone()
+                                            }),
+                                            line: *line,
+                                            col: *col,
+                                        }),
+                                    };
+
+                                vals.insert(name.to_string(), v);
+                            } else {
+                                return Err(Error::AtLoc{
+                                    source: Box::new(
+                                        Error::ObjectPropShorthandNotVar,
+                                    ),
+                                    line: *line,
+                                    col: *col,
+                                });
+                            }
                         }
                     },
                 }
@@ -1138,7 +1166,7 @@ fn eval_list_items(
                 let (_, (line, col)) = item.expr;
 
                 return Err(Error::AtLoc{
-                    source: Box::new(Error::SpreadNonList{
+                    source: Box::new(Error::SpreadNonListInList{
                         value: value.clone(),
                     }),
                     line,

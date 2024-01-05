@@ -223,6 +223,14 @@ xs := [1, 2];
 f(xs..);
 ```
 
+Objects can also be inlined in this way, but key order matters - later key
+values will shadow values declared earlier in the object literal:
+
+```
+xs := {"a": 1, "b": 2, "c": 3};
+print({xs.., "c": 4}); # {"a": 1, "b": 2, "c": 4}
+```
+
 ### Indexing
 
 `list`s, `string`s and `object`s can be indexed:

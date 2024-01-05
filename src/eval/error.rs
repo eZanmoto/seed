@@ -83,8 +83,16 @@ pub enum Error {
     NoSuchKey{key: String},
     #[snafu(display("index can't be negative"))]
     NegativeIndex{index: i64},
-    #[snafu(display("only lists can be spread, got '{}'", render_type(value)))]
-    SpreadNonList{value: Value},
+    #[snafu(display(
+        "only lists can be spread in lists, got '{}'",
+        render_type(value),
+    ))]
+    SpreadNonListInList{value: Value},
+    #[snafu(display(
+        "only objects can be spread in objects, got '{}'",
+        render_type(value),
+    ))]
+    SpreadNonObjectInObject{value: Value},
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},

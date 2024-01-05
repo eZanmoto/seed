@@ -229,8 +229,14 @@ pub ReverseExprList: Vec<ListItem> = {
 pub PropList: Vec<PropItem> = CommaSepList<PropItem>;
 
 pub PropItem: PropItem = {
-    <name:Expr> ":" <value:Expr> => PropItem::Pair{name, value},
-    <expr:Expr> => PropItem::Single{expr},
+    <name:Expr> ":" <value:Expr> =>
+        PropItem::Pair{name, value},
+
+    <expr:Expr> <spread:".."?> =>
+        PropItem::Single{
+            expr,
+            is_spread: spread.is_some(),
+        },
 }
 
 Ident: String = {
