@@ -246,6 +246,10 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
+    EvalObjectPropFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
     EvalStartIndexFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,

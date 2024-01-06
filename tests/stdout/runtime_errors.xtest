@@ -160,6 +160,13 @@ exit_code: 103
 --------------------------------------------------
 --------------------------------------------------
 runtime_errors/prop_access_on_non_object.sd:1:1: properties can only be accessed on objects, got 'list'
+================================================== prop_assign_on_non_object
+exit_code: 103
+--------------------------------------------------
+[].a = 1;
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/prop_assign_on_non_object.sd:1:1: properties can only be accessed on objects, got 'list'
 ================================================== negative_string_index
 exit_code: 103
 --------------------------------------------------

@@ -277,6 +277,15 @@ xs = {"a": 1, "b": 2, "c": 3};
 print(xs.b); # 2
 ```
 
+The same shorthand can be used for updating objects:
+
+```
+xs := {"a": 1, "b": null, "c": 3};
+xs.b = 2;
+xs.d = 4;
+print(xs); # {"a": 1, "b": 2, "c": 3, "d": 4}
+```
+
 ### Range-indexing
 
 `list`s and `string`s can be range-indexed:

@@ -110,6 +110,22 @@ fn bind_next(
             })
         },
 
+        RawExpr::Prop{expr, name} => {
+            match_eval_expr!((context, scopes, expr) {
+                Value::Object(props) => {
+                    props.insert(name.clone(), rhs);
+
+                    Ok(())
+                },
+
+                value => {
+                    new_loc_err(Error::PropAccessOnNonObject{
+                        value: value.clone(),
+                    })
+                },
+            })
+        },
+
         RawExpr::Null =>
             new_invalid_bind_error("`null`"),
         RawExpr::Bool{..} =>
@@ -128,8 +144,6 @@ fn bind_next(
             new_invalid_bind_error("a range operation"),
         RawExpr::Object{..} =>
             new_invalid_bind_error("an object literal"),
-        RawExpr::Prop{..} =>
-            new_invalid_bind_error("a property access operation"),
         RawExpr::Func{..} =>
             new_invalid_bind_error("an anonymous function"),
         RawExpr::Call{..} =>

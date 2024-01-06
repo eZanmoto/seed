@@ -295,6 +295,7 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::EvalStringIndexFailed{source} |
         EvalError::EvalListIndexFailed{source} |
         EvalError::EvalObjectIndexFailed{source} |
+        EvalError::EvalObjectPropFailed{source} |
         EvalError::EvalIndexToI64Failed{source} |
         EvalError::EvalStartIndexFailed{source} |
         EvalError::EvalEndIndexFailed{source} |
