@@ -73,6 +73,7 @@ pub enum RawExpr {
     Range{start: Box<Expr>, end: Box<Expr>},
 
     Object{props: Vec<PropItem>},
+    Prop{expr: Box<Expr>, name: String},
 
     Func{args: Vec<Expr>, stmts: Block},
     Call{func: Box<Expr>, args: Vec<ListItem>},

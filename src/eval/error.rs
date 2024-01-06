@@ -79,8 +79,6 @@ pub enum Error {
     RangeOutOfListBounds{start: usize, end: usize},
     #[snafu(display("only 'list's or 'string's can be range-indexed"))]
     ValueNotRangeIndexable,
-    #[snafu(display("object doesn't contain the key '{}'", key))]
-    NoSuchKey{key: String},
     #[snafu(display("index can't be negative"))]
     NegativeIndex{index: i64},
     #[snafu(display(
@@ -93,6 +91,13 @@ pub enum Error {
         render_type(value),
     ))]
     SpreadNonObjectInObject{value: Value},
+    #[snafu(display("object doesn't contain property '{}'", name))]
+    PropNotFound{name: String},
+    #[snafu(display(
+        "properties can only be accessed on objects, got '{}'",
+        render_type(value),
+    ))]
+    PropAccessOnNonObject{value: Value},
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},

@@ -220,6 +220,7 @@ fn render_token(t: Token) -> String {
         Token::Colon => ":".to_string(),
         Token::Comma => ",".to_string(),
         Token::Div => "/".to_string(),
+        Token::Dot => ".".to_string(),
         Token::Equals => "=".to_string(),
         Token::GreaterThan => ">".to_string(),
         Token::LessThan => "<".to_string(),

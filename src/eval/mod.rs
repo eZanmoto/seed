@@ -485,11 +485,12 @@ fn eval_expr(
                 Value::Object(props) => {
                     // TODO Consider whether non-UTF-8 strings can be used to
                     // perform key lookups on objects.
-                    let key = eval_expr_to_str(context, scopes, "key", locat)
-                        .context(EvalObjectIndexFailed)?;
+                    let name =
+                        eval_expr_to_str(context, scopes, "property", locat)
+                            .context(EvalObjectIndexFailed)?;
 
                     let v =
-                        match props.get(&key) {
+                        match props.get(&name) {
                             Some(v) => {
                                 let prop_val = &(*v.lock().unwrap()).v;
 
@@ -499,7 +500,7 @@ fn eval_expr(
                                 )
                             },
                             None => {
-                                return new_loc_err(Error::NoSuchKey{key});
+                                return new_loc_err(Error::PropNotFound{name});
                             },
                         };
 
@@ -668,6 +669,37 @@ fn eval_expr(
             }
 
             Ok(value::new_object(vals))
+        },
+
+        RawExpr::Prop{expr, name} => {
+            match_eval_expr!((context, scopes, expr) {
+                Value::Object(props) => {
+                    let v =
+                        match props.get(name) {
+                            Some(v) => {
+                                let prop_val = &(*v.lock().unwrap()).v;
+
+                                value::new_val_ref_with_source(
+                                    prop_val.clone(),
+                                    v.clone(),
+                                )
+                            },
+                            None => {
+                                return new_loc_err(Error::PropNotFound{
+                                    name: name.clone(),
+                                });
+                            },
+                        };
+
+                    Ok(v)
+                },
+
+                value => {
+                    new_loc_err(Error::PropAccessOnNonObject{
+                        value: value.clone(),
+                    })
+                },
+            })
         },
 
         RawExpr::Func{args, stmts} => {

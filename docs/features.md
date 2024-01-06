@@ -177,6 +177,9 @@ n := 1;
 print(n); # 2
 ```
 
+Variables must start with an alphabetic character or underscore, followed by any
+number of alphanumeric characters or underscores.
+
 ### Object property names
 
 In an object literal, the evaluated name of a property must be a string. That
@@ -246,6 +249,16 @@ print(xs[1]); # b
 
 xs = {"a": 1, "b": 2, "c": 3};
 print(xs["b"]); # 2
+```
+
+### Object properties
+
+A shorthand can be used for indexing objects when the property is a valid
+variable name:
+
+```
+xs = {"a": 1, "b": 2, "c": 3};
+print(xs.b); # 2
 ```
 
 ### Range-indexing

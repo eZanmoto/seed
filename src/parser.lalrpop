@@ -182,6 +182,9 @@ pub ExprPrecedence5: RawExpr = {
             end: end.map(|v| Box::new(v)),
         },
 
+    <loc:@L> <expr:ExprPrecedence5> "." <name:Ident> =>
+        RawExpr::Prop{expr: Box::new((expr, loc)), name},
+
     ExprPrecedence6
 }
 
@@ -282,6 +285,7 @@ extern {
         ":" => Token::Colon,
         "," => Token::Comma,
         "/" => Token::Div,
+        "." => Token::Dot,
         "=" => Token::Equals,
         ">" => Token::GreaterThan,
         "<" => Token::LessThan,
