@@ -199,6 +199,8 @@ pub ExprPrecedence6: RawExpr = {
 
     "[" <items:ExprList> "]" => RawExpr::List{items},
     "{" <props:PropList> "}" => RawExpr::Object{props},
+
+    "fn" "(" <args:ParamList> ")" <stmts:Block> => RawExpr::Func{args, stmts},
 }
 
 pub ExprList: Vec<ListItem> = {

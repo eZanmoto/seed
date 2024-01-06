@@ -382,3 +382,35 @@ print(v); # 1
 inc_v();
 print(v); # 2
 ```
+
+Functions are values, and so can be stored in variables, passed as parameters,
+etc. A function can be stored in a variable by name:
+
+```
+fn f() {
+    return 1;
+}
+g := f;
+print(g()); # 1
+```
+
+An function can also be created without a name, i.e. an anonymous function:
+
+```
+f := fn () {
+    return 1;
+};
+print(f()); # 1
+```
+
+Anonymous functions can be useful for creating callbacks:
+
+```
+fn f(callback) {
+    callback();
+}
+
+f(fn () {
+    print(1);
+});
+```

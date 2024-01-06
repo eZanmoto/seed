@@ -51,4 +51,52 @@ Stacktrace:
   stacktrace/stacktrace_builtin.sd:6:5: in 'second'
   stacktrace/stacktrace_builtin.sd:2:5: in 'first'
   stacktrace/stacktrace_builtin.sd:13:1: in '<root>'
+================================================== stacktrace_anon_function
+exit_code: 103
+--------------------------------------------------
+fn first() {
+    second();
+}
+
+second := fn () {
+    third();
+};
+
+fn third() {
+    print(1, 2);
+}
+
+first();
+--------------------------------------------------
+--------------------------------------------------
+stacktrace/stacktrace_anon_function.sd:10:5: in 'third': `print` only takes 1 argument (got 2)
+Stacktrace:
+  stacktrace/stacktrace_anon_function.sd:6:5: in '<unnamed function>'
+  stacktrace/stacktrace_anon_function.sd:2:5: in 'first'
+  stacktrace/stacktrace_anon_function.sd:13:1: in '<root>'
+================================================== stacktrace_function_variable
+exit_code: 103
+--------------------------------------------------
+fn first() {
+    second();
+}
+
+fn f() {
+    third();
+}
+
+second := f;
+
+fn third() {
+    print(1, 2);
+}
+
+first();
+--------------------------------------------------
+--------------------------------------------------
+stacktrace/stacktrace_function_variable.sd:12:5: in 'third': `print` only takes 1 argument (got 2)
+Stacktrace:
+  stacktrace/stacktrace_function_variable.sd:6:5: in 'f'
+  stacktrace/stacktrace_function_variable.sd:2:5: in 'first'
+  stacktrace/stacktrace_function_variable.sd:15:1: in '<root>'
 ==================================================

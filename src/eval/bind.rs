@@ -72,6 +72,8 @@ fn bind_next(
             new_invalid_bind_error("a range operation"),
         RawExpr::Object{..} =>
             new_invalid_bind_error("an object literal"),
+        RawExpr::Func{..} =>
+            new_invalid_bind_error("an anonymous function"),
         RawExpr::Call{..} =>
             new_invalid_bind_error("a function call"),
     }

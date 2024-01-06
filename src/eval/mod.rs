@@ -670,6 +670,12 @@ fn eval_expr(
             Ok(value::new_object(vals))
         },
 
+        RawExpr::Func{args, stmts} => {
+            let closure = scopes.clone();
+
+            Ok(value::new_func(None, args.clone(), stmts.clone(), closure))
+        },
+
         RawExpr::Call{func, args} => {
             let arg_vals = eval_list_items(context, scopes, args)
                 .context(EvalCallArgsFailed)?;

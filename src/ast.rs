@@ -74,6 +74,7 @@ pub enum RawExpr {
 
     Object{props: Vec<PropItem>},
 
+    Func{args: Vec<Expr>, stmts: Block},
     Call{func: Box<Expr>, args: Vec<ListItem>},
 }
 
