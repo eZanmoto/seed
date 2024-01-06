@@ -69,6 +69,8 @@ pub enum Error {
     ForIterNotIterable,
     #[snafu(display("only 'list's, 'object's or 'string's can be indexed"))]
     ValueNotIndexable,
+    #[snafu(display("only 'list's or 'object's can update indices"))]
+    ValueNotIndexAssignable,
     #[snafu(display("index '{}' is outside the string bounds", index))]
     OutOfStringBounds{index: usize},
     #[snafu(display("index '{}' is outside the list bounds", index))]

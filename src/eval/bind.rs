@@ -4,15 +4,38 @@
 
 use std::collections::HashSet;
 
+use snafu::ResultExt;
+
 #[allow(clippy::wildcard_imports)]
 use ast::*;
+use eval;
+use eval::EvaluationContext;
+#[allow(clippy::wildcard_imports)]
+use super::error::*;
 use super::error::Error;
 use super::scope::ScopeStack;
 use value::ValRefWithSource;
+use value::Value;
+
+// TODO Duplicated from `src/eval/mod.rs`.
+macro_rules! match_eval_expr {
+    (
+        ( $context:ident, $scopes:ident, $expr:expr )
+        { $( $key:pat => $value:expr , )* }
+    ) => {{
+        let value = eval::eval_expr($context, $scopes, $expr)
+            .context(EvalExprFailed)?;
+        let unlocked_value = &mut (*value.lock().unwrap()).v;
+        match unlocked_value {
+            $( $key => $value , )*
+        }
+    }};
+}
 
 // `bind` associates the values on `rhs` with the names deconstructed from
 // `lhs`.
 pub fn bind(
+    context: &EvaluationContext,
     scopes: &mut ScopeStack,
     lhs: &Expr,
     rhs: ValRefWithSource,
@@ -20,7 +43,7 @@ pub fn bind(
 )
     -> Result<(), Error>
 {
-    bind_next(scopes, &mut HashSet::new(), lhs, rhs, bind_type)
+    bind_next(context, scopes, &mut HashSet::new(), lhs, rhs, bind_type)
 }
 
 #[derive(Clone, Copy)]
@@ -32,6 +55,7 @@ pub enum BindType {
 // `bind_next` performs a bind, but returns an error if a name that's in
 // `names_in_binding` gets reused.
 fn bind_next(
+    context: &EvaluationContext,
     scopes: &mut ScopeStack,
     names_in_binding: &mut HashSet<String>,
     lhs: &Expr,
@@ -41,17 +65,51 @@ fn bind_next(
     -> Result<(), Error>
 {
     let (raw_lhs, loc) = lhs;
-    let new_invalid_bind_error = |s: &str| {
-        let source = Error::InvalidBindTarget{descr: s.to_string()};
+    let new_loc_err = |source| {
         let (line, col) = loc;
 
         Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
+    };
+    let new_invalid_bind_error = |s: &str| {
+        new_loc_err(Error::InvalidBindTarget{descr: s.to_string()})
     };
 
     match raw_lhs {
         RawExpr::Var{name} => {
             bind_next_name(scopes, names_in_binding, name, loc, rhs, bind_type)
         },
+
+        RawExpr::Index{expr, location: locat} => {
+            match_eval_expr!((context, scopes, expr) {
+                Value::List(items) => {
+                    let n = eval::eval_expr_to_index(context, scopes, locat)
+                        .context(EvalListIndexFailed)?;
+
+                    // TODO Handle out-of-bounds assignment.
+                    items[n as usize] = rhs;
+
+                    Ok(())
+                },
+
+                Value::Object(props) => {
+                    // TODO Consider whether non-UTF-8 strings can be used to
+                    // perform key lookups on objects.
+                    let descr = "property";
+                    let name =
+                        eval::eval_expr_to_str(context, scopes, descr, locat)
+                            .context(EvalObjectIndexFailed)?;
+
+                    props.insert(name, rhs);
+
+                    Ok(())
+                },
+
+                _ => {
+                    new_loc_err(Error::ValueNotIndexAssignable)
+                },
+            })
+        },
+
         RawExpr::Null =>
             new_invalid_bind_error("`null`"),
         RawExpr::Bool{..} =>
@@ -64,8 +122,6 @@ fn bind_next(
             new_invalid_bind_error("a binary operation"),
         RawExpr::List{..} =>
             new_invalid_bind_error("a list literal"),
-        RawExpr::Index{..} =>
-            new_invalid_bind_error("an index operation"),
         RawExpr::RangeIndex{..} =>
             new_invalid_bind_error("a range-index operation"),
         RawExpr::Range{..} =>

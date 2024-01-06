@@ -115,14 +115,14 @@ pub fn eval_stmts(
 )
     -> Result<Escape, Error>
 {
-    let mut inner_scopes = scopes.new_from_push(HashMap::new());
+    let mut new_scopes = scopes.new_from_push(HashMap::new());
 
     for (lhs, rhs) in new_bindings {
-        bind::bind(&mut inner_scopes, &lhs, rhs, BindType::Declaration)
+        bind::bind(context, &mut new_scopes, &lhs, rhs, BindType::Declaration)
             .context(BindFailed)?;
     }
 
-    let v = eval_stmts_with_scope_stack(context, &mut inner_scopes, stmts)
+    let v = eval_stmts_with_scope_stack(context, &mut new_scopes, stmts)
         .context(EvalStmtsWithScopeStackFailed)?;
 
     Ok(v)
@@ -178,7 +178,7 @@ fn eval_stmt(
             let v = eval_expr(context, scopes, rhs)
                 .context(EvalDeclarationRhsFailed)?;
 
-            bind::bind(scopes, lhs, v, BindType::Declaration)
+            bind::bind(context, scopes, lhs, v, BindType::Declaration)
                 .context(DeclarationBindFailed)?;
         },
 
@@ -186,7 +186,7 @@ fn eval_stmt(
             let v = eval_expr(context, scopes, rhs)
                 .context(EvalAssignmentRhsFailed)?;
 
-            bind::bind(scopes, lhs, v, BindType::Assignment)
+            bind::bind(context, scopes, lhs, v, BindType::Assignment)
                 .context(AssignmentBindFailed)?;
         },
 

@@ -251,6 +251,22 @@ xs = {"a": 1, "b": 2, "c": 3};
 print(xs["b"]); # 2
 ```
 
+### Index assigment
+
+`list`s and `object`s can assign to indices:
+
+```
+xs := null;
+
+xs = ["a", "b", "c"];
+xs[1] = "d";
+print(xs); # ["a", "d", "c"]
+
+xs = {"a": 1, "b": 2, "c": 3};
+xs["b"] = 4;
+print(xs); # {"a": 1, "b": 4, "c": 3}
+```
+
 ### Object properties
 
 A shorthand can be used for indexing objects when the property is a valid
