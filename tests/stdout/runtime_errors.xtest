@@ -135,10 +135,19 @@ runtime_errors/out_of_string_bounds.sd:1:1: index '5' is outside the string boun
 ================================================== out_of_list_bounds
 exit_code: 103
 --------------------------------------------------
-[1, 2, 3][5];
+xs := [1, 2, 3];
+xs[2];
+xs[3];
 --------------------------------------------------
 --------------------------------------------------
-runtime_errors/out_of_list_bounds.sd:1:1: index '5' is outside the list bounds
+runtime_errors/out_of_list_bounds.sd:3:1: index '3' is outside the list bounds
+================================================== out_of_list_bounds_assign
+exit_code: 103
+--------------------------------------------------
+[1, 2, 3][3] = 2;
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/out_of_list_bounds_assign.sd:1:1: index '3' is outside the list bounds
 ================================================== prop_not_found1
 exit_code: 103
 --------------------------------------------------

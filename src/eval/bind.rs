@@ -85,7 +85,10 @@ fn bind_next(
                     let n = eval::eval_expr_to_index(context, scopes, locat)
                         .context(EvalListIndexFailed)?;
 
-                    // TODO Handle out-of-bounds assignment.
+                    if n >= items.len() {
+                        return new_loc_err(Error::OutOfListBounds{index: n});
+                    }
+
                     items[n as usize] = rhs;
 
                     Ok(())
