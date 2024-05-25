@@ -256,31 +256,31 @@ runtime_errors/bad_list_range_end.sd:1:1: range [0:5] is outside the list bounds
 ================================================== object_prop_shorthand_not_var
 exit_code: 103
 --------------------------------------------------
-{ 1 };
+{1};
 --------------------------------------------------
 --------------------------------------------------
-runtime_errors/object_prop_shorthand_not_var.sd:1:3: object property name isn't a variable
+runtime_errors/object_prop_shorthand_not_var.sd:1:2: object property name isn't a variable
 ================================================== object_prop_shorthand_undefined
 exit_code: 103
 --------------------------------------------------
-{ value };
+{value};
 --------------------------------------------------
 --------------------------------------------------
-runtime_errors/object_prop_shorthand_undefined.sd:1:3: 'value' is not defined
+runtime_errors/object_prop_shorthand_undefined.sd:1:2: 'value' is not defined
 ================================================== spread_non_list_in_list
 exit_code: 103
 --------------------------------------------------
-[ 1.. ];
+[1..];
 --------------------------------------------------
 --------------------------------------------------
-runtime_errors/spread_non_list_in_list.sd:1:3: only lists can be spread in lists, got 'int'
+runtime_errors/spread_non_list_in_list.sd:1:2: only lists can be spread in lists, got 'int'
 ================================================== spread_non_object_in_object
 exit_code: 103
 --------------------------------------------------
-{ 1.. };
+{1..};
 --------------------------------------------------
 --------------------------------------------------
-runtime_errors/spread_non_object_in_object.sd:1:3: only objects can be spread in objects, got 'int'
+runtime_errors/spread_non_object_in_object.sd:1:2: only objects can be spread in objects, got 'int'
 ================================================== string_index_assign
 exit_code: 103
 --------------------------------------------------
