@@ -288,4 +288,49 @@ exit_code: 103
 --------------------------------------------------
 --------------------------------------------------
 runtime_errors/string_index_assign.sd:1:1: only 'list's or 'object's can update indices
+================================================== spread_on_object_destructure
+exit_code: 103
+--------------------------------------------------
+{xs..} = {};
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/spread_on_object_destructure.sd:1:2: can't use spread operator in object destructuring
+================================================== object_assign_prop_shorthand_not_var
+exit_code: 103
+--------------------------------------------------
+{} = {1};
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/object_assign_prop_shorthand_not_var.sd:1:7: object property name isn't a variable
+================================================== object_destructure_prop_not_found
+exit_code: 103
+--------------------------------------------------
+{a, b, c} := {"a": 1, "b": 2};
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/object_destructure_prop_not_found.sd:1:8: object doesn't contain property 'c'
+================================================== cannot_mix_var_declarations1
+exit_code: 103
+--------------------------------------------------
+a := 1;
+{a, b} = {"a": 1, "b": 2};
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/cannot_mix_var_declarations1.sd:2:5: 'b' is not defined
+================================================== cannot_mix_var_declarations2
+exit_code: 103
+--------------------------------------------------
+a := 1;
+{a, b} := {"a": 1, "b": 2};
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/cannot_mix_var_declarations2.sd:2:2: 'a' is already defined in the current scope at [1:1]
+================================================== object_destructure_already_in_scope
+exit_code: 103
+--------------------------------------------------
+b := 3;
+{"a": b} := {"a": 1, "b": 2};
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/object_destructure_already_in_scope.sd:2:7: 'b' is already defined in the current scope at [1:1]
 ==================================================

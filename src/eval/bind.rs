@@ -14,6 +14,7 @@ use eval::EvaluationContext;
 use super::error::*;
 use super::error::Error;
 use super::scope::ScopeStack;
+use value::Object;
 use value::ValRefWithSource;
 use value::Value;
 
@@ -129,6 +130,27 @@ fn bind_next(
             })
         },
 
+        RawExpr::Object{props: lhs_props} => {
+            match &(*rhs.lock().unwrap()).v {
+                Value::Object(rhs_props) => {
+                    bind_object(
+                        context,
+                        scopes,
+                        names_in_binding,
+                        lhs_props,
+                        rhs_props,
+                        bind_type,
+                    )
+                },
+
+                value => {
+                    new_loc_err(Error::ObjectDestructureOnNonObject{
+                        value: value.clone(),
+                    })
+                },
+            }
+        },
+
         RawExpr::Null =>
             new_invalid_bind_error("`null`"),
         RawExpr::Bool{..} =>
@@ -145,8 +167,6 @@ fn bind_next(
             new_invalid_bind_error("a range-index operation"),
         RawExpr::Range{..} =>
             new_invalid_bind_error("a range operation"),
-        RawExpr::Object{..} =>
-            new_invalid_bind_error("an object literal"),
         RawExpr::Func{..} =>
             new_invalid_bind_error("an anonymous function"),
         RawExpr::Call{..} =>
@@ -204,6 +224,112 @@ fn bind_next_name(
             }
         },
     };
+
+    Ok(())
+}
+
+fn bind_object(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    names_in_binding: &mut HashSet<String>,
+    lhs: &Vec<PropItem>,
+    rhs: &Object,
+    bind_type: BindType,
+)
+    -> Result<(), Error>
+{
+    // In contrast with lists, we don't explicitly require that the number of
+    // elements in the source object is equal to the number of elements in the
+    // target object.
+
+    for prop_item in lhs {
+        match prop_item {
+            PropItem::Single{expr, is_spread} => {
+                let (raw_expr, rhs_prop_name_loc) = expr;
+                let new_loc_err = |source| {
+                    let (line, col) = rhs_prop_name_loc;
+
+                    Err(Error::AtLoc{
+                        source: Box::new(source),
+                        line: *line,
+                        col: *col,
+                    })
+                };
+
+                if *is_spread {
+                    return new_loc_err(Error::SpreadOnObjectDestructure);
+                }
+
+                let rhs_prop_name =
+                    if let RawExpr::Var{name} = &raw_expr {
+                        name.clone()
+                    } else {
+                        return new_loc_err(Error::ObjectPropShorthandNotVar);
+                    };
+
+                bind_object_pair(
+                    context,
+                    scopes,
+                    names_in_binding,
+                    expr,
+                    rhs,
+                    (&rhs_prop_name, rhs_prop_name_loc),
+                    bind_type,
+                )
+                    .context(BindObjectSingleFailed)?;
+            },
+
+            PropItem::Pair{name, value: new_lhs} => {
+                let (_, rhs_prop_name_loc) = name;
+
+                let rhs_prop_name =
+                    eval::eval_expr_to_str(context, scopes, "property", name)
+                        .context(EvalObjectIndexFailed)?;
+
+                bind_object_pair(
+                    context,
+                    scopes,
+                    names_in_binding,
+                    new_lhs,
+                    rhs,
+                    (&rhs_prop_name, rhs_prop_name_loc),
+                    bind_type,
+                )
+                    .context(BindObjectPairFailed)?;
+            },
+        }
+    }
+
+    Ok(())
+}
+
+fn bind_object_pair(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    names_in_binding: &mut HashSet<String>,
+    lhs: &Expr,
+    rhs: &Object,
+    rhs_prop_name: (&str, &(usize, usize)),
+    bind_type: BindType,
+)
+    -> Result<(), Error>
+{
+    let new_loc_err = |source| {
+        let (line, col) = rhs_prop_name.1;
+
+        Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
+    };
+
+    let new_rhs =
+        match rhs.get(rhs_prop_name.0) {
+            Some(v) => v.clone(),
+            None => return new_loc_err(Error::PropNotFound{
+                name: rhs_prop_name.0.to_string(),
+            }),
+        };
+
+    bind_next(context, scopes, names_in_binding, lhs, new_rhs, bind_type)
+        .context(BindNextFailed)?;
 
     Ok(())
 }

@@ -286,6 +286,18 @@ xs.d = 4;
 print(xs); # {"a": 1, "b": 2, "c": 3, "d": 4}
 ```
 
+#### Object destructuring
+
+A shorthand can be used for declaring and assigning to variables the values of
+object properties:
+
+```
+xs := {"a": 1, "b": 2, "c": 3};
+{a, c} := xs;
+print(a); # 1
+print(c); # 3
+```
+
 ### Range-indexing
 
 `list`s and `string`s can be range-indexed:

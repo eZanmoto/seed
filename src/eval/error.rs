@@ -93,6 +93,13 @@ pub enum Error {
         render_type(value),
     ))]
     SpreadNonObjectInObject{value: Value},
+    #[snafu(display(
+        "only objects can be destructured into objects, got '{}'",
+        render_type(value),
+    ))]
+    ObjectDestructureOnNonObject{value: Value},
+    #[snafu(display("can't use spread operator in object destructuring"))]
+    SpreadOnObjectDestructure,
     #[snafu(display("object doesn't contain property '{}'", name))]
     PropNotFound{name: String},
     #[snafu(display(
@@ -119,6 +126,18 @@ pub enum Error {
     ConvertIndexToUsizeFailed{source: TryFromIntError},
 
     BindFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    BindObjectSingleFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    BindObjectPairFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    BindNextFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
