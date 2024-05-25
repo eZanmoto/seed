@@ -288,6 +288,13 @@ exit_code: 103
 --------------------------------------------------
 --------------------------------------------------
 runtime_errors/string_index_assign.sd:1:1: only 'list's or 'object's can update indices
+================================================== object_destructure_on_non_object
+exit_code: 103
+--------------------------------------------------
+{a} = 1;
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/object_destructure_on_non_object.sd:1:1: only objects can be destructured into objects, got 'int'
 ================================================== spread_on_object_destructure
 exit_code: 103
 --------------------------------------------------

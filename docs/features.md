@@ -298,6 +298,16 @@ print(a); # 1
 print(c); # 3
 ```
 
+Keys can be assigned to different variables by providing the key on the left and
+the variable name on the right:
+
+```
+xs := {"a": 1, "b": 2};
+{"a": b, "b": a} := xs;
+print(a); # 1
+print(b); # 2
+```
+
 ### Range-indexing
 
 `list`s and `string`s can be range-indexed:
