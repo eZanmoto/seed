@@ -267,6 +267,19 @@ xs["b"] = 4;
 print(xs); # {"a": 1, "b": 4, "c": 3}
 ```
 
+#### List destructuring
+
+A shorthand can be used for declaring and assigning to variables the values of
+lists:
+
+```
+xs := [1, 2, 3];
+[a, b, c] := xs;
+print(a); # 1
+print(b); # 2
+print(c); # 3
+```
+
 ### Object properties
 
 A shorthand can be used for indexing objects when the property is a valid

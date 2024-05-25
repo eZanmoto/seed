@@ -268,6 +268,7 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::BindFailed{source} |
         EvalError::BindObjectSingleFailed{source} |
         EvalError::BindObjectPairFailed{source} |
+        EvalError::BindListItemFailed{source} |
         EvalError::BindNextFailed{source} |
         EvalError::EvalProgFailed{source} |
         EvalError::EvalStmtsInNewScopeFailed{source} |

@@ -14,6 +14,7 @@ use eval::EvaluationContext;
 use super::error::*;
 use super::error::Error;
 use super::scope::ScopeStack;
+use value::List;
 use value::Object;
 use value::ValRefWithSource;
 use value::Value;
@@ -55,6 +56,7 @@ pub enum BindType {
 
 // `bind_next` performs a bind, but returns an error if a name that's in
 // `names_in_binding` gets reused.
+#[allow(clippy::too_many_lines)]
 fn bind_next(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
@@ -151,6 +153,28 @@ fn bind_next(
             }
         },
 
+        RawExpr::List{items: lhs_items} => {
+            match &(*rhs.lock().unwrap()).v {
+                Value::List(rhs_items) => {
+                    bind_list(
+                        context,
+                        scopes,
+                        names_in_binding,
+                        lhs_items,
+                        loc,
+                        rhs_items,
+                        bind_type,
+                    )
+                },
+
+                value => {
+                    new_loc_err(Error::ListDestructureOnNonList{
+                        value: value.clone(),
+                    })
+                },
+            }
+        },
+
         RawExpr::Null =>
             new_invalid_bind_error("`null`"),
         RawExpr::Bool{..} =>
@@ -161,8 +185,6 @@ fn bind_next(
             new_invalid_bind_error("a string literal"),
         RawExpr::BinaryOp{..} =>
             new_invalid_bind_error("a binary operation"),
-        RawExpr::List{..} =>
-            new_invalid_bind_error("a list literal"),
         RawExpr::RangeIndex{..} =>
             new_invalid_bind_error("a range-index operation"),
         RawExpr::Range{..} =>
@@ -330,6 +352,40 @@ fn bind_object_pair(
 
     bind_next(context, scopes, names_in_binding, lhs, new_rhs, bind_type)
         .context(BindNextFailed)?;
+
+    Ok(())
+}
+
+fn bind_list(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    names_in_binding: &mut HashSet<String>,
+    lhs: &[ListItem],
+    lhs_loc: &(usize, usize),
+    rhs: &List,
+    bind_type: BindType,
+)
+    -> Result<(), Error>
+{
+    let new_loc_err = |source| {
+        let (line, col) = lhs_loc;
+
+        Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
+    };
+
+    if lhs.len() != rhs.len() {
+        return new_loc_err(Error::ListDestructureItemMismatch{
+            lhs_len: lhs.len(),
+            rhs_len: rhs.len(),
+        });
+    }
+
+    // TODO Investigate how we can avoid cloning `rhs` here.
+    let new_rhs = rhs.clone();
+    for (ListItem{expr, ..}, rhs) in lhs.iter().zip(new_rhs.into_iter()) {
+        bind_next(context, scopes, names_in_binding, expr, rhs, bind_type)
+            .context(BindListItemFailed)?;
+    }
 
     Ok(())
 }

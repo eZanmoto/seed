@@ -100,6 +100,17 @@ pub enum Error {
     ObjectDestructureOnNonObject{value: Value},
     #[snafu(display("can't use spread operator in object destructuring"))]
     SpreadOnObjectDestructure,
+    #[snafu(display(
+        "only lists can be destructured into lists, got '{}'",
+        render_type(value),
+    ))]
+    ListDestructureOnNonList{value: Value},
+    #[snafu(display(
+        "cannot bind {} item(s) to {} variable name(s)",
+        rhs_len,
+        lhs_len,
+    ))]
+    ListDestructureItemMismatch{lhs_len: usize, rhs_len: usize},
     #[snafu(display("object doesn't contain property '{}'", name))]
     PropNotFound{name: String},
     #[snafu(display(
@@ -134,6 +145,10 @@ pub enum Error {
         source: Box<Error>,
     },
     BindObjectPairFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    BindListItemFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },

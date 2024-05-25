@@ -340,4 +340,18 @@ b := 3;
 --------------------------------------------------
 --------------------------------------------------
 runtime_errors/object_destructure_already_in_scope.sd:2:7: 'b' is already defined in the current scope at [1:1]
+================================================== list_destructure_on_non_list
+exit_code: 103
+--------------------------------------------------
+[a] = 1;
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/list_destructure_on_non_list.sd:1:1: only lists can be destructured into lists, got 'int'
+================================================== list_destruct_item_mismatch
+exit_code: 103
+--------------------------------------------------
+[a, b] := [1, 2, 3];
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/list_destruct_item_mismatch.sd:1:1: cannot bind 3 item(s) to 2 variable name(s)
 ==================================================
