@@ -288,20 +288,20 @@ exit_code: 103
 --------------------------------------------------
 --------------------------------------------------
 runtime_errors/string_index_assign.sd:1:1: only 'list's or 'object's can update indices
-================================================== object_destructure_on_non_object
+================================================== object_destruct_on_non_object
 exit_code: 103
 --------------------------------------------------
 {a} = 1;
 --------------------------------------------------
 --------------------------------------------------
-runtime_errors/object_destructure_on_non_object.sd:1:1: only objects can be destructured into objects, got 'int'
-================================================== spread_on_object_destructure
+runtime_errors/object_destruct_on_non_object.sd:1:1: only objects can be destructured into objects, got 'int'
+================================================== spread_on_object_destruct
 exit_code: 103
 --------------------------------------------------
 {xs..} = {};
 --------------------------------------------------
 --------------------------------------------------
-runtime_errors/spread_on_object_destructure.sd:1:2: can't use spread operator in object destructuring
+runtime_errors/spread_on_object_destruct.sd:1:2: can't use spread operator in object destructuring
 ================================================== object_assign_prop_shorthand_not_var
 exit_code: 103
 --------------------------------------------------
@@ -309,21 +309,34 @@ exit_code: 103
 --------------------------------------------------
 --------------------------------------------------
 runtime_errors/object_assign_prop_shorthand_not_var.sd:1:7: object property name isn't a variable
-================================================== object_destructure_prop_not_found
+================================================== object_destruct_prop_not_found
 exit_code: 103
 --------------------------------------------------
 {a, b, c} := {"a": 1, "b": 2};
 --------------------------------------------------
 --------------------------------------------------
-runtime_errors/object_destructure_prop_not_found.sd:1:8: object doesn't contain property 'c'
-================================================== cannot_mix_var_declarations1
+runtime_errors/object_destruct_prop_not_found.sd:1:8: object doesn't contain property 'c'
+================================================== object_destruct_dup_name1
 exit_code: 103
 --------------------------------------------------
-a := 1;
-{a, b} = {"a": 1, "b": 2};
+{a, a} := {"a": 1, "b": 2};
 --------------------------------------------------
 --------------------------------------------------
-runtime_errors/cannot_mix_var_declarations1.sd:2:5: 'b' is not defined
+runtime_errors/object_destruct_dup_name1.sd:1:5: 'a' is bound multiple times in this binding
+================================================== object_destruct_dup_name2
+exit_code: 103
+--------------------------------------------------
+{a, "b": a} := {"a": 1, "b": 2};
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/object_destruct_dup_name2.sd:1:10: 'a' is bound multiple times in this binding
+================================================== list_destruct_dup_name
+exit_code: 103
+--------------------------------------------------
+[a, a] := [1, 2];
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/list_destruct_dup_name.sd:1:5: 'a' is bound multiple times in this binding
 ================================================== cannot_mix_var_declarations2
 exit_code: 103
 --------------------------------------------------
@@ -332,21 +345,21 @@ a := 1;
 --------------------------------------------------
 --------------------------------------------------
 runtime_errors/cannot_mix_var_declarations2.sd:2:2: 'a' is already defined in the current scope at [1:1]
-================================================== object_destructure_already_in_scope
+================================================== object_destruct_already_in_scope
 exit_code: 103
 --------------------------------------------------
 b := 3;
 {"a": b} := {"a": 1, "b": 2};
 --------------------------------------------------
 --------------------------------------------------
-runtime_errors/object_destructure_already_in_scope.sd:2:7: 'b' is already defined in the current scope at [1:1]
-================================================== list_destructure_on_non_list
+runtime_errors/object_destruct_already_in_scope.sd:2:7: 'b' is already defined in the current scope at [1:1]
+================================================== list_destruct_on_non_list
 exit_code: 103
 --------------------------------------------------
 [a] = 1;
 --------------------------------------------------
 --------------------------------------------------
-runtime_errors/list_destructure_on_non_list.sd:1:1: only lists can be destructured into lists, got 'int'
+runtime_errors/list_destruct_on_non_list.sd:1:1: only lists can be destructured into lists, got 'int'
 ================================================== list_destruct_item_mismatch
 exit_code: 103
 --------------------------------------------------
