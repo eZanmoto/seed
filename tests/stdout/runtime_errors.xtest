@@ -197,6 +197,41 @@ exit_code: 103
 --------------------------------------------------
 --------------------------------------------------
 runtime_errors/value_not_range_indexable.sd:1:1: only 'list's or 'string's can be range-indexed
+================================================== value_not_range_index_assignable
+exit_code: 103
+--------------------------------------------------
+1[2:] = [];
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/value_not_range_index_assignable.sd:1:1: only 'list's can update range indices
+================================================== range_index_assign_on_non_indexable
+exit_code: 103
+--------------------------------------------------
+[][2:] = 1;
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/range_index_assign_on_non_indexable.sd:1:1: only 'list's or 'string's can be assigned to range indexes, got 'int'
+================================================== range_start_out_of_list_bounds
+exit_code: 103
+--------------------------------------------------
+[][2:] = [];
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/range_start_out_of_list_bounds.sd:1:1: range start (2) is greater than list length (0)
+================================================== range_start_not_before_end
+exit_code: 103
+--------------------------------------------------
+[1, 2, 3][2:1] = [1, 2, 3];
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/range_start_not_before_end.sd:1:1: range end (1) must be greater than range start (2)
+================================================== range_end_out_of_list_bounds
+exit_code: 103
+--------------------------------------------------
+[][:2] = [];
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/range_end_out_of_list_bounds.sd:1:1: range end (2) is greater than list length (0)
 ================================================== negative_string_range_start
 exit_code: 103
 --------------------------------------------------

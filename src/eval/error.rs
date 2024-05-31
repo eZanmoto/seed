@@ -71,14 +71,36 @@ pub enum Error {
     ValueNotIndexable,
     #[snafu(display("only 'list's or 'object's can update indices"))]
     ValueNotIndexAssignable,
+    #[snafu(display("only 'list's can update range indices"))]
+    ValueNotRangeIndexAssignable,
     #[snafu(display("index '{}' is outside the string bounds", index))]
     OutOfStringBounds{index: usize},
     #[snafu(display("index '{}' is outside the list bounds", index))]
     OutOfListBounds{index: usize},
     #[snafu(display("range [{}:{}] is outside the string bounds", start, end))]
     RangeOutOfStringBounds{start: usize, end: usize},
+    // TODO Update usage of `RangeOutOfListBounds` to use more specific
+    // variants, like `RangeStartOutOfListBounds`.
     #[snafu(display("range [{}:{}] is outside the list bounds", start, end))]
     RangeOutOfListBounds{start: usize, end: usize},
+    #[snafu(display(
+        "range start ({}) is greater than list length ({})",
+        start,
+        list_len,
+    ))]
+    RangeStartOutOfListBounds{start: usize, list_len: usize},
+    #[snafu(display(
+        "range end ({}) must be greater than range start ({})",
+        end,
+        start,
+    ))]
+    RangeStartNotBeforeEnd{start: usize, end: usize},
+    #[snafu(display(
+        "range end ({}) is greater than list length ({})",
+        end,
+        list_len,
+    ))]
+    RangeEndOutOfListBounds{end: usize, list_len: usize},
     #[snafu(display("only 'list's or 'string's can be range-indexed"))]
     ValueNotRangeIndexable,
     #[snafu(display("index can't be negative"))]
@@ -93,6 +115,11 @@ pub enum Error {
         render_type(value),
     ))]
     SpreadNonObjectInObject{value: Value},
+    #[snafu(display(
+        "only 'list's or 'string's can be assigned to range indexes, got '{}'",
+        render_type(value),
+    ))]
+    RangeIndexAssignOnNonIndexable{value: Value},
     #[snafu(display(
         "only objects can be destructured into objects, got '{}'",
         render_type(value),
@@ -111,6 +138,12 @@ pub enum Error {
         lhs_len,
     ))]
     ListDestructureItemMismatch{lhs_len: usize, rhs_len: usize},
+    #[snafu(display(
+        "cannot bind {} item(s) to {} index(s)",
+        rhs_len,
+        range_len,
+    ))]
+    RangeIndexItemMismatch{range_len: usize, rhs_len: usize},
     #[snafu(display("object doesn't contain property '{}'", name))]
     PropNotFound{name: String},
     #[snafu(display(

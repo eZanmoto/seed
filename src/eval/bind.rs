@@ -14,6 +14,7 @@ use eval::EvaluationContext;
 use super::error::*;
 use super::error::Error;
 use super::scope::ScopeStack;
+use value;
 use value::List;
 use value::Object;
 use value::ValRefWithSource;
@@ -116,6 +117,49 @@ fn bind_next(
             })
         },
 
+        RawExpr::RangeIndex{expr, start, end} => {
+            match_eval_expr!((context, scopes, expr) {
+                Value::List(lhs_items) => {
+                    match &(*rhs.lock().unwrap()).v {
+                        Value::List(rhs_items) => {
+                            bind_range_index(
+                                context,
+                                scopes,
+                                (lhs_items, start, end),
+                                loc,
+                                rhs_items,
+                            )
+                        },
+
+                        Value::Str(s) => {
+                            let chars: List =
+                                s.iter()
+                                    .map(|c| value::new_str(vec![*c]))
+                                    .collect();
+                            bind_range_index(
+                                context,
+                                scopes,
+                                (lhs_items, start, end),
+                                loc,
+                                &chars,
+                            )
+                        },
+
+                        value => {
+                            new_loc_err(Error::RangeIndexAssignOnNonIndexable{
+                                value: value.clone(),
+                            })
+                        },
+                    }
+                },
+
+                _ => {
+                    // TODO Consider adding the value to the error.
+                    new_loc_err(Error::ValueNotRangeIndexAssignable)
+                },
+            })
+        },
+
         RawExpr::Prop{expr, name} => {
             match_eval_expr!((context, scopes, expr) {
                 Value::Object(props) => {
@@ -185,8 +229,6 @@ fn bind_next(
             new_invalid_bind_error("a string literal"),
         RawExpr::BinaryOp{..} =>
             new_invalid_bind_error("a binary operation"),
-        RawExpr::RangeIndex{..} =>
-            new_invalid_bind_error("a range-index operation"),
         RawExpr::Range{..} =>
             new_invalid_bind_error("a range operation"),
         RawExpr::Func{..} =>
@@ -246,6 +288,62 @@ fn bind_next_name(
             }
         },
     };
+
+    Ok(())
+}
+
+fn bind_range_index(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    lhs: (&mut List, &Option<Box<Expr>>, &Option<Box<Expr>>),
+    lhs_loc: &(usize, usize),
+    rhs: &List,
+)
+    -> Result<(), Error>
+{
+    let new_loc_err = |source| {
+        let (line, col) = lhs_loc;
+
+        Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
+    };
+
+    let (lhs_items, maybe_start, maybe_end) = lhs;
+
+    let start =
+        if let Some(start) = maybe_start {
+            eval::eval_expr_to_index(context, scopes, start)
+                    .context(EvalStartIndexFailed)?
+        } else {
+            0
+        };
+
+    let end =
+        if let Some(end) = maybe_end {
+            eval::eval_expr_to_index(context, scopes, end)
+                    .context(EvalEndIndexFailed)?
+        } else {
+            rhs.len()
+        };
+
+    let list_len = lhs_items.len();
+    if start > list_len {
+        return new_loc_err(Error::RangeStartOutOfListBounds{start, list_len});
+    } else if start >= end {
+        return new_loc_err(Error::RangeStartNotBeforeEnd{start, end});
+    } else if end > list_len {
+        return new_loc_err(Error::RangeEndOutOfListBounds{end, list_len});
+    }
+
+    let range_len = end - start;
+    if range_len != rhs.len() {
+        return new_loc_err(Error::RangeIndexItemMismatch{
+            range_len,
+            rhs_len: rhs.len(),
+        });
+    }
+
+    lhs_items[start .. (range_len+start)]
+        .clone_from_slice(&rhs[..range_len]);
 
     Ok(())
 }

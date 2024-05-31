@@ -251,6 +251,9 @@ xs = {"a": 1, "b": 2, "c": 3};
 print(xs["b"]); # 2
 ```
 
+Note that indexing with strings uses byte boundaries, not UTF-8 character
+boundaries, so care should be taken when handling strings using UTF-8 encoding.
+
 ### Index assigment
 
 `list`s and `object`s can assign to indices:
@@ -339,6 +342,20 @@ print("abcdef"[2:]); # cdef
 print("abcdef"[:]); # abcdef
 ```
 
+Range-indexing can also be used with assignments:
+
+```
+xs := [1, 2, 3, 4, 5];
+xs[1:4] = [7, 8, 9];
+print(xs); # [1, 7, 8, 9, 5]
+xs[1:4] = "abc";
+print(xs); # [1, "a", "b", "c", 5]
+```
+
+Note that range-indexing with a string on the right hand side will index the
+string along byte boundaries, not UTF-8 character boundaries, so care should be
+taken when handling strings using UTF-8 encoding.
+
 Control Flow
 ------------
 
@@ -409,6 +426,9 @@ for ic in "abc" {
     print(ic);
 }
 ```
+
+Note that iterating over strings uses byte boundaries, not UTF-8 character
+boundaries, so care should be taken when handling strings using UTF-8 encoding.
 
 `break`s can be used to exit a loop early:
 
