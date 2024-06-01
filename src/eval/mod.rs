@@ -301,11 +301,12 @@ fn eval_stmt(
             return Ok(Escape::Continue{loc: *loc});
         },
 
-        Stmt::Func{name: (name, loc), args, stmts} => {
+        Stmt::Func{name: (name, loc), args, collect_args, stmts} => {
             let closure = scopes.clone();
             let func = value::new_func(
                 Some(name.clone()),
                 args.clone(),
+                *collect_args,
                 stmts.clone(),
                 closure,
             );
@@ -706,116 +707,21 @@ fn eval_expr(
             })
         },
 
-        RawExpr::Func{args, stmts} => {
+        RawExpr::Func{args, collect_args, stmts} => {
             let closure = scopes.clone();
 
-            Ok(value::new_func(None, args.clone(), stmts.clone(), closure))
+            Ok(value::new_func(
+                None,
+                args.clone(),
+                *collect_args,
+                stmts.clone(),
+                closure,
+            ))
         },
 
         RawExpr::Call{func, args} => {
-            let arg_vals = eval_list_items(context, scopes, args)
-                .context(EvalCallArgsFailed)?;
-
-            let func_val = eval_expr(context, scopes, func)
-                .context(EvalCallFuncFailed)?;
-
-            let (func_name, v) =
-                {
-                    let ValWithSource{v, source} = &*func_val.lock().unwrap();
-                    match v {
-                        Value::BuiltinFunc{name, f} => {
-                            let this = source.as_ref().cloned();
-
-                            (
-                                Some(name.clone()),
-                                CallBinding::BuiltinFunc{
-                                    f: *f,
-                                    this,
-                                    args: arg_vals,
-                                },
-                            )
-                        },
-
-                        Value::Func{name, args: arg_names, stmts, closure} => {
-                            let need = arg_names.len();
-                            let got = arg_vals.len();
-                            if got != need {
-                                return new_loc_err(
-                                    Error::ArgNumMismatch{need, got}
-                                );
-                            }
-
-                            let mut bindings: Vec<(Expr, ValRefWithSource)> =
-                                arg_names
-                                    .clone()
-                                    .into_iter()
-                                    .zip(arg_vals)
-                                    .collect();
-
-                            if let Some(this) = source {
-                                // TODO Consider how to avoid creating a
-                                // new AST variable node here.
-                                bindings.push((
-                                    (
-                                        RawExpr::Var{name: "this".to_string()},
-                                        (0, 0),
-                                    ),
-                                    this.clone(),
-                                ));
-                            }
-
-                            (
-                                name.clone(),
-                                CallBinding::Func{
-                                    bindings,
-                                    closure: closure.clone(),
-                                    stmts: stmts.clone(),
-                                },
-                            )
-                        },
-
-                        _ => {
-                            return new_loc_err(
-                                Error::CannotCallNonFunc{v: v.clone()},
-                            );
-                        },
-                    }
-                };
-
-            let v =
-                match v {
-                    CallBinding::BuiltinFunc{f, this, args} => {
-                        f(this, args)
-                            .context(EvalBuiltinFuncCallFailed{
-                                func_name,
-                                call_loc: (*line, *col),
-                            })?
-                    },
-
-                    CallBinding::Func{bindings, mut closure, stmts} => {
-                        let v = eval_stmts(
-                            context,
-                            &mut closure,
-                            bindings,
-                            &stmts,
-                        )
-                            .context(EvalFuncCallFailed{
-                                func_name,
-                                call_loc: (*line, *col),
-                            })?;
-
-                        match v {
-                            Escape::None =>
-                                value::new_null(),
-                            Escape::Break{..} =>
-                                return Err(Error::BreakOutsideLoop),
-                            Escape::Continue{..} =>
-                                return Err(Error::ContinueOutsideLoop),
-                            Escape::Return{value, ..} =>
-                                value,
-                        }
-                    },
-                };
+            let v = eval_call(context, scopes, func, args, (line, col))
+                .context(EvalCallFailed)?;
 
             Ok(v)
         },
@@ -1219,4 +1125,148 @@ fn eval_list_items(
     }
 
     Ok(vals)
+}
+
+#[allow(clippy::too_many_lines)]
+fn eval_call(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    func: &Expr,
+    args: &Vec<ListItem>,
+    loc: (&usize, &usize),
+)
+    -> Result<ValRefWithSource, Error>
+{
+    let (line, col) = loc;
+    let new_loc_err = |source| {
+        Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
+    };
+
+    let arg_vals = eval_list_items(context, scopes, args)
+        .context(EvalCallArgsFailed)?;
+
+    let func_val = eval_expr(context, scopes, func)
+        .context(EvalCallFuncFailed)?;
+
+    let (func_name, v) =
+        {
+            let ValWithSource{v, source} = &*func_val.lock().unwrap();
+            match v {
+                Value::BuiltinFunc{name, f} => {
+                    let this = source.as_ref().cloned();
+
+                    (
+                        Some(name.clone()),
+                        CallBinding::BuiltinFunc{
+                            f: *f,
+                            this,
+                            args: arg_vals,
+                        },
+                    )
+                },
+
+                Value::Func{
+                    name,
+                    args: arg_names,
+                    collect_args,
+                    stmts,
+                    closure,
+                } => {
+                    let num_params = arg_names.len();
+                    let got = arg_vals.len();
+                    if *collect_args {
+                        let minimum = num_params-1;
+                        if minimum > got {
+                            return new_loc_err(
+                                Error::TooFewArgs{minimum, got},
+                            );
+                        }
+                    } else if num_params != got {
+                        return new_loc_err(
+                            Error::ArgNumMismatch{need: num_params, got}
+                        );
+                    }
+
+                    let mut bindings: Vec<(Expr, ValRefWithSource)> =
+                        vec![];
+
+                    for i in 0 .. num_params {
+                        let arg_val =
+                            if *collect_args && i == num_params-1 {
+                                let rest = arg_vals[num_params-1 ..].to_vec();
+
+                                value::new_list(rest)
+                            } else {
+                                arg_vals[i].clone()
+                            };
+
+                        bindings.push((arg_names[i].clone(), arg_val));
+                    }
+
+                    if let Some(this) = source {
+                        // TODO Consider how to avoid creating a
+                        // new AST variable node here.
+                        bindings.push((
+                            (
+                                RawExpr::Var{name: "this".to_string()},
+                                (0, 0),
+                            ),
+                            this.clone(),
+                        ));
+                    }
+
+                    (
+                        name.clone(),
+                        CallBinding::Func{
+                            bindings,
+                            closure: closure.clone(),
+                            stmts: stmts.clone(),
+                        },
+                    )
+                },
+
+                _ => {
+                    return new_loc_err(
+                        Error::CannotCallNonFunc{v: v.clone()},
+                    );
+                },
+            }
+        };
+
+    let v =
+        match v {
+            CallBinding::BuiltinFunc{f, this, args} => {
+                f(this, args)
+                    .context(EvalBuiltinFuncCallFailed{
+                        func_name,
+                        call_loc: (*line, *col),
+                    })?
+            },
+
+            CallBinding::Func{bindings, mut closure, stmts} => {
+                let v = eval_stmts(
+                    context,
+                    &mut closure,
+                    bindings,
+                    &stmts,
+                )
+                    .context(EvalFuncCallFailed{
+                        func_name,
+                        call_loc: (*line, *col),
+                    })?;
+
+                match v {
+                    Escape::None =>
+                        value::new_null(),
+                    Escape::Break{..} =>
+                        return Err(Error::BreakOutsideLoop),
+                    Escape::Continue{..} =>
+                        return Err(Error::ContinueOutsideLoop),
+                    Escape::Return{value, ..} =>
+                        value,
+                }
+            },
+        };
+
+    Ok(v)
 }

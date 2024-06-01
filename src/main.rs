@@ -309,6 +309,7 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::EvalRangeEndFailed{source} |
         EvalError::EvalPropNameFailed{source} |
         EvalError::EvalPropValueFailed{source, ..} |
+        EvalError::EvalCallFailed{source} |
         EvalError::EvalCallArgsFailed{source} |
         EvalError::EvalCallFuncFailed{source} |
         EvalError::EvalExprFailed{source} => {

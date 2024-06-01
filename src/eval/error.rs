@@ -50,6 +50,8 @@ pub enum Error {
     StringConstructionFailed{source: FromUtf8Error, descr: String},
     #[snafu(display("expected {} arguments, got {}", need, got))]
     ArgNumMismatch{need: usize, got: usize},
+    #[snafu(display("expected at least {} arguments, got {}", minimum, got))]
+    TooFewArgs{minimum: usize, got: usize},
     #[snafu(display(
         "can't apply '{}' to '{}' and '{}'",
         op_symbol(op),
@@ -362,6 +364,10 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
         name: String,
+    },
+    EvalCallFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
     },
     EvalCallArgsFailed{
         #[snafu(source(from(Error, Box::new)))]

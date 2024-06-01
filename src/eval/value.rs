@@ -55,6 +55,7 @@ pub enum Value {
     Func{
         name: Option<String>,
         args: Vec<Expr>,
+        collect_args: bool,
         stmts: Block,
         closure: ScopeStack,
     },
@@ -103,12 +104,13 @@ pub fn new_object(object: Object) -> ValRefWithSource {
 pub fn new_func(
     name: Option<String>,
     args: Vec<Expr>,
+    collect_args: bool,
     stmts: Block,
     closure: ScopeStack,
 )
     -> ValRefWithSource
 {
-    new_val_ref(Value::Func{name, args, stmts, closure})
+    new_val_ref(Value::Func{name, args, collect_args, stmts, closure})
 }
 
 pub fn new_built_in_func(name: String, f: BuiltinFunc) -> ValRefWithSource {

@@ -32,7 +32,12 @@ pub enum Stmt {
     Break{loc: Location},
     Continue{loc: Location},
 
-    Func{name: (String, Location), args: Vec<Expr>, stmts: Block},
+    Func{
+        name: (String, Location),
+        args: Vec<Expr>,
+        collect_args: bool,
+        stmts: Block,
+    },
     Return{loc: Location, expr: Expr},
 }
 
@@ -75,7 +80,7 @@ pub enum RawExpr {
     Object{props: Vec<PropItem>},
     Prop{expr: Box<Expr>, name: String},
 
-    Func{args: Vec<Expr>, stmts: Block},
+    Func{args: Vec<Expr>, collect_args: bool, stmts: Block},
     Call{func: Box<Expr>, args: Vec<ListItem>},
 }
 

@@ -59,21 +59,24 @@ pub Stmt: Stmt = {
     <loc:@L> "continue" ";" =>
         Stmt::Continue{loc},
 
-    "fn" <loc:@L> <name:Ident> "(" <args:ParamList> ")" <stmts:Block> =>
-        Stmt::Func{name: (name, loc), args, stmts},
+    "fn" <loc:@L> <name:Ident> "(" <raw_args:ParamList> ")" <stmts:Block> => {
+        let (args, collect_args) = raw_args;
+
+        Stmt::Func{name: (name, loc), args, collect_args, stmts}
+    },
     <loc:@L> "return" <expr:Expr> ";" =>
         Stmt::Return{loc, expr},
 }
 
-pub ParamList: Vec<Expr> = CommaSepList<Expr>;
-
-CommaSepList<T>: Vec<T> = {
-    <mut values:(<T> ",")*> <last:T?> => {
-        if let Some(v) = last {
+pub ParamList: (Vec<Expr>, bool) = {
+    <mut values:(<Expr> ",")*> <last:(<".."?> <Expr>)?> => {
+        let mut collect = false;
+        if let Some((maybe_collect, v)) = last {
             values.push(v);
+            collect = maybe_collect.is_some();
         }
 
-        values
+        (values, collect)
     }
 }
 
@@ -236,7 +239,11 @@ pub ExprPrecedence6: RawExpr = {
 
     "{" <props:PropList> "}" => RawExpr::Object{props},
 
-    "fn" "(" <args:ParamList> ")" <stmts:Block> => RawExpr::Func{args, stmts},
+    "fn" "(" <raw_args:ParamList> ")" <stmts:Block> => {
+        let (args, collect_args) = raw_args;
+
+        RawExpr::Func{args, collect_args, stmts}
+    },
 }
 
 pub ExprList: (Vec<ListItem>, bool) = {
@@ -274,6 +281,16 @@ pub ReverseExprList: (Vec<ListItem>, bool) = {
 }
 
 pub PropList: Vec<PropItem> = CommaSepList<PropItem>;
+
+CommaSepList<T>: Vec<T> = {
+    <mut values:(<T> ",")*> <last:T?> => {
+        if let Some(v) = last {
+            values.push(v);
+        }
+
+        values
+    }
+}
 
 pub PropItem: PropItem = {
     <name:Expr> ":" <value:Expr> =>

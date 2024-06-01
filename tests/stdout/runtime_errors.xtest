@@ -423,4 +423,14 @@ exit_code: 103
 --------------------------------------------------
 --------------------------------------------------
 runtime_errors/list_collect_outside_destruct.sd:1:8: cannot collect 'list' items outside a destructure
+================================================== param_destruct_spread
+exit_code: 103
+--------------------------------------------------
+fn f(a, b, ..c) {
+    print(c);
+}
+f(1);
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/param_destruct_spread.sd:4:1: expected at least 2 arguments, got 1
 ==================================================

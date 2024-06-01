@@ -206,14 +206,14 @@ print({a, "b": 2, c}); # { a: 1, b: 2, c: 3}
 
 ### Spread
 
-The items of a list can be inlined into a new list using the spread operator:
+The items of a list can be inlined into a new list using the spread annotation:
 
 ```
 xs := [1, 2];
 print([xs.., 3, xs..]); # [ 1, 2, 3, 1, 2 ]
 ```
 
-Arguments to a function can also use the spread operator:
+Arguments to a function can also use the spread annotation:
 
 ```
 fn f(a, b) {
@@ -518,4 +518,27 @@ fn f(callback) {
 f(fn () {
     print(1);
 });
+```
+
+### Parameter destructuring
+
+Function parameters can be destructured in the same way as lists, using the
+"collect" annotation (i.e. "varargs"):
+
+```
+fn f(a, b, ..c) {
+    print(c);
+}
+f(1, 2); # []
+f(1, 2, 3, 4); # [3, 4]
+```
+
+This can be combined with the "spread" annotation:
+
+```
+fn f(a, b, ..c) {
+    print(c);
+}
+xs := [2, 3];
+f(1, xs.., 4); # [3, 4]
 ```
