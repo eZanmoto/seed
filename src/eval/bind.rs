@@ -197,14 +197,14 @@ fn bind_next(
             }
         },
 
-        RawExpr::List{items: lhs_items} => {
+        RawExpr::List{items: lhs_items, collect} => {
             match &(*rhs.lock().unwrap()).v {
                 Value::List(rhs_items) => {
                     bind_list(
                         context,
                         scopes,
                         names_in_binding,
-                        lhs_items,
+                        (lhs_items, collect),
                         loc,
                         rhs_items,
                         bind_type,
@@ -458,30 +458,50 @@ fn bind_list(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
     names_in_binding: &mut HashSet<String>,
-    lhs: &[ListItem],
+    raw_lhs: (&[ListItem], &bool),
     lhs_loc: &(usize, usize),
     rhs: &List,
     bind_type: BindType,
 )
     -> Result<(), Error>
 {
+    let (lhs, collect) = raw_lhs;
+
     let new_loc_err = |source| {
         let (line, col) = lhs_loc;
 
         Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
     };
 
-    if lhs.len() != rhs.len() {
+    let lhs_len = lhs.len();
+    if *collect {
+        if lhs_len-1 > rhs.len() {
+            return new_loc_err(Error::ListCollectTooFew{
+                lhs_len,
+                rhs_len: rhs.len(),
+            });
+        }
+    } else if lhs_len != rhs.len() {
         return new_loc_err(Error::ListDestructureItemMismatch{
-            lhs_len: lhs.len(),
+            lhs_len,
             rhs_len: rhs.len(),
         });
     }
 
-    // TODO Investigate how we can avoid cloning `rhs` here.
-    let new_rhs = rhs.clone();
-    for (ListItem{expr, ..}, rhs) in lhs.iter().zip(new_rhs.into_iter()) {
-        bind_next(context, scopes, names_in_binding, expr, rhs, bind_type)
+    for i in 0 .. lhs_len {
+        let ListItem{expr: lhs, is_spread} = &lhs[i];
+        if *is_spread {
+            return new_loc_err(Error::SpreadInListDestructure{index: i});
+        }
+
+        let rhs =
+            if *collect && i == lhs_len-1 {
+                value::new_list(rhs[lhs_len-1 ..].to_vec())
+            } else {
+                rhs[i].clone()
+            };
+
+        bind_next(context, scopes, names_in_binding, lhs, rhs, bind_type)
             .context(BindListItemFailed)?;
     }
 

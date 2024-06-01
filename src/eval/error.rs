@@ -105,6 +105,8 @@ pub enum Error {
     ValueNotRangeIndexable,
     #[snafu(display("index can't be negative"))]
     NegativeIndex{index: i64},
+    #[snafu(display("cannot collect 'list' items outside a destructure"))]
+    ListCollectOutsideDestructure,
     #[snafu(display(
         "only lists can be spread in lists, got '{}'",
         render_type(value),
@@ -138,6 +140,17 @@ pub enum Error {
         lhs_len,
     ))]
     ListDestructureItemMismatch{lhs_len: usize, rhs_len: usize},
+    #[snafu(display(
+        "cannot bind {} item(s) to {} variable name(s)",
+        rhs_len,
+        lhs_len,
+    ))]
+    ListCollectTooFew{lhs_len: usize, rhs_len: usize},
+    #[snafu(display(
+        "cannot use spread operator (at index {}) of list destructure",
+        index,
+    ))]
+    SpreadInListDestructure{index: usize},
     #[snafu(display(
         "cannot bind {} item(s) to {} index(s)",
         rhs_len,

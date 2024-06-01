@@ -436,7 +436,11 @@ fn eval_expr(
             Ok(value::new_val_ref(v))
         },
 
-        RawExpr::List{items} => {
+        RawExpr::List{items, collect} => {
+            if *collect {
+                return new_loc_err(Error::ListCollectOutsideDestructure);
+            }
+
             let vals = eval_list_items(context, scopes, items)
                 .context(EvalListItemsFailed)?;
 

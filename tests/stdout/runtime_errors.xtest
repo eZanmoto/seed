@@ -402,4 +402,25 @@ exit_code: 103
 --------------------------------------------------
 --------------------------------------------------
 runtime_errors/list_destruct_item_mismatch.sd:1:1: cannot bind 3 item(s) to 2 variable name(s)
+================================================== list_collect_too_few
+exit_code: 103
+--------------------------------------------------
+[a, b, ..c] := [1];
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/list_collect_too_few.sd:1:1: cannot bind 1 item(s) to 3 variable name(s)
+================================================== list_destruct_spread
+exit_code: 103
+--------------------------------------------------
+[a..] := [1];
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/list_destruct_spread.sd:1:1: cannot use spread operator (at index 0) of list destructure
+================================================== list_collect_outside_destruct
+exit_code: 103
+--------------------------------------------------
+[a] := [..1];
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/list_collect_outside_destruct.sd:1:8: cannot collect 'list' items outside a destructure
 ==================================================

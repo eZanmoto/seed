@@ -63,7 +63,7 @@ pub enum RawExpr {
         rhs: Box<Expr>,
     },
 
-    List{items: Vec<ListItem>},
+    List{items: Vec<ListItem>, collect: bool},
     Index{expr: Box<Expr>, location: Box<Expr>},
     RangeIndex{
         expr: Box<Expr>,

@@ -283,6 +283,18 @@ print(b); # 2
 print(c); # 3
 ```
 
+The "collect" annotation can be used on the last item in a list destructure to
+capture all remaining items from the right-hand side:
+
+```
+xs := [1, 2];
+[a, b, ..c] := xs;
+print(c); # []
+xs = [1, 2, 3, 4];
+[a, b, ..c] = xs;
+print(c); # [3, 4]
+```
+
 ### Object properties
 
 A shorthand can be used for indexing objects when the property is a valid

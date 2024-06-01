@@ -169,7 +169,7 @@ pub ExprOp4: BinaryOp = {
 };
 
 pub ExprPrecedence5: RawExpr = {
-    <loc:@L> <expr:ExprPrecedence5> "(" <args:ExprList> ")" =>
+    <loc:@L> <expr:ExprPrecedence5> "(" <args:ArgList> ")" =>
         RawExpr::Call{func: Box::new((expr, loc)), args},
 
     <loc:@L> <expr:ExprPrecedence5> "[" <locat:Expr> "]" =>
@@ -188,6 +188,34 @@ pub ExprPrecedence5: RawExpr = {
     ExprPrecedence6
 }
 
+// NOTE `ArgList` is functionally equivalent to `ExprList`, but doesn't allow
+// for the `collect` operator. TODO Consider combining the two productions.
+pub ArgList: Vec<ListItem> = {
+    <items:ReverseArgList> => {
+        items
+            .into_iter()
+            .rev()
+            .collect()
+    },
+}
+
+pub ReverseArgList: Vec<ListItem> = {
+    () => {
+        vec![]
+    },
+
+    <expr:Expr> <spread:".."?> => {
+        vec![ListItem{expr, is_spread: spread.is_some()}]
+    },
+
+    <expr:Expr> <spread:".."?> "," <mut tail:ReverseArgList> => {
+        let is_spread = spread.is_some();
+        tail.push(ListItem{expr, is_spread});
+
+        tail
+    },
+}
+
 pub ExprPrecedence6: RawExpr = {
     "null" => RawExpr::Null,
     "true" => RawExpr::Bool{b: true},
@@ -200,34 +228,48 @@ pub ExprPrecedence6: RawExpr = {
 
     "(" <expr:ExprPrecedence1> ")" => expr,
 
-    "[" <items:ExprList> "]" => RawExpr::List{items},
+    "[" <raw_items:ExprList> "]" => {
+        let (items, collect) = raw_items;
+
+        RawExpr::List{items, collect}
+    },
+
     "{" <props:PropList> "}" => RawExpr::Object{props},
 
     "fn" "(" <args:ParamList> ")" <stmts:Block> => RawExpr::Func{args, stmts},
 }
 
-pub ExprList: Vec<ListItem> = {
-    <list:ReverseExprList> => {
-        list
-            .into_iter()
-            .rev()
-            .collect()
+pub ExprList: (Vec<ListItem>, bool) = {
+    <raw_items:ReverseExprList> => {
+        let (items, collect) = raw_items;
+
+        let items =
+            items
+                .into_iter()
+                .rev()
+                .collect();
+
+        (items, collect)
     },
 }
 
-pub ReverseExprList: Vec<ListItem> = {
-    () => vec![],
+pub ReverseExprList: (Vec<ListItem>, bool) = {
+    () => {
+        (vec![], false)
+    },
 
-    <expr:Expr> <spread:".."?> => vec![ListItem{
-        expr,
-        is_spread: spread.is_some(),
-    }],
+    <collect:".."?> <expr:Expr> <spread:".."?> => {
+        let tail = vec![ListItem{expr, is_spread: spread.is_some()}];
 
-    <expr:Expr> <spread:".."?> "," <mut tail:ReverseExprList> => {
+        (tail, collect.is_some())
+    },
+
+    <expr:Expr> <spread:".."?> "," <tail:ReverseExprList> => {
         let is_spread = spread.is_some();
-        tail.push(ListItem{expr, is_spread});
+        let (mut tail_items, collect) = tail;
+        tail_items.push(ListItem{expr, is_spread});
 
-        tail
+        (tail_items, collect)
     },
 }
 
