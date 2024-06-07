@@ -283,16 +283,24 @@ print(b); # 2
 print(c); # 3
 ```
 
+Underscores can be used to skip items in a list destructure:
+
+```
+xs := [1, 2, 3];
+[_, _, c] := xs;
+print(c); # 3
+```
+
 The "collect" annotation can be used on the last item in a list destructure to
 capture all remaining items from the right-hand side:
 
 ```
 xs := [1, 2];
-[a, b, ..c] := xs;
-print(c); # []
+[a, _, ..rest] := xs;
+print(rest); # []
 xs = [1, 2, 3, 4];
-[a, b, ..c] = xs;
-print(c); # [3, 4]
+[a, _, ..rest] = xs;
+print(rest); # [3, 4]
 ```
 
 ### Object properties
@@ -344,6 +352,15 @@ xs := {"a": 1, "b": 2, "c": 3, "d": 4};
 {b, d, ..rest} := xs;
 print(b); # 2
 print(d); # 4
+print(rest); # {"a": 1, "c": 3}
+```
+
+Underscores can be used to skip items in an object destructure when using
+"collect":
+
+```
+xs := {"a": 1, "b": 2, "c": 3, "d": 4};
+{"b": _, "d": _, ..rest} := xs;
 print(rest); # {"a": 1, "c": 3}
 ```
 

@@ -261,6 +261,10 @@ fn bind_next_name(
 )
     -> Result<(), Error>
 {
+    if name == "_" {
+        return Ok(())
+    }
+
     let (line, col) = name_loc;
     let new_loc_error = |source| {
         Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
@@ -472,6 +476,10 @@ fn bind_object_prop(
 )
     -> Result<(), Error>
 {
+    if prop_name.0 == "_" {
+        return Ok(());
+    }
+
     let new_loc_err = |source| {
         let (line, col) = prop_name.1;
 
