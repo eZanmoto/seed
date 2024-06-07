@@ -296,10 +296,11 @@ pub PropItem: PropItem = {
     <name:Expr> ":" <value:Expr> =>
         PropItem::Pair{name, value},
 
-    <expr:Expr> <spread:".."?> =>
+    <collect:".."?> <expr:Expr> <spread:".."?> =>
         PropItem::Single{
             expr,
             is_spread: spread.is_some(),
+            collect: collect.is_some(),
         },
 }
 

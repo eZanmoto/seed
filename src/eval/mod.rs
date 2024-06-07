@@ -616,7 +616,13 @@ fn eval_expr(
                         vals.insert(name, v);
                     },
 
-                    PropItem::Single{expr, is_spread} => {
+                    PropItem::Single{expr, is_spread, collect} => {
+                        if *collect {
+                            return new_loc_err(
+                                Error::ObjectCollectOutsideDestructure,
+                            )
+                        }
+
                         if *is_spread {
                             match_eval_expr!((context, scopes, expr) {
                                 Value::Object(props) => {

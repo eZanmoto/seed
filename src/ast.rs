@@ -112,5 +112,5 @@ pub struct ListItem {
 #[derive(Clone, Debug)]
 pub enum PropItem {
     Pair{name: Expr, value: Expr},
-    Single{expr: Expr, is_spread: bool},
+    Single{expr: Expr, is_spread: bool, collect: bool},
 }

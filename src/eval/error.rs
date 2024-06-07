@@ -109,6 +109,10 @@ pub enum Error {
     NegativeIndex{index: i64},
     #[snafu(display("cannot collect 'list' items outside a destructure"))]
     ListCollectOutsideDestructure,
+    #[snafu(display("cannot collect 'object' items outside a destructure"))]
+    ObjectCollectOutsideDestructure,
+    #[snafu(display("only the last item in the destructure can collect"))]
+    ObjectCollectIsNotLast,
     #[snafu(display(
         "only lists can be spread in lists, got '{}'",
         render_type(value),
@@ -185,6 +189,10 @@ pub enum Error {
     ConvertIndexToUsizeFailed{source: TryFromIntError},
 
     BindFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    BindObjectCollectFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },

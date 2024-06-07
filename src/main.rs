@@ -266,6 +266,7 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
 {
     match error {
         EvalError::BindFailed{source} |
+        EvalError::BindObjectCollectFailed{source} |
         EvalError::BindObjectSingleFailed{source} |
         EvalError::BindObjectPairFailed{source} |
         EvalError::BindListItemFailed{source} |

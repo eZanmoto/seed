@@ -336,6 +336,17 @@ print(a); # 1
 print(b); # 2
 ```
 
+The "collect" annotation can be used on the last item in an object destructure
+to capture all remaining items from the right-hand side:
+
+```
+xs := {"a": 1, "b": 2, "c": 3, "d": 4};
+{b, d, ..rest} := xs;
+print(b); # 2
+print(d); # 4
+print(rest); # {"a": 1, "c": 3}
+```
+
 ### Range-indexing
 
 `list`s and `string`s can be range-indexed:

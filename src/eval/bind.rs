@@ -2,6 +2,7 @@
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
+use std::collections::BTreeMap;
 use std::collections::HashSet;
 
 use snafu::ResultExt;
@@ -362,12 +363,19 @@ fn bind_object(
     // elements in the source object is equal to the number of elements in the
     // target object.
 
+    let mut remaining_keys =
+        rhs
+            .keys()
+            .cloned()
+            .collect::<HashSet<String>>();
+
+    let mut i = 0;
     for prop_item in lhs {
         match prop_item {
-            PropItem::Single{expr, is_spread} => {
-                let (raw_expr, rhs_prop_name_loc) = expr;
+            PropItem::Single{expr, is_spread, collect} => {
+                let (raw_expr, prop_name_loc) = expr;
                 let new_loc_err = |source| {
-                    let (line, col) = rhs_prop_name_loc;
+                    let (line, col) = prop_name_loc;
 
                     Err(Error::AtLoc{
                         source: Box::new(source),
@@ -380,71 +388,101 @@ fn bind_object(
                     return new_loc_err(Error::SpreadOnObjectDestructure);
                 }
 
-                let rhs_prop_name =
+                let prop_name =
                     if let RawExpr::Var{name} = &raw_expr {
                         name.clone()
                     } else {
                         return new_loc_err(Error::ObjectPropShorthandNotVar);
                     };
 
-                bind_object_pair(
+                if *collect {
+                    if i != lhs.len()-1 {
+                        return new_loc_err(Error::ObjectCollectIsNotLast);
+                    }
+
+                    let new_rhs: BTreeMap<String, ValRefWithSource> =
+                        remaining_keys
+                            .iter()
+                            .map(|k| (k.clone(), rhs[k].clone()))
+                            .collect();
+
+                    bind_next_name(
+                        scopes,
+                        names_in_binding,
+                        &prop_name,
+                        prop_name_loc,
+                        value::new_object(new_rhs),
+                        bind_type,
+                    )
+                        .context(BindObjectCollectFailed)?;
+
+                    continue;
+                }
+
+                bind_object_prop(
                     context,
                     scopes,
                     names_in_binding,
                     expr,
                     rhs,
-                    (&rhs_prop_name, rhs_prop_name_loc),
+                    (&prop_name, prop_name_loc),
                     bind_type,
                 )
                     .context(BindObjectSingleFailed)?;
+
+                remaining_keys.remove(&prop_name);
             },
 
             PropItem::Pair{name, value: new_lhs} => {
-                let (_, rhs_prop_name_loc) = name;
+                let (_, prop_name_loc) = name;
 
-                let rhs_prop_name =
+                let prop_name =
                     eval::eval_expr_to_str(context, scopes, "property", name)
                         .context(EvalObjectIndexFailed)?;
 
-                bind_object_pair(
+                bind_object_prop(
                     context,
                     scopes,
                     names_in_binding,
                     new_lhs,
                     rhs,
-                    (&rhs_prop_name, rhs_prop_name_loc),
+                    (&prop_name, prop_name_loc),
                     bind_type,
                 )
                     .context(BindObjectPairFailed)?;
+
+                remaining_keys.remove(&prop_name);
             },
         }
+
+        i += 1;
     }
 
     Ok(())
 }
 
-fn bind_object_pair(
+fn bind_object_prop(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
     names_in_binding: &mut HashSet<String>,
     lhs: &Expr,
     rhs: &Object,
-    rhs_prop_name: (&str, &(usize, usize)),
+    prop_name: (&str, &(usize, usize)),
     bind_type: BindType,
 )
     -> Result<(), Error>
 {
     let new_loc_err = |source| {
-        let (line, col) = rhs_prop_name.1;
+        let (line, col) = prop_name.1;
 
         Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
     };
 
     let new_rhs =
-        match rhs.get(rhs_prop_name.0) {
+        match rhs.get(prop_name.0) {
             Some(v) => v.clone(),
             None => return new_loc_err(Error::PropNotFound{
-                name: rhs_prop_name.0.to_string(),
+                name: prop_name.0.to_string(),
             }),
         };
 
