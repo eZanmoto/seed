@@ -1,0 +1,105 @@
+================================================== read
+person := {
+    "_age": 20,
+
+    "age": fn () {
+        return this._age;
+    },
+};
+
+print(person.age());
+--------------------------------------------------
+20
+================================================== write
+person := {
+    "_age": 20,
+
+    "inc_age": fn () {
+        this._age = this._age + 1;
+    },
+
+    "age": fn () {
+        return this._age;
+    },
+};
+
+print(person.age());
+person.inc_age();
+print(person.age());
+print(person._age);
+--------------------------------------------------
+20
+21
+21
+================================================== bind
+person := {
+    "_age": 10,
+
+    "set_age": fn (age) {
+        this._age = age;
+    },
+};
+
+set_age := person.set_age;
+
+set_age(20);
+print(person._age);
+--------------------------------------------------
+20
+================================================== source_change1
+fn f() {
+    this._value = 1;
+}
+person := {
+    "set_value": f,
+};
+
+person.set_value();
+print(person._value);
+--------------------------------------------------
+1
+================================================== source_change2
+person1 := {
+    "_age": 10,
+
+    "set_age": fn (age) {
+        this._age = age;
+    },
+};
+person2 := {
+    "_age": 30,
+
+    "set_age": person1.set_age,
+};
+
+person2.set_age(20);
+print(person1._age);
+print(person2._age);
+--------------------------------------------------
+10
+20
+================================================== source_change3
+person1 := {
+    "_age": 10,
+
+    "set_age": fn (age) {
+        this._age = age;
+    },
+};
+
+set_age := person1.set_age;
+
+person2 := {
+    "_age": 30,
+
+    "set_age": set_age,
+};
+
+set_age(40);
+person2.set_age(20);
+print(person1._age);
+print(person2._age);
+--------------------------------------------------
+40
+20
+==================================================

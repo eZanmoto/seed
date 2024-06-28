@@ -683,7 +683,11 @@ fn eval_expr(
         },
 
         RawExpr::Prop{expr, name} => {
-            match_eval_expr!((context, scopes, expr) {
+            let value = eval_expr(context, scopes, expr)
+                .context(EvalPropFailed)?;
+
+            let unlocked_value = &mut (*value.lock().unwrap()).v;
+            match unlocked_value {
                 Value::Object(props) => {
                     let v =
                         match props.get(name) {
@@ -692,7 +696,7 @@ fn eval_expr(
 
                                 value::new_val_ref_with_source(
                                     prop_val.clone(),
-                                    v.clone(),
+                                    value.clone(),
                                 )
                             },
                             None => {
@@ -710,7 +714,7 @@ fn eval_expr(
                         value: value.clone(),
                     })
                 },
-            })
+            }
         },
 
         RawExpr::Func{args, collect_args, stmts} => {

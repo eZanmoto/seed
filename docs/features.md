@@ -570,3 +570,70 @@ fn f(a, b, ..c) {
 xs := [2, 3];
 f(1, xs.., 4); # [3, 4]
 ```
+
+### `this`
+
+If an object property is a function, then when that function is called, `this`
+will refer to the object within the scope of the function:
+
+```
+person := {
+    "_age": 20,
+
+    "age": fn () {
+        return this._age;
+    },
+};
+
+print(person.age()); # 20
+```
+
+The value of `this` is based on the "call path" of the function call. For
+example, if the same function is assigned to object `a` and object `b`, then
+`this` in `a.f()` will refer to `a`, and `this` in `b.f()` will refer to `b`:
+
+```
+f := fn () {
+    return this._value
+};
+a := {"_value": 1, f};
+b := {"_value": 2, f};
+
+print(a.f()); # 1
+print(b.f()); # 2
+```
+
+Note that this also holds when the function was defined on one of the objects:
+
+```
+a := {
+    "_value": 1,
+    "f": fn () {
+        return this._value
+    },
+};
+b := {"_value": 2, "f": a.f};
+
+print(a.f()); # 1
+print(b.f()); # 2
+```
+
+As such, it should be noted that the value of `this` depends on the evaluation
+context of the function, not on its definition context.
+
+Finally, this evaluation context is carried by variables. In the following
+example, even though `f()` is not being called as a property of an object, the
+fact that it was dereferenced from `a` earlier means that `this` will refer to
+`a` when it is called:
+
+```
+a := {
+    "_value": "Hello, world!",
+    "value": fn () {
+        return this._value;
+    },
+};
+f := a.value;
+
+print(f()); # Hello, world!
+```

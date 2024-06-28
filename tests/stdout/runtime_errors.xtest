@@ -447,4 +447,16 @@ exit_code: 103
 --------------------------------------------------
 --------------------------------------------------
 runtime_errors/object_collect_is_not_last.sd:1:4: only the last item in the destructure can collect
+================================================== this_undefined
+exit_code: 103
+--------------------------------------------------
+fn f() {
+    this._value = 1;
+}
+f();
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/this_undefined.sd:2:5: in 'f': 'this' is not defined
+Stacktrace:
+  runtime_errors/this_undefined.sd:4:1: in '<root>'
 ==================================================

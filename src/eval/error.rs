@@ -401,6 +401,10 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
+    EvalPropFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
 }
 
 fn render_type(v: &Value) -> String {
