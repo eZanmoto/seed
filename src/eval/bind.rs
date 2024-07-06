@@ -161,7 +161,11 @@ fn bind_next(
             })
         },
 
-        RawExpr::Prop{expr, name} => {
+        RawExpr::Prop{expr, name, type_prop} => {
+            if *type_prop {
+                return new_loc_err(Error::AssignToTypeProp)
+            }
+
             match_eval_expr!((context, scopes, expr) {
                 Value::Object(props) => {
                     props.insert(name.clone(), rhs);

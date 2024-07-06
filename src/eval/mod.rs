@@ -682,37 +682,58 @@ fn eval_expr(
             Ok(value::new_object(vals))
         },
 
-        RawExpr::Prop{expr, name} => {
-            let value = eval_expr(context, scopes, expr)
+        RawExpr::Prop{expr, name, type_prop} => {
+            let source = eval_expr(context, scopes, expr)
                 .context(EvalPropFailed)?;
 
-            let unlocked_value = &mut (*value.lock().unwrap()).v;
-            match unlocked_value {
-                Value::Object(props) => {
-                    let v =
-                        match props.get(name) {
-                            Some(v) => {
-                                let prop_val = &(*v.lock().unwrap()).v;
+            let unlocked_source = &mut (*source.lock().unwrap()).v;
 
-                                value::new_val_ref_with_source(
-                                    prop_val.clone(),
-                                    value.clone(),
-                                )
-                            },
-                            None => {
-                                return new_loc_err(Error::PropNotFound{
-                                    name: name.clone(),
-                                });
-                            },
-                        };
+            let namespace =
+                if *type_prop {
+                    match unlocked_source {
+                        Value::Str(_) => &context.builtins.type_functions.strs,
 
-                    Ok(v)
+                        value => {
+                            return new_loc_err(Error::Dev{
+                                msg: format!(
+                                    "type functions not yet defined for '{}'",
+                                    render_type(value),
+                                ),
+                            });
+                        },
+                    }
+                } else {
+                    match unlocked_source {
+                        Value::Object(props) => props,
+
+                        value => {
+                            return new_loc_err(Error::PropAccessOnNonObject{
+                                value: value.clone(),
+                            })
+                        },
+                    }
+                };
+
+            match namespace.get(name) {
+                Some(v) => {
+                    let value = &(*v.lock().unwrap()).v;
+
+                    Ok(value::new_val_ref_with_source(
+                        value.clone(),
+                        source.clone(),
+                    ))
                 },
-
-                value => {
-                    new_loc_err(Error::PropAccessOnNonObject{
-                        value: value.clone(),
-                    })
+                None => {
+                    if *type_prop {
+                        new_loc_err(Error::TypeFunctionNotFound{
+                            value: unlocked_source.clone(),
+                            name: name.clone(),
+                        })
+                    } else {
+                        new_loc_err(Error::PropNotFound{
+                            name: name.clone(),
+                        })
+                    }
                 },
             }
         },

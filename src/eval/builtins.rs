@@ -1,4 +1,4 @@
-// Copyright 2023 Sean Kelleher. All rights reserved.
+// Copyright 2023-2024 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -7,10 +7,10 @@ pub use super::value::Value;
 
 pub struct Builtins {
     pub std: Object,
-    pub type_methods: TypeMethods,
+    pub type_functions: TypeFunctions,
 }
 
-pub struct TypeMethods {
+pub struct TypeFunctions {
     pub strs: Object,
     pub funcs: Object,
 }

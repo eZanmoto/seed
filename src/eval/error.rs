@@ -75,6 +75,8 @@ pub enum Error {
     ValueNotIndexAssignable,
     #[snafu(display("only 'list's can update range indices"))]
     ValueNotRangeIndexAssignable,
+    #[snafu(display("type properties cannot be assigned to"))]
+    AssignToTypeProp,
     #[snafu(display("index '{}' is outside the string bounds", index))]
     OutOfStringBounds{index: usize},
     #[snafu(display("index '{}' is outside the list bounds", index))]
@@ -166,6 +168,12 @@ pub enum Error {
     #[snafu(display("object doesn't contain property '{}'", name))]
     PropNotFound{name: String},
     #[snafu(display(
+        "there is no type function '{}' for '{}'",
+        name,
+        render_type(value),
+    ))]
+    TypeFunctionNotFound{value: Value, name: String},
+    #[snafu(display(
         "properties can only be accessed on objects, got '{}'",
         render_type(value),
     ))]
@@ -173,6 +181,9 @@ pub enum Error {
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
+
+    #[snafu(display("dev error: {}", msg))]
+    Dev{msg: String},
 
     // NOTE This is a somewhat hacky way of adding location information to
     // errors in a generic way. Ideally this information could be better
@@ -405,9 +416,25 @@ pub enum Error {
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
+    AssertArgsFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    AssertThisFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    AssertNoThisFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    AssertStrFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
 }
 
-fn render_type(v: &Value) -> String {
+pub fn render_type(v: &Value) -> String {
     let s =
         match v {
             Value::Null => "null",

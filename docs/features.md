@@ -637,3 +637,17 @@ f := a.value;
 
 print(f()); # Hello, world!
 ```
+
+### Type functions
+
+In this language, objects provide the primary mechanism for user-defined data
+and behaviour abstraction. In order to provide access to language-defined
+type-based behaviour without conflicting with the user-defined namespace, the
+arrow operator is used to access type functions:
+
+```
+print("abc"->len()); # 3
+```
+
+In this context, the type of the value before the arrow operator defines the
+function namespace that is being referenced.

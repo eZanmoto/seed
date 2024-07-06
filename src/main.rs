@@ -25,7 +25,7 @@ use snafu::Snafu;
 
 use ast::RawExpr;
 use builtins::fns;
-use builtins::type_methods;
+use builtins::type_functions;
 use eval::builtins::Builtins;
 use eval::EvaluationContext;
 use eval::error::Error as EvalError;
@@ -135,7 +135,7 @@ fn run(cur_rel_script_path: &Path) -> Result<(), Error> {
         &EvaluationContext{
             builtins: &Builtins{
                 std: BTreeMap::new(),
-                type_methods: type_methods::type_methods(),
+                type_functions: type_functions::type_functions(),
             },
             global_bindings: &global_bindings,
             cur_script_dir,
@@ -235,6 +235,7 @@ fn render_token(t: Token) -> String {
         Token::AmpAmp => "&&".to_string(),
         Token::BangEquals => "!=".to_string(),
         Token::ColonEquals => ":=".to_string(),
+        Token::DashGreaterThan => "->".to_string(),
         Token::DivEquals => "/=".to_string(),
         Token::DotDot => "..".to_string(),
         Token::EqualsEquals => "==".to_string(),
@@ -314,7 +315,11 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::EvalCallArgsFailed{source} |
         EvalError::EvalCallFuncFailed{source} |
         EvalError::EvalExprFailed{source} |
-        EvalError::EvalPropFailed{source} => {
+        EvalError::EvalPropFailed{source} |
+        EvalError::AssertArgsFailed{source} |
+        EvalError::AssertThisFailed{source} |
+        EvalError::AssertNoThisFailed{source} |
+        EvalError::AssertStrFailed{source} => {
             eval_err_to_stacktrace(path, func, *source)
         },
 

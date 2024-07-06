@@ -459,4 +459,18 @@ f();
 runtime_errors/this_undefined.sd:2:5: in 'f': 'this' is not defined
 Stacktrace:
   runtime_errors/this_undefined.sd:4:1: in '<root>'
+================================================== type_method_bad_arglen
+exit_code: 103
+--------------------------------------------------
+""->len(1);
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/type_method_bad_arglen.sd:1:1: `len` only takes 0 arguments (got 1)
+================================================== type_method_undefined
+exit_code: 103
+--------------------------------------------------
+""->not_defined();
+--------------------------------------------------
+--------------------------------------------------
+runtime_errors/type_method_undefined.sd:1:1: there is no type function 'not_defined' for 'string'
 ==================================================
