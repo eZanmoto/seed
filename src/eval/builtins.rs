@@ -11,6 +11,10 @@ pub struct Builtins {
 }
 
 pub struct TypeFunctions {
+    pub bools: Object,
+    pub ints: Object,
     pub strs: Object,
+    pub lists: Object,
+    pub objects: Object,
     pub funcs: Object,
 }

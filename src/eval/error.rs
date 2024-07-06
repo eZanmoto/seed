@@ -173,6 +173,8 @@ pub enum Error {
         render_type(value),
     ))]
     TypeFunctionNotFound{value: Value, name: String},
+    #[snafu(display("cannot access type function on 'null'"))]
+    TypeFunctionOnNull,
     #[snafu(display(
         "properties can only be accessed on objects, got '{}'",
         render_type(value),
@@ -446,7 +448,7 @@ pub fn render_type(v: &Value) -> String {
             Value::List(_) => "list",
             Value::Object(_) => "object",
 
-            Value::BuiltinFunc{..} | Value::Func{..} => "function",
+            Value::BuiltinFunc{..} | Value::Func{..} => "func",
         };
 
     s.to_string()

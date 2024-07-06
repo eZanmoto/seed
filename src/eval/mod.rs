@@ -691,15 +691,21 @@ fn eval_expr(
             let namespace =
                 if *type_prop {
                     match unlocked_source {
-                        Value::Str(_) => &context.builtins.type_functions.strs,
+                        Value::Bool(_) =>
+                            &context.builtins.type_functions.bools,
+                        Value::Int(_) =>
+                            &context.builtins.type_functions.ints,
+                        Value::Str(_) =>
+                            &context.builtins.type_functions.strs,
+                        Value::List(_) =>
+                            &context.builtins.type_functions.lists,
+                        Value::Object(_) =>
+                            &context.builtins.type_functions.objects,
+                        Value::BuiltinFunc{..} | Value::Func{..}  =>
+                            &context.builtins.type_functions.funcs,
 
-                        value => {
-                            return new_loc_err(Error::Dev{
-                                msg: format!(
-                                    "type functions not yet defined for '{}'",
-                                    render_type(value),
-                                ),
-                            });
+                        Value::Null => {
+                            return new_loc_err(Error::TypeFunctionOnNull)
                         },
                     }
                 } else {
