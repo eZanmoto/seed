@@ -651,3 +651,28 @@ print("abc"->len()); # 3
 
 In this context, the type of the value before the arrow operator defines the
 function namespace that is being referenced.
+
+#### `bool`
+
+* `v->type()`: returns `"bool"`
+
+#### `int`
+
+* `v->type()`: returns `"int"`
+
+#### `str`
+
+* `v->len()`: returns the length of `v`.
+* `v->type()`: returns `"string"`
+
+#### `list`
+
+* `v->type()`: returns `"list"`
+
+#### `object`
+
+* `v->type()`: returns `"object"`
+
+#### `func`
+
+* `v->type()`: returns `"func"`
