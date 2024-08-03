@@ -32,6 +32,11 @@ false
 {"hello": "world", "test": [1, 2, 3]}
 ```
 
+```
+# Escape sequences in strings:
+"\"\x41n example string\"\n"
+```
+
 Operations
 ----------
 

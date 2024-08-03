@@ -190,6 +190,8 @@ fn render_parse_error(error: ParseError<(usize, usize), Token, LexError>)
             match error {
                 LexError::Unexpected(loc, c) =>
                     (loc, format!("unexpected '{}'", c)),
+                LexError::InvalidHexChar(loc, c) =>
+                    (loc, format!("'{}' is not a valid hex character", c)),
             },
     }
 }

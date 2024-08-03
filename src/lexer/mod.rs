@@ -1,4 +1,4 @@
-// Copyright 2023 Sean Kelleher. All rights reserved.
+// Copyright 2023-2024 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -63,6 +63,7 @@ pub enum Token {
 #[derive(Debug)]
 pub enum LexError {
     Unexpected(Location, char),
+    InvalidHexChar(Location, char),
 }
 
 pub struct Lexer<'input> {
@@ -138,20 +139,66 @@ impl<'input> Lexer<'input> {
         Token::IntLiteral(int)
     }
 
-    fn next_str_literal(&mut self) -> Token {
-        let start = self.scanner.index;
+    fn next_str_literal(&mut self) -> Result<Token, LexError> {
         self.scanner.next_char();
+
+        let mut chars = vec![];
+        let mut state = StrScanState::None;
+        let mut first_hex_char = None;
         while let Some(c) = self.scanner.peek_char() {
+            let cur_loc = self.scanner.loc();
+
             self.scanner.next_char();
-            if c == '"' {
-                break;
+
+            match state {
+                StrScanState::None => {
+                    if c == '\\' {
+                        state = StrScanState::Escape;
+                    } else if c == '"' {
+                        break;
+                    } else {
+                        chars.push(c);
+                    }
+                },
+                StrScanState::Escape => {
+                    if c == '\\' || c == '"' {
+                        chars.push(c);
+                    } else if c == 'n' {
+                        chars.push('\n');
+                    } else if c == 'r' {
+                        chars.push('\r');
+                    } else if c == 'x' {
+                        state = StrScanState::Hex;
+                        continue;
+                    }
+                    state = StrScanState::None;
+                },
+                StrScanState::Hex => {
+                    let h =
+                        match u8::from_str_radix(&c.to_string(), 16) {
+                            Ok(v) => v,
+                            Err(_) => return Err(LexError::InvalidHexChar(
+                                cur_loc,
+                                c,
+                            )),
+                        };
+
+                    match first_hex_char {
+                        None => {
+                            first_hex_char = Some(h);
+                        },
+                        Some(n) => {
+                            chars.push((n * 16 + h) as char);
+
+                            first_hex_char = None;
+                            state = StrScanState::None;
+                        },
+                    }
+                },
             }
         }
-        let end = self.scanner.index;
 
-        let id = self.scanner.range(start + 1, end - 1);
-
-        Token::StrLiteral(id.to_string())
+        Ok(Token::StrLiteral(chars.into_iter().collect()))
     }
 
     fn next_symbol_token(&mut self, c: char) -> Option<Token> {
@@ -187,6 +234,12 @@ impl<'input> Lexer<'input> {
     }
 }
 
+enum StrScanState {
+    None,
+    Escape,
+    Hex,
+}
+
 pub type Span = (Location, Token, Location);
 
 pub type Location = (usize, usize);
@@ -207,7 +260,10 @@ impl<'input> Iterator for Lexer<'input> {
             } else if c.is_ascii_digit() {
                 self.next_int()
             } else if c == '"' {
-                self.next_str_literal()
+                match self.next_str_literal() {
+                    Ok(s) => s,
+                    Err(e) => return Some(Err(e)),
+                }
             } else if let Some(t) = self.next_symbol_token(c) {
                 t
             } else {
