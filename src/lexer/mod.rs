@@ -63,6 +63,7 @@ pub enum Token {
 #[derive(Debug)]
 pub enum LexError {
     Unexpected(Location, char),
+    InvalidEscapeChar(Location, char),
     InvalidHexChar(Location, char),
 }
 
@@ -170,6 +171,8 @@ impl<'input> Lexer<'input> {
                     } else if c == 'x' {
                         state = StrScanState::Hex;
                         continue;
+                    } else {
+                        return Err(LexError::InvalidEscapeChar(cur_loc, c));
                     }
                     state = StrScanState::None;
                 },
