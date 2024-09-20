@@ -3,6 +3,7 @@
 // licence that can be found in the LICENCE file.
 
 use ast::*;
+use lexer::InterpSlot;
 use lexer::LexError;
 use lexer::Location as LexLocation;
 use lexer::Token;
@@ -230,7 +231,9 @@ pub ExprPrecedence6: RawExpr = {
     <name:Ident> => RawExpr::Var{name},
     <n:IntLiteral> => RawExpr::Int{n},
     "-" <n:IntLiteral> => RawExpr::Int{n: -n},
-    <s:StrLiteral> => RawExpr::Str{s},
+    <s:StrLiteral> => RawExpr::Str{s, interpolation_slots: None},
+    <is:InterpStrLiteral> =>
+        RawExpr::Str{s: is.0, interpolation_slots: Some(is.1)},
 
     "(" <expr:ExprPrecedence1> ")" => expr,
 
@@ -319,6 +322,10 @@ StrLiteral: String = {
     <s:"str_literal"> => s,
 };
 
+InterpStrLiteral: (String, Vec<InterpSlot>) = {
+    <s:"interp_str_literal"> => s,
+};
+
 extern {
     type Location = LexLocation;
     type Error = LexError;
@@ -327,6 +334,8 @@ extern {
         "identifier" => Token::Ident(<String>),
         "int_literal" => Token::IntLiteral(<i64>),
         "str_literal" => Token::StrLiteral(<String>),
+        "interp_str_literal" =>
+            Token::InterpStrLiteral(<String>, <Vec<InterpSlot>>),
 
         "break" => Token::Break,
         "continue" => Token::Continue,

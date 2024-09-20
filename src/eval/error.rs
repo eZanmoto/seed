@@ -180,6 +180,15 @@ pub enum Error {
         render_type(value),
     ))]
     PropAccessOnNonObject{value: Value},
+    #[snafu(display(
+        "interpolated values can only be strings, got '{}'",
+        render_type(value),
+    ))]
+    InterpolatedValueNotString{value: Value},
+    #[snafu(display("couldn't parse interpolation slot: {}", source_str))]
+    InterpolateStringParseFailed{
+        source_str: String,
+    },
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
@@ -415,6 +424,14 @@ pub enum Error {
         source: Box<Error>,
     },
     EvalPropFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    InterpolateStringFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    InterpolateStringEvalExprFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },

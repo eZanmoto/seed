@@ -57,7 +57,10 @@ pub enum RawExpr {
 
     Bool{b: bool},
     Int{n: i64},
-    Str{s: String},
+    // `interpolation_slots` is `None` iff the string isn't interpolated,
+    // otherwise it contains start/end indices of substrings to be evaluated
+    // during interpolation.
+    Str{s: String, interpolation_slots: Option<Vec<(usize, usize)>>},
 
     Var{name: String},
 

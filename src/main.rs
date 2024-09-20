@@ -190,8 +190,20 @@ fn render_parse_error(error: ParseError<(usize, usize), Token, LexError>)
             match error {
                 LexError::Unexpected(loc, c) =>
                     (loc, format!("unexpected '{}'", c)),
+                LexError::InvalidEscapeChar(loc, c) =>
+                    (loc, format!("'{}' is not a valid escape character", c)),
                 LexError::InvalidHexChar(loc, c) =>
                     (loc, format!("'{}' is not a valid hex character", c)),
+                LexError::UnescapedDollar(loc) =>
+                    (loc, "'$' must be escaped".to_string()),
+                LexError::InvalidInterpolationStart(loc, c) =>
+                    (
+                        loc,
+                        format!(
+                            "interpolation slots start with '{{', got '{}'",
+                            c,
+                        ),
+                    ),
             },
     }
 }
@@ -200,7 +212,11 @@ fn render_token(t: Token) -> String {
     match t {
         Token::Ident(s) => format!("`{}`", s),
         Token::IntLiteral(n) => format!("{}", n),
-        Token::StrLiteral(s) => format!("\"{}\"", s),
+
+        Token::StrLiteral(s)
+        | Token::InterpStrLiteral(s, _) => {
+            format!("\"{}\"", s)
+        },
 
         Token::Break => "`break`".to_string(),
         Token::Continue => "`continue`".to_string(),
@@ -318,6 +334,8 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::EvalCallFuncFailed{source} |
         EvalError::EvalExprFailed{source} |
         EvalError::EvalPropFailed{source} |
+        EvalError::InterpolateStringFailed{source} |
+        EvalError::InterpolateStringEvalExprFailed{source} |
         EvalError::AssertArgsFailed{source} |
         EvalError::AssertThisFailed{source} |
         EvalError::AssertNoThisFailed{source} |

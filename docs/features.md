@@ -92,6 +92,16 @@ x += ", world!";
 print(x); # Hello, world!
 ```
 
+Strings can be interpolated by prepending a `$` to a string. Each slot of the
+string (of the form `${...}`) will be evaluated and substituted in place. At
+present, slots may only evaluate to strings:
+
+```
+fname := "Jo";
+lname := "Soap";
+print($"Hello ${fname} ${lname}"); # Hello Jo Soap
+```
+
 ### Boolean
 
 ```

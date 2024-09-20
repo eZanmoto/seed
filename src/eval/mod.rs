@@ -32,6 +32,9 @@ use self::value::ValRefWithSource;
 use self::value::Value;
 use self::value::ValWithSource;
 
+use lexer::Lexer;
+use parser::ExprParser;
+
 macro_rules! match_eval_expr {
     (
         ( $context:ident, $scopes:ident, $expr:expr )
@@ -399,7 +402,22 @@ fn eval_expr(
 
         RawExpr::Int{n} => Ok(value::new_int(*n)),
 
-        RawExpr::Str{s} => Ok(value::new_str_from_string(s.clone())),
+        RawExpr::Str{s, interpolation_slots} => {
+            if let Some(slots) = interpolation_slots {
+                let v =
+                    interpolate_string(
+                        context,
+                        scopes,
+                        s,
+                        slots,
+                        (line, col),
+                    )
+                    .context(InterpolateStringFailed)?;
+                Ok(value::new_str_from_string(v))
+            } else {
+                Ok(value::new_str_from_string(s.clone()))
+            }
+        },
 
         RawExpr::Var{name} => {
             let v =
@@ -1306,4 +1324,91 @@ fn eval_call(
         };
 
     Ok(v)
+}
+
+fn interpolate_string(
+    context: &EvaluationContext,
+    scopes: &mut ScopeStack,
+    s: &str,
+    interpolation_slots: &Vec<(usize, usize)>,
+    loc: (&usize, &usize),
+)
+    -> Result<String, Error>
+{
+    let (line, col) = loc;
+    let new_loc_err = |source, col| {
+        Err(Error::AtLoc{source: Box::new(source), line: *line, col})
+    };
+
+    let parser = ExprParser::new();
+
+    let mut result: Vec<String> = vec![];
+
+    let mut last_slot_end = 0;
+
+    for cur_slot in interpolation_slots {
+        let (cur_slot_start, cur_slot_end) = cur_slot;
+        result.push(s[last_slot_end .. *cur_slot_start].to_string());
+
+        // We shorten the slot to skip the delimiters (`${` at the start and
+        // `}` at the end).
+        let directive = &s[(cur_slot_start+2) .. (cur_slot_end-1)];
+
+        let slot_col = col + cur_slot_start + 4;
+
+        let mut lexer = Lexer::new(directive);
+
+        let ast =
+            match parser.parse(&mut lexer) {
+                Ok(v) => v,
+                Err(e) => return new_loc_err(
+                    Error::InterpolateStringParseFailed{
+                        source_str: format!("{:?}", e),
+                    },
+                    slot_col,
+                ),
+            };
+
+        // We catch the evaluation error manually so that we can modify the
+        // location of the error to account for the string location.
+        let v =
+            match eval_expr(context, scopes, &ast) {
+                Ok(v) => v,
+                Err(e) => return new_loc_err(
+                    Error::InterpolateStringEvalExprFailed{
+                        source: Box::new(e),
+                    },
+                    slot_col,
+                ),
+            };
+
+        match &v.lock().unwrap().v {
+            Value::Str(s) => {
+                match String::from_utf8(s.clone()) {
+                    Ok(s) => result.push(s),
+                    Err(source) => return new_loc_err(
+                        Error::StringConstructionFailed{
+                            source,
+                            descr: "interpolated slot".to_string(),
+                        },
+                        slot_col,
+                    ),
+                }
+            },
+            v => {
+                let value = v.clone();
+
+                return new_loc_err(
+                    Error::InterpolatedValueNotString{value},
+                    slot_col,
+                );
+            },
+        }
+
+        last_slot_end = *cur_slot_end;
+    }
+
+    result.push(s[last_slot_end ..].to_string());
+
+    Ok(result.join(""))
 }

@@ -6,11 +6,14 @@ mod scanner;
 
 use self::scanner::Scanner;
 
+pub type InterpSlot = (usize, usize);
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     Ident(String),
     IntLiteral(i64),
     StrLiteral(String),
+    InterpStrLiteral(String, Vec<InterpSlot>),
 
     Break,
     Continue,
@@ -63,12 +66,14 @@ pub enum Token {
 #[derive(Debug)]
 pub enum LexError {
     Unexpected(Location, char),
+    UnescapedDollar(Location),
+    InvalidInterpolationStart(Location, char),
     InvalidEscapeChar(Location, char),
     InvalidHexChar(Location, char),
 }
 
 pub struct Lexer<'input> {
-    scanner: Scanner<'input>,
+    pub scanner: Scanner<'input>,
 }
 
 impl<'input> Lexer<'input> {
@@ -140,12 +145,20 @@ impl<'input> Lexer<'input> {
         Token::IntLiteral(int)
     }
 
-    fn next_str_literal(&mut self) -> Result<Token, LexError> {
+    #[allow(clippy::too_many_lines)]
+    fn next_str_literal(&mut self, interpolate: bool)
+        -> Result<Token, LexError>
+    {
         self.scanner.next_char();
 
         let mut chars = vec![];
         let mut state = StrScanState::None;
         let mut first_hex_char = None;
+
+        let mut cur_interpolation_start = 0;
+        let mut interpolation_slots = vec![];
+        let mut interpolation_brace_count = 0;
+
         while let Some(c) = self.scanner.peek_char() {
             let cur_loc = self.scanner.loc();
 
@@ -155,6 +168,14 @@ impl<'input> Lexer<'input> {
                 StrScanState::None => {
                     if c == '\\' {
                         state = StrScanState::Escape;
+                    } else if c == '$' {
+                        if interpolate {
+                            cur_interpolation_start = chars.len();
+                            state = StrScanState::Interpolate;
+                            chars.push('$');
+                        } else {
+                            return Err(LexError::UnescapedDollar(cur_loc));
+                        }
                     } else if c == '"' {
                         break;
                     } else {
@@ -162,7 +183,7 @@ impl<'input> Lexer<'input> {
                     }
                 },
                 StrScanState::Escape => {
-                    if c == '\\' || c == '"' {
+                    if c == '\\' || c == '"' || c == '$' {
                         chars.push(c);
                     } else if c == 'n' {
                         chars.push('\n');
@@ -198,10 +219,47 @@ impl<'input> Lexer<'input> {
                         },
                     }
                 },
+                // NOTE We identify interpolation slots during lexing instead
+                // of parsing because the identification of escapes (namely
+                // `\\` and `\$`) needs to be performed at the same time. If
+                // not, escaping `$` would require a double backslash (`\\$`)
+                // because the handling of the escapes would be performed in
+                // two separate steps. Another solution would be to use a
+                // different escape character for the different steps, but we
+                // use the current approach for consistency.
+                StrScanState::Interpolate => {
+                    if cur_interpolation_start+1 == chars.len() && c != '{' {
+                        return Err(LexError::InvalidInterpolationStart(
+                            cur_loc,
+                            c,
+                        ));
+                    }
+
+                    if c == '{' {
+                        interpolation_brace_count += 1;
+                    } else if c == '}' {
+                        interpolation_brace_count -= 1;
+                    }
+
+                    if interpolation_brace_count == 0 {
+                        // We shorten the slot to ignore the delimiters.
+                        let slot = (cur_interpolation_start, chars.len()+1);
+                        interpolation_slots.push(slot);
+                        state = StrScanState::None;
+                    }
+
+                    chars.push(c);
+                },
             }
         }
 
-        Ok(Token::StrLiteral(chars.into_iter().collect()))
+        let s = chars.into_iter().collect();
+
+        if interpolate {
+            Ok(Token::InterpStrLiteral(s, interpolation_slots))
+        } else {
+            Ok(Token::StrLiteral(s))
+        }
     }
 
     fn next_symbol_token(&mut self, c: char) -> Option<Token> {
@@ -241,6 +299,7 @@ enum StrScanState {
     None,
     Escape,
     Hex,
+    Interpolate,
 }
 
 pub type Span = (Location, Token, Location);
@@ -262,8 +321,14 @@ impl<'input> Iterator for Lexer<'input> {
                 self.next_keyword_or_ident()
             } else if c.is_ascii_digit() {
                 self.next_int()
-            } else if c == '"' {
-                match self.next_str_literal() {
+            } else if c == '"' || c == '$' {
+                let mut interpolate = false;
+                if c == '$' {
+                    self.scanner.next_char();
+                    interpolate = true;
+                }
+
+                match self.next_str_literal(interpolate) {
                     Ok(s) => s,
                     Err(e) => return Some(Err(e)),
                 }
