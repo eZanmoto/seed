@@ -30,10 +30,25 @@ use self::value::List;
 use self::value::Str;
 use self::value::ValRefWithSource;
 use self::value::Value;
-use self::value::ValWithSource;
 
 use lexer::Lexer;
 use parser::ExprParser;
+
+// `deref` must be defined as a macro, because a reference to the temporary
+// value borrowed from the `Mutex` `v` can't be returned from a function,
+// because once the lock is released at the end of the function, the reference
+// is no longer valid. As such, we define a macro to abstract this access.
+macro_rules! deref {
+    ( $val_ref_with_source:ident ) => {
+        &*$val_ref_with_source.v.lock().unwrap()
+    };
+}
+
+macro_rules! mut_deref {
+    ( $val_ref_with_source:ident ) => {
+        &mut *$val_ref_with_source.v.lock().unwrap()
+    };
+}
 
 macro_rules! match_eval_expr {
     (
@@ -42,7 +57,7 @@ macro_rules! match_eval_expr {
     ) => {{
         let value = eval_expr($context, $scopes, $expr)
             .context(EvalExprFailed)?;
-        let unlocked_value = &mut (*value.lock().unwrap()).v;
+        let unlocked_value = mut_deref!(value);
         match unlocked_value {
             $( $key => $value , )*
         }
@@ -220,11 +235,11 @@ fn eval_stmt(
                 op,
                 op_loc,
                 &clone_value(&lhs_val),
-                &rhs_val.lock().unwrap().v,
+                deref!(rhs_val),
             )
                 .context(ApplyBinOpFailed)?;
 
-            let v = value::new_val_ref(raw_v);
+            let v = value::new_val_ref_from_value(raw_v);
 
             bind::bind_name(scopes, name, name_loc, v, BindType::Assignment)
                 .context(OpAssignmentBindFailed)?;
@@ -276,7 +291,7 @@ fn eval_stmt(
             let iter_val = eval_expr(context, scopes, iter)
                     .context(EvalForIterFailed)?;
 
-            let pairs = value_to_pairs(&(*iter_val.lock().unwrap()).v)
+            let pairs = value_to_pairs(deref!(iter_val))
                     .context(ConvertForIterToPairsFailed)?;
 
             for (key, value) in pairs {
@@ -439,20 +454,21 @@ fn eval_expr(
                 .context(EvalBinOpRhsFailed)?;
 
             // We clone the value from inside the `lhs_val` `Mutex` in a
-            // separate scope instead of using `&lhs_val.lock().unwrap().v`.
-            // This is because, with the latter approach, if `lhs_val` and
-            // `rhs_val` refer to the same `Mutex` value, the first lock on it
-            // (`lhs_val.lock()`) will cause a deadlock when a second lock
-            // (`rhs_val.lock()`) is attempted in the same scope.
+            // separate scope instead of using `&lhs_val.v.lock().unwrap()`
+            // (which is performed by `deref!`). This is because, with the
+            // latter approach, if `lhs_val` and `rhs_val` refer to the same
+            // `Mutex` value, the first lock on it (`lhs_val.v.lock()`) will
+            // cause a deadlock when a second lock (`rhs_val.v.lock()`) is
+            // attempted in the same scope.
             let v = apply_binary_operation(
                 op,
                 op_loc,
                 &clone_value(&lhs_val),
-                &rhs_val.lock().unwrap().v,
+                deref!(rhs_val),
             )
                 .context(ApplyBinOpFailed)?;
 
-            Ok(value::new_val_ref(v))
+            Ok(value::new_val_ref_from_value(v))
         },
 
         RawExpr::List{items, collect} => {
@@ -472,9 +488,8 @@ fn eval_expr(
             let source_val = eval_expr(context, scopes, expr)
                 .context(EvalSourceExprFailed)?;
 
-            let unlocked_source_val = &(*source_val.lock().unwrap()).v;
-
-            match unlocked_source_val {
+            let unlocked_value = deref!(source_val);
+            match unlocked_value {
                 Value::Str(s) => {
                     let index = eval_expr_to_index(context, scopes, locat)
                         .context(EvalStringIndexFailed)?;
@@ -514,12 +529,10 @@ fn eval_expr(
 
                     let v =
                         match props.get(&name) {
-                            Some(v) => {
-                                let prop_val = &(*v.lock().unwrap()).v;
-
+                            Some(value) => {
                                 value::new_val_ref_with_source(
-                                    prop_val.clone(),
-                                    source_val.clone(),
+                                    value.v.clone(),
+                                    source_val.v.clone(),
                                 )
                             },
                             None => {
@@ -704,7 +717,7 @@ fn eval_expr(
             let source = eval_expr(context, scopes, expr)
                 .context(EvalPropFailed)?;
 
-            let unlocked_source = &mut (*source.lock().unwrap()).v;
+            let unlocked_source = mut_deref!(source);
 
             let namespace =
                 if *type_prop {
@@ -739,12 +752,10 @@ fn eval_expr(
                 };
 
             match namespace.get(name) {
-                Some(v) => {
-                    let value = &(*v.lock().unwrap()).v;
-
+                Some(value) => {
                     Ok(value::new_val_ref_with_source(
-                        value.clone(),
-                        source.clone(),
+                        value.v.clone(),
+                        source.v.clone(),
                     ))
                 },
                 None => {
@@ -796,8 +807,11 @@ enum CallBinding {
     },
 }
 
+// `clone_value` is used to explicitly release the lock on `v` after the value
+// is cloned. This is in contrast with `deref!(v).clone()`, which may cause a
+// deadlock if performed sequentially on the same reference.
 fn clone_value(v: &ValRefWithSource) -> Value {
-    let unlocked_v = &(*v.lock().unwrap()).v;
+    let unlocked_v = deref!(v);
 
     unlocked_v.clone()
 }
@@ -948,7 +962,7 @@ fn eq(lhs: &Value, rhs: &Value) -> Option<bool> {
                 // inside the `lhs` `Mutex`.
                 let equal = eq(
                     &clone_value(x),
-                    &y.lock().unwrap().v,
+                    deref!(y),
                 )?;
 
                 if !equal {
@@ -977,7 +991,7 @@ fn eq(lhs: &Value, rhs: &Value) -> Option<bool> {
                 // inside the `lhs` `Mutex`.
                 let equal = eq(
                     &clone_value(x),
-                    &y.lock().unwrap().v,
+                    deref!(y),
                 )?;
 
                 if !equal {
@@ -1158,7 +1172,7 @@ fn eval_list_items(
             continue;
         }
 
-        match &(*v.lock().unwrap()).v {
+        match deref!(v) {
             Value::List(items) => {
                 for item in items {
                     vals.push(item.clone());
@@ -1205,10 +1219,13 @@ fn eval_call(
 
     let (func_name, v) =
         {
-            let ValWithSource{v, source} = &*func_val.lock().unwrap();
-            match v {
+            let ValRefWithSource{v, source} = func_val;
+
+            let unlocked_value = &*v.lock().unwrap();
+
+            match unlocked_value {
                 Value::BuiltinFunc{name, f} => {
-                    let this = source.as_ref().cloned();
+                    let this = source.map(value::new_val_ref_with_no_source);
 
                     (
                         Some(name.clone()),
@@ -1266,7 +1283,7 @@ fn eval_call(
                                 RawExpr::Var{name: "this".to_string()},
                                 (0, 0),
                             ),
-                            this.clone(),
+                            value::new_val_ref_with_no_source(this),
                         ));
                     }
 
@@ -1282,7 +1299,7 @@ fn eval_call(
 
                 _ => {
                     return new_loc_err(
-                        Error::CannotCallNonFunc{v: v.clone()},
+                        Error::CannotCallNonFunc{v: unlocked_value.clone()},
                     );
                 },
             }
@@ -1382,7 +1399,7 @@ fn interpolate_string(
                 ),
             };
 
-        match &v.lock().unwrap().v {
+        match deref!(v) {
             Value::Str(s) => {
                 match String::from_utf8(s.clone()) {
                     Ok(s) => result.push(s),

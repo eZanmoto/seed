@@ -8,4 +8,52 @@ person := {
 print(person["greet"]());
 --------------------------------------------------
 Hello
+================================================== parameter_mutation1
+fn set_age(p) {
+    p.age = 30;
+}
+
+person := {};
+set_age(person);
+print(person.age);
+--------------------------------------------------
+30
+================================================== parameter_mutation2
+fn update_age(p) {
+    p.age = 30;
+}
+
+person := {"age": 20};
+update_age(person);
+print(person.age);
+--------------------------------------------------
+30
+================================================== parameter_mutation3
+fn set_first_name(p) {
+    p.name.first = "Jo";
+}
+
+person := {"name": {}};
+set_first_name(person);
+print(person.name.first);
+--------------------------------------------------
+Jo
+================================================== prop_assign
+person := {};
+person.name = "Jo";
+print(person.name);
+--------------------------------------------------
+Jo
+================================================== nested_prop_assign1
+person := {"name": {}};
+person.name.first = "Jo";
+print(person.name.first);
+--------------------------------------------------
+Jo
+================================================== nested_prop_assign2
+person := {"name": {"last": "Doe"}};
+person.name.last = "Soap";
+print(person.name.last);
+--------------------------------------------------
+Soap
 ==================================================

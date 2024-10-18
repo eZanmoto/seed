@@ -17,6 +17,13 @@ use crate::eval::value::List;
 use crate::eval::value::ValRefWithSource;
 use crate::eval::value::Value;
 
+// TODO Duplicated from `src/eval/mod.rs`.
+macro_rules! deref {
+    ( $val_ref_with_source:ident ) => {
+        &*$val_ref_with_source.v.lock().unwrap()
+    };
+}
+
 pub fn type_functions() -> TypeFunctions {
     TypeFunctions{
         bools: BTreeMap::<String, ValRefWithSource>::from([
@@ -88,8 +95,7 @@ pub fn any_type(this: Option<ValRefWithSource>, vs: List)
     let this = fns::assert_this(this)
         .context(AssertThisFailed)?;
 
-    let unlocked_value = &(*this.lock().unwrap()).v;
-    let s = render_type(unlocked_value);
+    let s = render_type(deref!(this));
 
     Ok(value::new_str_from_string(s))
 }

@@ -12,6 +12,13 @@ use crate::eval::value::List;
 use crate::eval::value::ValRefWithSource;
 use crate::eval::value::Value;
 
+// TODO Duplicated from `src/eval/mod.rs`.
+macro_rules! deref {
+    ( $val_ref_with_source:ident ) => {
+        &*$val_ref_with_source.v.lock().unwrap()
+    };
+}
+
 #[allow(clippy::needless_pass_by_value)]
 pub fn print(this: Option<ValRefWithSource>, vs: List)
     -> Result<ValRefWithSource, Error>
@@ -32,7 +39,7 @@ pub fn print(this: Option<ValRefWithSource>, vs: List)
 fn render(v: &ValRefWithSource) -> Result<String, Error> {
     let mut s = String::new();
 
-    match &v.lock().unwrap().v {
+    match deref!(v) {
         Value::Null => {
             s += "<null>";
         },
@@ -136,7 +143,7 @@ pub fn assert_this(this: Option<ValRefWithSource>)
 pub fn assert_str(val_name: &str, v: &ValRefWithSource)
     -> Result<String, Error>
 {
-    let unlocked_value = &v.lock().unwrap().v;
+    let unlocked_value = deref!(v);
 
     if let Value::Str(raw_str) = unlocked_value {
         match String::from_utf8(raw_str.clone()) {

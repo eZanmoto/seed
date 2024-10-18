@@ -1,4 +1,4 @@
-// Copyright 2023 Sean Kelleher. All rights reserved.
+// Copyright 2023-2024 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -11,34 +11,40 @@ use eval::Error;
 use eval::Expr;
 use super::scope::ScopeStack;
 
-// TODO Consider renaming to `new_val_ref_with_no_source`.
-pub fn new_val_ref(v: Value) -> ValRefWithSource {
-    Arc::new(Mutex::new(ValWithSource{
-        v,
+pub fn new_val_ref_from_value(v: Value) -> ValRefWithSource {
+    ValRefWithSource{
+        v: Arc::new(Mutex::new(v)),
         source: None,
-    }))
+    }
 }
 
-pub fn new_val_ref_with_source(v: Value, source: ValRefWithSource)
+pub fn new_val_ref_with_no_source(v: ValRef) -> ValRefWithSource {
+    ValRefWithSource{
+        v,
+        source: None,
+    }
+}
+
+pub fn new_val_ref_with_source(v: ValRef, source: ValRef)
     -> ValRefWithSource
 {
-    Arc::new(Mutex::new(ValWithSource{
+    ValRefWithSource{
         v,
         source: Some(source),
-    }))
+    }
 }
 
 // `ValRefWithSource` is intended to be used as a regular `ValRef` would, but
 // it includes the most recent object it was referenced from. For example, in
 // the case of `x['f']`, the `ValRef` is the value stored at the location
 // `'f'`, and the `source` of this value is `x`.
-pub type ValRefWithSource = Arc<Mutex<ValWithSource>>;
-
 #[derive(Clone, Debug)]
-pub struct ValWithSource {
-    pub v: Value,
-    pub source: Option<ValRefWithSource>,
+pub struct ValRefWithSource {
+    pub v: ValRef,
+    pub source: Option<ValRef>,
 }
+
+type ValRef = Arc<Mutex<Value>>;
 
 #[derive(Clone, Debug)]
 pub enum Value {
@@ -74,31 +80,31 @@ pub type BuiltinFunc =
     fn(Option<ValRefWithSource>, List) -> Result<ValRefWithSource, Error>;
 
 pub fn new_null() -> ValRefWithSource {
-    new_val_ref(Value::Null)
+    new_val_ref_from_value(Value::Null)
 }
 
 pub fn new_bool(b: bool) -> ValRefWithSource {
-    new_val_ref(Value::Bool(b))
+    new_val_ref_from_value(Value::Bool(b))
 }
 
 pub fn new_int(n: i64) -> ValRefWithSource {
-    new_val_ref(Value::Int(n))
+    new_val_ref_from_value(Value::Int(n))
 }
 
 pub fn new_str(s: Str) -> ValRefWithSource {
-        new_val_ref(Value::Str(s))
+        new_val_ref_from_value(Value::Str(s))
 }
 
 pub fn new_str_from_string(s: String) -> ValRefWithSource {
-    new_val_ref(Value::Str(s.into_bytes()))
+    new_val_ref_from_value(Value::Str(s.into_bytes()))
 }
 
 pub fn new_list(list: List) -> ValRefWithSource {
-    new_val_ref(Value::List(list))
+    new_val_ref_from_value(Value::List(list))
 }
 
 pub fn new_object(object: Object) -> ValRefWithSource {
-    new_val_ref(Value::Object(object))
+    new_val_ref_from_value(Value::Object(object))
 }
 
 pub fn new_func(
@@ -110,9 +116,11 @@ pub fn new_func(
 )
     -> ValRefWithSource
 {
-    new_val_ref(Value::Func{name, args, collect_args, stmts, closure})
+    new_val_ref_from_value(
+        Value::Func{name, args, collect_args, stmts, closure},
+    )
 }
 
 pub fn new_built_in_func(name: String, f: BuiltinFunc) -> ValRefWithSource {
-    new_val_ref(Value::BuiltinFunc{name, f})
+    new_val_ref_from_value(Value::BuiltinFunc{name, f})
 }

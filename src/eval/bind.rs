@@ -22,6 +22,20 @@ use value::ValRefWithSource;
 use value::Value;
 
 // TODO Duplicated from `src/eval/mod.rs`.
+macro_rules! deref {
+    ( $val_ref_with_source:ident ) => {
+        &*$val_ref_with_source.v.lock().unwrap()
+    };
+}
+
+// TODO Duplicated from `src/eval/mod.rs`.
+macro_rules! mut_deref {
+    ( $val_ref_with_source:ident ) => {
+        &mut *$val_ref_with_source.v.lock().unwrap()
+    };
+}
+
+// TODO Duplicated from `src/eval/mod.rs`.
 macro_rules! match_eval_expr {
     (
         ( $context:ident, $scopes:ident, $expr:expr )
@@ -29,7 +43,7 @@ macro_rules! match_eval_expr {
     ) => {{
         let value = eval::eval_expr($context, $scopes, $expr)
             .context(EvalExprFailed)?;
-        let unlocked_value = &mut (*value.lock().unwrap()).v;
+        let unlocked_value = mut_deref!(value);
         match unlocked_value {
             $( $key => $value , )*
         }
@@ -121,7 +135,7 @@ fn bind_next(
         RawExpr::RangeIndex{expr, start, end} => {
             match_eval_expr!((context, scopes, expr) {
                 Value::List(lhs_items) => {
-                    match &(*rhs.lock().unwrap()).v {
+                    match deref!(rhs) {
                         Value::List(rhs_items) => {
                             bind_range_index(
                                 context,
@@ -182,7 +196,7 @@ fn bind_next(
         },
 
         RawExpr::Object{props: lhs_props} => {
-            match &(*rhs.lock().unwrap()).v {
+            match deref!(rhs) {
                 Value::Object(rhs_props) => {
                     bind_object(
                         context,
@@ -203,7 +217,7 @@ fn bind_next(
         },
 
         RawExpr::List{items: lhs_items, collect} => {
-            match &(*rhs.lock().unwrap()).v {
+            match deref!(rhs) {
                 Value::List(rhs_items) => {
                     bind_list(
                         context,
