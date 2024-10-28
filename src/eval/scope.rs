@@ -1,4 +1,4 @@
-// Copyright 2023 Sean Kelleher. All rights reserved.
+// Copyright 2023-2024 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -7,6 +7,8 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use ast::Location;
+use value;
+use value::Value;
 use value::ValRefWithSource;
 
 #[derive(Clone, Debug)]
@@ -41,7 +43,10 @@ impl ScopeStack {
         if let Some((_, loc)) = cur_scope.get(name) {
             return Err(*loc);
         }
-        cur_scope.insert(name.to_string(), (v, loc));
+
+        let new_v = copy(v);
+
+        cur_scope.insert(name.to_string(), (new_v, loc));
 
         Ok(())
     }
@@ -50,7 +55,6 @@ impl ScopeStack {
         for scope in self.0.iter().rev() {
             let unlocked_scope = scope.lock().unwrap();
             if let Some((v, _)) = unlocked_scope.get(name) {
-                // TODO Remove `clone()`.
                 return Some(v.clone());
             }
         }
@@ -65,20 +69,9 @@ impl ScopeStack {
     pub fn assign(&mut self, name: &str, v: ValRefWithSource) -> bool {
         for scope in self.0.iter().rev() {
             let mut unlocked_scope = scope.lock().unwrap();
-            let prev_loc =
-                if let Some((_, loc)) = unlocked_scope.get(name) {
-                    Some(*loc)
-                } else {
-                    None
-                };
 
-            if let Some(loc) = prev_loc {
-                // This should ideally overwrite the value stored in this
-                // variable instead of introducing a new variable with a new
-                // binding, but this isn't possible at present with the current
-                // structure of `ValRefWithSource`; see the comment above
-                // `ValRefWithSource` for more details.
-                unlocked_scope.insert(name.to_string(), (v, loc));
+            if let Some((slot, _)) = unlocked_scope.get_mut(name) {
+                set_val_ref(slot, v);
 
                 return true;
             }
@@ -86,4 +79,32 @@ impl ScopeStack {
 
         false
     }
+}
+
+// `copy` returns `v` if it is of a mutable (i.e. object or list) type,
+// otherwise it clones the immutable value and returns it.
+fn copy(v: ValRefWithSource) -> ValRefWithSource {
+    let is_compound_type = matches!(
+        &*v.v.lock().unwrap(),
+        Value::Object(_) | Value::List(_),
+    );
+
+    let new_val_ref =
+        if is_compound_type {
+            v.v
+        } else {
+            let new_v = v.v.lock().unwrap();
+
+            Arc::new(Mutex::new(new_v.clone()))
+        };
+
+    if let Some(source) = v.source {
+        value::new_val_ref_with_source(new_val_ref, source)
+    } else {
+        value::new_val_ref_with_no_source(new_val_ref)
+    }
+}
+
+pub fn set_val_ref(slot: &mut ValRefWithSource, v: ValRefWithSource) {
+    *slot = copy(v);
 }

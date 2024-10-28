@@ -14,6 +14,7 @@ use eval::EvaluationContext;
 #[allow(clippy::wildcard_imports)]
 use super::error::*;
 use super::error::Error;
+use super::scope;
 use super::scope::ScopeStack;
 use value;
 use value::List;
@@ -108,7 +109,7 @@ fn bind_next(
                         return new_loc_err(Error::OutOfListBounds{index: n});
                     }
 
-                    items[n as usize] = rhs;
+                    scope::set_val_ref(&mut items[n as usize], rhs);
 
                     Ok(())
                 },
@@ -121,7 +122,11 @@ fn bind_next(
                         eval::eval_expr_to_str(context, scopes, descr, locat)
                             .context(EvalObjectIndexFailed)?;
 
-                    props.insert(name, rhs);
+                    if let Some(slot) = props.get_mut(&name) {
+                        scope::set_val_ref(slot, rhs);
+                    } else {
+                        props.insert(name, rhs);
+                    }
 
                     Ok(())
                 },
@@ -182,7 +187,11 @@ fn bind_next(
 
             match_eval_expr!((context, scopes, expr) {
                 Value::Object(props) => {
-                    props.insert(name.clone(), rhs);
+                    if let Some(slot) = props.get_mut(name) {
+                        scope::set_val_ref(slot, rhs);
+                    } else {
+                        props.insert(name.clone(), rhs);
+                    }
 
                     Ok(())
                 },
@@ -320,7 +329,7 @@ fn bind_range_index(
     scopes: &mut ScopeStack,
     lhs: (&mut List, &Option<Box<Expr>>, &Option<Box<Expr>>),
     lhs_loc: &(usize, usize),
-    rhs: &List,
+    rhs_items: &List,
 )
     -> Result<(), Error>
 {
@@ -345,7 +354,7 @@ fn bind_range_index(
             eval::eval_expr_to_index(context, scopes, end)
                     .context(EvalEndIndexFailed)?
         } else {
-            rhs.len()
+            rhs_items.len()
         };
 
     let list_len = lhs_items.len();
@@ -358,15 +367,19 @@ fn bind_range_index(
     }
 
     let range_len = end - start;
-    if range_len != rhs.len() {
+    if range_len != rhs_items.len() {
         return new_loc_err(Error::RangeIndexItemMismatch{
             range_len,
-            rhs_len: rhs.len(),
+            rhs_len: rhs_items.len(),
         });
     }
 
-    lhs_items[start .. (range_len+start)]
-        .clone_from_slice(&rhs[..range_len]);
+    for (i, v) in rhs_items.iter().enumerate() {
+        let slot = &mut lhs_items[(start+i) as usize];
+
+        // TODO Consider removing `clone()`.
+        scope::set_val_ref(slot, v.clone());
+    }
 
     Ok(())
 }
