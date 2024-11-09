@@ -35,7 +35,7 @@ impl ScopeStack {
         let mut cur_scope =
             self.0.last()
                 .expect("`ScopeStack` stack shouldn't be empty")
-                .lock()
+                .try_lock()
                 .unwrap();
 
         if let Some((_, loc)) = cur_scope.get(name) {
@@ -49,7 +49,7 @@ impl ScopeStack {
 
     pub fn get(&self, name: &String) -> Option<SourcedValue> {
         for scope in self.0.iter().rev() {
-            let unlocked_scope = scope.lock().unwrap();
+            let unlocked_scope = scope.try_lock().unwrap();
             if let Some((v, _)) = unlocked_scope.get(name) {
                 return Some(v.clone());
             }
@@ -64,7 +64,7 @@ impl ScopeStack {
     // a constant binding.
     pub fn assign(&mut self, name: &str, v: SourcedValue) -> bool {
         for scope in self.0.iter().rev() {
-            let mut unlocked_scope = scope.lock().unwrap();
+            let mut unlocked_scope = scope.try_lock().unwrap();
 
             if let Some((slot, _)) = unlocked_scope.get_mut(name) {
                 set(slot, v);

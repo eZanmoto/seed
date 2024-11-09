@@ -18,7 +18,7 @@ use super::scope::ScopeStack;
 #[macro_export]
 macro_rules! deref {
     ( $val_ref_with_source:ident ) => {
-        *$val_ref_with_source.lock().unwrap()
+        *$val_ref_with_source.try_lock().unwrap()
     };
 }
 
