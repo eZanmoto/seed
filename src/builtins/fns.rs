@@ -4,6 +4,7 @@
 
 use snafu::ResultExt;
 
+use ::deref;
 use crate::eval::error::AssertArgsFailed;
 use crate::eval::error::AssertNoThisFailed;
 use crate::eval::error::Error;
@@ -11,13 +12,6 @@ use crate::eval::value;
 use crate::eval::value::Func;
 use crate::eval::value::SourcedValue;
 use crate::eval::value::Value;
-
-// TODO Duplicated from `src/eval/mod.rs`.
-macro_rules! deref {
-    ( $val_ref_with_source:ident ) => {
-        *$val_ref_with_source.lock().unwrap()
-    };
-}
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn print(this: Option<SourcedValue>, args: Vec<SourcedValue>)
