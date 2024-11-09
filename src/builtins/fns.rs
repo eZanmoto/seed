@@ -9,7 +9,7 @@ use crate::eval::error::AssertNoThisFailed;
 use crate::eval::error::Error;
 use crate::eval::value;
 use crate::eval::value::Func;
-use crate::eval::value::ValRefWithSource;
+use crate::eval::value::SourcedValue;
 use crate::eval::value::Value;
 
 // TODO Duplicated from `src/eval/mod.rs`.
@@ -20,8 +20,8 @@ macro_rules! deref {
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub fn print(this: Option<ValRefWithSource>, args: Vec<ValRefWithSource>)
-    -> Result<ValRefWithSource, Error>
+pub fn print(this: Option<SourcedValue>, args: Vec<SourcedValue>)
+    -> Result<SourcedValue, Error>
 {
     assert_args("print", 1, &args)
         .context(AssertArgsFailed)?;
@@ -36,7 +36,7 @@ pub fn print(this: Option<ValRefWithSource>, args: Vec<ValRefWithSource>)
     Ok(value::new_null())
 }
 
-fn render(v: &ValRefWithSource) -> Result<String, Error> {
+fn render(v: &SourcedValue) -> Result<String, Error> {
     let mut s = String::new();
 
     match v.v.clone() {
@@ -101,7 +101,7 @@ fn render(v: &ValRefWithSource) -> Result<String, Error> {
 
 // `assert_args` asserts that the correct number of arguments were passed for
 // built-in functions.
-pub fn assert_args(fn_name: &str, exp_args: usize, args: &[ValRefWithSource])
+pub fn assert_args(fn_name: &str, exp_args: usize, args: &[SourcedValue])
     -> Result<(), Error>
 {
     let args_len = args.len();
@@ -124,9 +124,7 @@ pub fn assert_args(fn_name: &str, exp_args: usize, args: &[ValRefWithSource])
     Ok(())
 }
 
-pub fn assert_no_this(this: &Option<ValRefWithSource>)
-    -> Result<(), Error>
-{
+pub fn assert_no_this(this: &Option<SourcedValue>) -> Result<(), Error> {
     if this.is_none() {
         Ok(())
     } else {
@@ -134,9 +132,7 @@ pub fn assert_no_this(this: &Option<ValRefWithSource>)
     }
 }
 
-pub fn assert_this(this: Option<ValRefWithSource>)
-    -> Result<ValRefWithSource, Error>
-{
+pub fn assert_this(this: Option<SourcedValue>) -> Result<SourcedValue, Error> {
     if let Some(v) = this {
         Ok(v)
     } else {
@@ -144,9 +140,7 @@ pub fn assert_this(this: Option<ValRefWithSource>)
     }
 }
 
-pub fn assert_str(val_name: &str, v: &ValRefWithSource)
-    -> Result<String, Error>
-{
+pub fn assert_str(val_name: &str, v: &SourcedValue) -> Result<String, Error> {
     if let Value::Str(raw_str) = &v.v {
         match String::from_utf8(raw_str.clone()) {
             Ok(s) => Ok(s),

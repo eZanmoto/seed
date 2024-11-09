@@ -28,8 +28,8 @@ use self::scope::ScopeStack;
 use self::value::BuiltinFunc;
 use self::value::Func;
 use self::value::ListRef;
+use self::value::SourcedValue;
 use self::value::Str;
-use self::value::ValRefWithSource;
 use self::value::Value;
 
 use lexer::Lexer;
@@ -65,13 +65,13 @@ pub struct EvaluationContext<'a> {
     // `global_bindings` are added to the global scope when the program starts.
     //
     // TODO Consider grouping `global_bindings` with `builtins`.
-    pub global_bindings: &'a Vec<(RawExpr, ValRefWithSource)>,
+    pub global_bindings: &'a Vec<(RawExpr, SourcedValue)>,
 }
 
 pub fn eval_prog(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
-    global_bindings: Vec<(RawExpr, ValRefWithSource)>,
+    global_bindings: Vec<(RawExpr, SourcedValue)>,
     Prog::Body{stmts}: &Prog,
 )
     -> Result<(), Error>
@@ -122,7 +122,7 @@ pub fn eval_prog(
 pub fn eval_stmts(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
-    new_bindings: Vec<(Expr, ValRefWithSource)>,
+    new_bindings: Vec<(Expr, SourcedValue)>,
     stmts: &Block,
 )
     -> Result<Escape, Error>
@@ -164,7 +164,7 @@ pub enum Escape {
     None,
     Break{loc: Location},
     Continue{loc: Location},
-    Return{value: ValRefWithSource, loc: Location},
+    Return{value: SourcedValue, loc: Location},
 }
 
 #[allow(clippy::too_many_lines)]
@@ -334,7 +334,7 @@ fn eval_stmt(
 // `value_to_pairs` returns the "index, value" pairs in `v`, if `v` represents
 // an "iterable" type.
 fn value_to_pairs(v: &Value)
-    -> Result<Vec<(ValRefWithSource, ValRefWithSource)>, Error>
+    -> Result<Vec<(SourcedValue, SourcedValue)>, Error>
 {
     let pairs =
         match v {
@@ -397,7 +397,7 @@ fn eval_expr(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
     expr: &Expr,
-) -> Result<ValRefWithSource, Error> {
+) -> Result<SourcedValue, Error> {
     let (raw_expr, (line, col)) = expr;
     let new_loc_err = |source| {
         Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
@@ -611,7 +611,7 @@ fn eval_expr(
         },
 
         RawExpr::Object{props} => {
-            let mut vals = BTreeMap::<String, ValRefWithSource>::new();
+            let mut vals = BTreeMap::<String, SourcedValue>::new();
 
             for prop in props {
                 match prop {
@@ -773,11 +773,11 @@ fn eval_expr(
 enum CallBinding {
     BuiltinFunc{
         f: BuiltinFunc,
-        this: Option<ValRefWithSource>,
-        args: Vec<ValRefWithSource>,
+        this: Option<SourcedValue>,
+        args: Vec<SourcedValue>,
     },
     Func{
-        bindings: Vec<(Expr, ValRefWithSource)>,
+        bindings: Vec<(Expr, SourcedValue)>,
         closure: ScopeStack,
         stmts: Block,
     },
@@ -1088,7 +1088,7 @@ fn get_str_range_index(
     mut maybe_start: Option<usize>,
     mut maybe_end: Option<usize>,
 )
-    -> Result<ValRefWithSource, Error>
+    -> Result<SourcedValue, Error>
 {
     let start = maybe_start.get_or_insert(0);
     let end = maybe_end.get_or_insert(s.len());
@@ -1105,7 +1105,7 @@ fn get_list_range_index(
     mut maybe_start: Option<usize>,
     mut maybe_end: Option<usize>,
 )
-    -> Result<ValRefWithSource, Error>
+    -> Result<SourcedValue, Error>
 {
     let start = maybe_start.get_or_insert(0);
     let end = maybe_end.get_or_insert(deref!(list).len());
@@ -1122,7 +1122,7 @@ fn eval_list_items(
     scopes: &mut ScopeStack,
     items: &Vec<ListItem>,
 )
-    -> Result<Vec<ValRefWithSource>, Error>
+    -> Result<Vec<SourcedValue>, Error>
 {
     let mut vals = vec![];
 
@@ -1166,7 +1166,7 @@ fn eval_call(
     args: &Vec<ListItem>,
     loc: (&usize, &usize),
 )
-    -> Result<ValRefWithSource, Error>
+    -> Result<SourcedValue, Error>
 {
     let (line, col) = loc;
     let new_loc_err = |source| {
@@ -1181,7 +1181,7 @@ fn eval_call(
 
     let (func_name, v) =
         {
-            let ValRefWithSource{v, source} = func_val;
+            let SourcedValue{v, source} = func_val;
 
             match v {
                 Value::BuiltinFunc{name, f} => {
@@ -1217,8 +1217,7 @@ fn eval_call(
                         );
                     }
 
-                    let mut bindings: Vec<(Expr, ValRefWithSource)> =
-                        vec![];
+                    let mut bindings: Vec<(Expr, SourcedValue)> = vec![];
 
                     for i in 0 .. num_params {
                         let arg_val =

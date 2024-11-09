@@ -7,12 +7,12 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use ast::Location;
-use value::ValRefWithSource;
+use value::SourcedValue;
 
 #[derive(Clone, Debug)]
 pub struct ScopeStack(Vec<Arc<Mutex<Scope>>>);
 
-pub type Scope = HashMap<String, (ValRefWithSource, Location)>;
+pub type Scope = HashMap<String, (SourcedValue, Location)>;
 
 impl ScopeStack {
     pub fn new(scopes: Vec<Arc<Mutex<Scope>>>) -> ScopeStack {
@@ -29,7 +29,7 @@ impl ScopeStack {
     // `declare` returns `Err` if `name` is already defined in the current
     // scope, and the `Err` will contain the location of the previous
     // definition.
-    pub fn declare(&mut self, name: &str, loc: Location, v: ValRefWithSource)
+    pub fn declare(&mut self, name: &str, loc: Location, v: SourcedValue)
         -> Result<(), Location>
     {
         let mut cur_scope =
@@ -47,7 +47,7 @@ impl ScopeStack {
         Ok(())
     }
 
-    pub fn get(&self, name: &String) -> Option<ValRefWithSource> {
+    pub fn get(&self, name: &String) -> Option<SourcedValue> {
         for scope in self.0.iter().rev() {
             let unlocked_scope = scope.lock().unwrap();
             if let Some((v, _)) = unlocked_scope.get(name) {
@@ -62,7 +62,7 @@ impl ScopeStack {
     // returns `true`, or else it returns `false` if `name` wasn't found in
     // this `ScopeStack`. `assign` returns an error if attempting to assign to
     // a constant binding.
-    pub fn assign(&mut self, name: &str, v: ValRefWithSource) -> bool {
+    pub fn assign(&mut self, name: &str, v: SourcedValue) -> bool {
         for scope in self.0.iter().rev() {
             let mut unlocked_scope = scope.lock().unwrap();
 
@@ -77,6 +77,6 @@ impl ScopeStack {
     }
 }
 
-pub fn set(slot: &mut ValRefWithSource, v: ValRefWithSource) {
+pub fn set(slot: &mut SourcedValue, v: SourcedValue) {
     *slot = v;
 }

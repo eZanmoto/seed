@@ -17,7 +17,7 @@ use crate::eval::error::AssertThisFailed;
 use crate::eval::error::Error;
 use crate::eval::value;
 use crate::eval::value::ObjectRef;
-use crate::eval::value::ValRefWithSource;
+use crate::eval::value::SourcedValue;
 use crate::eval::value::Value;
 
 pub fn type_functions() -> TypeFunctions {
@@ -65,15 +65,15 @@ pub fn type_functions() -> TypeFunctions {
     }
 }
 
-pub fn new_func_map(funcs: Vec<(String, ValRefWithSource)>) -> ObjectRef {
-    Arc::new(Mutex::new(BTreeMap::<String, ValRefWithSource>::from_iter(
+pub fn new_func_map(funcs: Vec<(String, SourcedValue)>) -> ObjectRef {
+    Arc::new(Mutex::new(BTreeMap::<String, SourcedValue>::from_iter(
         funcs,
     )))
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub fn str_len(this: Option<ValRefWithSource>, vs: Vec<ValRefWithSource>)
-    -> Result<ValRefWithSource, Error>
+pub fn str_len(this: Option<SourcedValue>, vs: Vec<SourcedValue>)
+    -> Result<SourcedValue, Error>
 {
     fns::assert_args("len", 0, &vs)
         .context(AssertArgsFailed)?;
@@ -88,8 +88,8 @@ pub fn str_len(this: Option<ValRefWithSource>, vs: Vec<ValRefWithSource>)
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub fn any_type(this: Option<ValRefWithSource>, vs: Vec<ValRefWithSource>)
-    -> Result<ValRefWithSource, Error>
+pub fn any_type(this: Option<SourcedValue>, vs: Vec<SourcedValue>)
+    -> Result<SourcedValue, Error>
 {
     fns::assert_args("type", 0, &vs)
         .context(AssertArgsFailed)?;

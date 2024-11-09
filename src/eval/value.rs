@@ -11,30 +11,30 @@ use eval::Error;
 use eval::Expr;
 use super::scope::ScopeStack;
 
-pub fn new_val_ref_with_no_source(v: Value) -> ValRefWithSource {
-    ValRefWithSource{
+pub fn new_val_ref_with_no_source(v: Value) -> SourcedValue {
+    SourcedValue{
         v,
         source: None,
     }
 }
 
-pub fn new_val_ref_with_source(v: Value, source: Value) -> ValRefWithSource {
-    ValRefWithSource{
+pub fn new_val_ref_with_source(v: Value, source: Value) -> SourcedValue {
+    SourcedValue{
         v,
         source: Some(source),
     }
 }
 
-// `ValRefWithSource` is intended to be used as a regular `ValRef` would, but
-// it includes the most recent object it was referenced from. For example, in
-// the case of `x['f']`, the `ValRef` is the value stored at the location
-// `'f'`, and the `source` of this value is `x`.
+// `SourcedValue` is intended to be used as a regular `Value` would, but it
+// includes the most recent object it was referenced from. For example, in the
+// case of `x['f']`, the `Value` is the value stored at the location `'f'`,
+// and the `source` of this value is `x`.
 //
 // Note that `source` will only be an `Object` when `v` has been accessed using
 // a property/index access, but it can be of any type when `v` has been
 // accessed as a type property.
 #[derive(Clone, Debug)]
-pub struct ValRefWithSource {
+pub struct SourcedValue {
     pub v: Value,
     pub source: Option<Value>,
 }
@@ -58,18 +58,18 @@ pub type Str = Vec<u8>;
 
 pub type ListRef = Arc<Mutex<List>>;
 
-pub type List = Vec<ValRefWithSource>;
+pub type List = Vec<SourcedValue>;
 
 pub type ObjectRef = Arc<Mutex<Object>>;
 
 // We use a `BTreeMap` instead of a `HashMap` for representing `Object`s in
 // order to get a deterministic order when printing objects, which simplifies
 // "output" tests.
-pub type Object = BTreeMap<String, ValRefWithSource>;
+pub type Object = BTreeMap<String, SourcedValue>;
 
 pub type BuiltinFunc =
-    fn(Option<ValRefWithSource>, Vec<ValRefWithSource>)
-        -> Result<ValRefWithSource, Error>;
+    fn(Option<SourcedValue>, Vec<SourcedValue>)
+        -> Result<SourcedValue, Error>;
 
 #[derive(Clone, Debug)]
 pub struct Func {
@@ -80,31 +80,31 @@ pub struct Func {
     pub closure: ScopeStack,
 }
 
-pub fn new_null() -> ValRefWithSource {
+pub fn new_null() -> SourcedValue {
     new_val_ref_with_no_source(Value::Null)
 }
 
-pub fn new_bool(b: bool) -> ValRefWithSource {
+pub fn new_bool(b: bool) -> SourcedValue {
     new_val_ref_with_no_source(Value::Bool(b))
 }
 
-pub fn new_int(n: i64) -> ValRefWithSource {
+pub fn new_int(n: i64) -> SourcedValue {
     new_val_ref_with_no_source(Value::Int(n))
 }
 
-pub fn new_str(s: Str) -> ValRefWithSource {
+pub fn new_str(s: Str) -> SourcedValue {
     new_val_ref_with_no_source(Value::Str(s))
 }
 
-pub fn new_str_from_string(s: String) -> ValRefWithSource {
+pub fn new_str_from_string(s: String) -> SourcedValue {
     new_val_ref_with_no_source(Value::Str(s.into_bytes()))
 }
 
-pub fn new_list(list: List) -> ValRefWithSource {
+pub fn new_list(list: List) -> SourcedValue {
     new_val_ref_with_no_source(Value::List(Arc::new(Mutex::new(list))))
 }
 
-pub fn new_object(object: Object) -> ValRefWithSource {
+pub fn new_object(object: Object) -> SourcedValue {
     new_val_ref_with_no_source(Value::Object(Arc::new(Mutex::new(object))))
 }
 
@@ -115,7 +115,7 @@ pub fn new_func(
     stmts: Block,
     closure: ScopeStack,
 )
-    -> ValRefWithSource
+    -> SourcedValue
 {
     new_val_ref_with_no_source(
         Value::Func(Arc::new(Mutex::new(Func{
@@ -128,7 +128,7 @@ pub fn new_func(
     )
 }
 
-pub fn new_built_in_func(name: String, f: BuiltinFunc) -> ValRefWithSource {
+pub fn new_built_in_func(name: String, f: BuiltinFunc) -> SourcedValue {
     new_val_ref_with_no_source(Value::BuiltinFunc{name, f})
 }
 

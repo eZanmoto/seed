@@ -19,7 +19,7 @@ use super::scope::ScopeStack;
 use value;
 use value::ListRef;
 use value::ObjectRef;
-use value::ValRefWithSource;
+use value::SourcedValue;
 use value::Value;
 
 // TODO Duplicated from `src/eval/mod.rs`.
@@ -49,7 +49,7 @@ pub fn bind(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
     lhs: &Expr,
-    rhs: ValRefWithSource,
+    rhs: SourcedValue,
     bind_type: BindType,
 )
     -> Result<(), Error>
@@ -71,7 +71,7 @@ fn bind_next(
     scopes: &mut ScopeStack,
     names_in_binding: &mut HashSet<String>,
     lhs: &Expr,
-    rhs: ValRefWithSource,
+    rhs: SourcedValue,
     bind_type: BindType,
 )
     -> Result<(), Error>
@@ -148,7 +148,7 @@ fn bind_next(
                         },
 
                         Value::Str(s) => {
-                            let chars: Vec<ValRefWithSource> =
+                            let chars: Vec<SourcedValue> =
                                 s.iter()
                                     .map(|c| value::new_str(vec![*c]))
                                     .collect();
@@ -263,7 +263,7 @@ pub fn bind_name(
     scopes: &mut ScopeStack,
     name: &str,
     name_loc: &(usize, usize),
-    rhs: ValRefWithSource,
+    rhs: SourcedValue,
     bind_type: BindType,
 )
     -> Result<(), Error>
@@ -276,7 +276,7 @@ fn bind_next_name(
     names_in_binding: &mut HashSet<String>,
     name: &str,
     name_loc: &(usize, usize),
-    rhs: ValRefWithSource,
+    rhs: SourcedValue,
     bind_type: BindType,
 )
     -> Result<(), Error>
@@ -322,7 +322,7 @@ fn bind_range_index(
     scopes: &mut ScopeStack,
     lhs: (&mut ListRef, &Option<Box<Expr>>, &Option<Box<Expr>>),
     lhs_loc: &(usize, usize),
-    rhs_items: &[ValRefWithSource],
+    rhs_items: &[SourcedValue],
 )
     -> Result<(), Error>
 {
@@ -428,7 +428,7 @@ fn bind_object(
                         return new_loc_err(Error::ObjectCollectIsNotLast);
                     }
 
-                    let new_rhs: BTreeMap<String, ValRefWithSource> =
+                    let new_rhs: BTreeMap<String, SourcedValue> =
                         remaining_keys
                             .iter()
                             .map(|k| (
