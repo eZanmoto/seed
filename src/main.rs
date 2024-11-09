@@ -13,6 +13,8 @@ use std::io::Error as IoError;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 mod ast;
 mod builtins;
@@ -134,7 +136,7 @@ fn run(cur_rel_script_path: &Path) -> Result<(), Error> {
     eval::eval_prog(
         &EvaluationContext{
             builtins: &Builtins{
-                std: BTreeMap::new(),
+                std: Arc::new(Mutex::new(BTreeMap::new())),
                 type_functions: type_functions::type_functions(),
             },
             global_bindings: &global_bindings,
