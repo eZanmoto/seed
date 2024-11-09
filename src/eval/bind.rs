@@ -16,18 +16,12 @@ use super::error::*;
 use super::error::Error;
 use super::scope;
 use super::scope::ScopeStack;
+use ::deref;
 use value;
 use value::ListRef;
 use value::ObjectRef;
 use value::SourcedValue;
 use value::Value;
-
-// TODO Duplicated from `src/eval/mod.rs`.
-macro_rules! deref {
-    ( $val_ref_with_source:ident ) => {
-        *$val_ref_with_source.lock().unwrap()
-    };
-}
 
 // TODO Duplicated from `src/eval/mod.rs`.
 macro_rules! match_eval_expr {
