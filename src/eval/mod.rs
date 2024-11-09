@@ -26,7 +26,8 @@ use self::error::*;
 use self::error::Error;
 use self::scope::ScopeStack;
 use self::value::BuiltinFunc;
-use self::value::List;
+use self::value::Func;
+use self::value::ListRef;
 use self::value::Str;
 use self::value::ValRefWithSource;
 use self::value::Value;
@@ -40,13 +41,7 @@ use parser::ExprParser;
 // is no longer valid. As such, we define a macro to abstract this access.
 macro_rules! deref {
     ( $val_ref_with_source:ident ) => {
-        &*$val_ref_with_source.v.lock().unwrap()
-    };
-}
-
-macro_rules! mut_deref {
-    ( $val_ref_with_source:ident ) => {
-        &mut *$val_ref_with_source.v.lock().unwrap()
+        *$val_ref_with_source.lock().unwrap()
     };
 }
 
@@ -57,8 +52,7 @@ macro_rules! match_eval_expr {
     ) => {{
         let value = eval_expr($context, $scopes, $expr)
             .context(EvalExprFailed)?;
-        let unlocked_value = mut_deref!(value);
-        match unlocked_value {
+        match value.v {
             $( $key => $value , )*
         }
     }};
@@ -228,18 +222,11 @@ fn eval_stmt(
             let rhs_val = eval_expr(context, scopes, rhs)
                 .context(EvalBinOpRhsFailed)?;
 
-            // See comment above call to `apply_binary_operation` in
-            // `eval_expr` for details on why we clone the value from inside
-            // the `lhs` `Mutex`.
-            let raw_v = apply_binary_operation(
-                op,
-                op_loc,
-                &clone_value(&lhs_val),
-                deref!(rhs_val),
-            )
-                .context(ApplyBinOpFailed)?;
+            let raw_v =
+                apply_binary_operation(op, op_loc, &lhs_val.v, &rhs_val.v)
+                    .context(ApplyBinOpFailed)?;
 
-            let v = value::new_val_ref_from_value(raw_v);
+            let v = value::new_val_ref_with_no_source(raw_v);
 
             bind::bind_name(scopes, name, name_loc, v, BindType::Assignment)
                 .context(OpAssignmentBindFailed)?;
@@ -291,7 +278,7 @@ fn eval_stmt(
             let iter_val = eval_expr(context, scopes, iter)
                     .context(EvalForIterFailed)?;
 
-            let pairs = value_to_pairs(deref!(iter_val))
+            let pairs = value_to_pairs(&iter_val.v)
                     .context(ConvertForIterToPairsFailed)?;
 
             for (key, value) in pairs {
@@ -361,7 +348,9 @@ fn value_to_pairs(v: &Value)
                     })
                     .collect(),
 
-            Value::List(items) =>
+            Value::List(items) => {
+                let items = &deref!(items);
+
                 items
                     .iter()
                     .enumerate()
@@ -369,9 +358,12 @@ fn value_to_pairs(v: &Value)
                         // TODO Handle issues caused by casting.
                         (value::new_int(i as i64), value.clone())
                     })
-                    .collect(),
+                    .collect()
+            },
 
-            Value::Object(props) =>
+            Value::Object(props) => {
+                let props = &deref!(props);
+
                 props
                     .iter()
                     .map(|(key, value)| {
@@ -380,7 +372,8 @@ fn value_to_pairs(v: &Value)
                             value.clone(),
                         )
                     })
-                    .collect(),
+                    .collect()
+            },
 
             _ =>
                 return Err(Error::ForIterNotIterable),
@@ -453,22 +446,10 @@ fn eval_expr(
             let rhs_val = eval_expr(context, scopes, rhs)
                 .context(EvalBinOpRhsFailed)?;
 
-            // We clone the value from inside the `lhs_val` `Mutex` in a
-            // separate scope instead of using `&lhs_val.v.lock().unwrap()`
-            // (which is performed by `deref!`). This is because, with the
-            // latter approach, if `lhs_val` and `rhs_val` refer to the same
-            // `Mutex` value, the first lock on it (`lhs_val.v.lock()`) will
-            // cause a deadlock when a second lock (`rhs_val.v.lock()`) is
-            // attempted in the same scope.
-            let v = apply_binary_operation(
-                op,
-                op_loc,
-                &clone_value(&lhs_val),
-                deref!(rhs_val),
-            )
+            let v = apply_binary_operation(op, op_loc, &lhs_val.v, &rhs_val.v)
                 .context(ApplyBinOpFailed)?;
 
-            Ok(value::new_val_ref_from_value(v))
+            Ok(value::new_val_ref_with_no_source(v))
         },
 
         RawExpr::List{items, collect} => {
@@ -488,8 +469,7 @@ fn eval_expr(
             let source_val = eval_expr(context, scopes, expr)
                 .context(EvalSourceExprFailed)?;
 
-            let unlocked_value = deref!(source_val);
-            match unlocked_value {
+            match source_val.v {
                 Value::Str(s) => {
                     let index = eval_expr_to_index(context, scopes, locat)
                         .context(EvalStringIndexFailed)?;
@@ -510,7 +490,7 @@ fn eval_expr(
                         .context(EvalListIndexFailed)?;
 
                     let v =
-                        match list.get(index) {
+                        match deref!(list).get(index) {
                             Some(v) => v.clone(),
                             None => return new_loc_err(
                                 Error::OutOfListBounds{index},
@@ -520,7 +500,7 @@ fn eval_expr(
                     Ok(v)
                 },
 
-                Value::Object(props) => {
+                Value::Object(ref props) => {
                     // TODO Consider whether non-UTF-8 strings can be used to
                     // perform key lookups on objects.
                     let name =
@@ -528,19 +508,16 @@ fn eval_expr(
                             .context(EvalObjectIndexFailed)?;
 
                     let v =
-                        match props.get(&name) {
+                        match deref!(props).get(&name) {
                             Some(value) => {
-                                value::new_val_ref_with_source(
-                                    value.v.clone(),
-                                    source_val.v.clone(),
-                                )
+                                value.v.clone()
                             },
                             None => {
                                 return new_loc_err(Error::PropNotFound{name});
                             },
                         };
 
-                    Ok(v)
+                    Ok(value::new_val_ref_with_source(v, source_val.v.clone()))
                 },
 
                 _ => {
@@ -573,7 +550,7 @@ fn eval_expr(
             match_eval_expr!((context, scopes, expr) {
                 Value::Str(s) => {
                     let v =
-                        match get_str_range_index(s, start_val, end_val) {
+                        match get_str_range_index(&s, start_val, end_val) {
                             Ok(v) => v,
 
                             // TODO Instead of using `new_loc_err`, check
@@ -591,8 +568,11 @@ fn eval_expr(
                 },
 
                 Value::List(items) => {
+                    let range_values =
+                        get_list_range_index(&items, start_val, end_val);
+
                     let v =
-                        match get_list_range_index(items, start_val, end_val) {
+                        match range_values {
                             Ok(v) => v,
 
                             // TODO Instead of using `new_loc_err`, check
@@ -657,7 +637,7 @@ fn eval_expr(
                         if *is_spread {
                             match_eval_expr!((context, scopes, expr) {
                                 Value::Object(props) => {
-                                    for (name, value) in props.iter() {
+                                    for (name, value) in &deref!(props) {
                                         vals.insert(
                                             name.to_string(),
                                             value.clone(),
@@ -671,7 +651,7 @@ fn eval_expr(
                                     return Err(Error::AtLoc{
                                         source: Box::new(
                                             Error::SpreadNonObjectInObject{
-                                                value: value.clone(),
+                                                value,
                                             },
                                         ),
                                         line: *line,
@@ -717,11 +697,9 @@ fn eval_expr(
             let source = eval_expr(context, scopes, expr)
                 .context(EvalPropFailed)?;
 
-            let unlocked_source = mut_deref!(source);
-
             let namespace =
                 if *type_prop {
-                    match unlocked_source {
+                    match source.v {
                         Value::Bool(_) =>
                             &context.builtins.type_functions.bools,
                         Value::Int(_) =>
@@ -740,37 +718,35 @@ fn eval_expr(
                         },
                     }
                 } else {
-                    match unlocked_source {
-                        Value::Object(props) => props,
+                    match source.v {
+                        Value::Object(ref props) => props,
 
                         value => {
                             return new_loc_err(Error::PropAccessOnNonObject{
-                                value: value.clone(),
+                                value,
                             })
                         },
                     }
                 };
 
-            match namespace.get(name) {
-                Some(value) => {
+            let v =
+                if let Some(value) = deref!(namespace).get(name) {
                     Ok(value::new_val_ref_with_source(
                         value.v.clone(),
                         source.v.clone(),
                     ))
-                },
-                None => {
-                    if *type_prop {
-                        new_loc_err(Error::TypeFunctionNotFound{
-                            value: unlocked_source.clone(),
-                            name: name.clone(),
-                        })
-                    } else {
-                        new_loc_err(Error::PropNotFound{
-                            name: name.clone(),
-                        })
-                    }
-                },
-            }
+                } else if *type_prop {
+                    new_loc_err(Error::TypeFunctionNotFound{
+                        value: source.v.clone(),
+                        name: name.clone(),
+                    })
+                } else {
+                    new_loc_err(Error::PropNotFound{
+                        name: name.clone(),
+                    })
+                };
+
+            v
         },
 
         RawExpr::Func{args, collect_args, stmts} => {
@@ -798,22 +774,13 @@ enum CallBinding {
     BuiltinFunc{
         f: BuiltinFunc,
         this: Option<ValRefWithSource>,
-        args: List,
+        args: Vec<ValRefWithSource>,
     },
     Func{
         bindings: Vec<(Expr, ValRefWithSource)>,
         closure: ScopeStack,
         stmts: Block,
     },
-}
-
-// `clone_value` is used to explicitly release the lock on `v` after the value
-// is cloned. This is in contrast with `deref!(v).clone()`, which may cause a
-// deadlock if performed sequentially on the same reference.
-fn clone_value(v: &ValRefWithSource) -> Value {
-    let unlocked_v = deref!(v);
-
-    unlocked_v.clone()
 }
 
 fn apply_binary_operation(
@@ -950,20 +917,18 @@ fn eq(lhs: &Value, rhs: &Value) -> Option<bool> {
             Some(a == b),
 
         (Value::List(xs), Value::List(ys)) => {
-            if xs.len() != ys.len() {
+            if value::ref_eq(xs, ys) {
+                return Some(true);
+            }
+
+            if deref!(xs).len() != deref!(ys).len() {
                 return Some(false);
             }
 
-            for (i, x) in xs.iter().enumerate() {
-                let y = &ys[i];
+            for (i, x) in deref!(xs).iter().enumerate() {
+                let y = &deref!(ys)[i];
 
-                // See comment above call to `apply_binary_operation` in
-                // `eval_expr` for details on why we clone the value from
-                // inside the `lhs` `Mutex`.
-                let equal = eq(
-                    &clone_value(x),
-                    deref!(y),
-                )?;
+                let equal = eq(&x.v, &y.v)?;
 
                 if !equal {
                     return Some(false);
@@ -974,11 +939,16 @@ fn eq(lhs: &Value, rhs: &Value) -> Option<bool> {
         },
 
         (Value::Object(xs), Value::Object(ys)) => {
-            if xs.len() != ys.len() {
+            if value::ref_eq(xs, ys) {
+                return Some(true);
+            }
+
+            if deref!(xs).len() != deref!(ys).len() {
                 return Some(false);
             }
 
-            for (k, x) in xs.iter() {
+            for (k, x) in &deref!(xs) {
+                let ys = &deref!(ys);
                 let y =
                     if let Some(y) = ys.get(k) {
                         y
@@ -986,13 +956,7 @@ fn eq(lhs: &Value, rhs: &Value) -> Option<bool> {
                         return Some(false);
                     };
 
-                // See comment above call to `apply_binary_operation` in
-                // `eval_expr` for details on why we clone the value from
-                // inside the `lhs` `Mutex`.
-                let equal = eq(
-                    &clone_value(x),
-                    deref!(y),
-                )?;
+                let equal = eq(&x.v, &y.v)?;
 
                 if !equal {
                     return Some(false);
@@ -1022,11 +986,11 @@ fn eval_expr_to_str(
 
     let raw_str =
         match_eval_expr!((context, scopes, expr) {
-            Value::Str(s) => s.clone(),
+            Value::Str(s) => s,
             value => return new_loc_err(Error::IncorrectType{
                 descr: descr.to_string(),
                 exp_type: "string".to_string(),
-                value: value.clone(),
+                value,
             }),
         });
 
@@ -1057,13 +1021,13 @@ fn eval_expr_to_bool(
 
     match_eval_expr!((context, scopes, expr) {
         Value::Bool(b) =>
-            Ok(*b),
+            Ok(b),
 
         value =>
             new_loc_err(Error::IncorrectType{
                 descr: descr.to_string(),
                 exp_type: "bool".to_string(),
-                value: value.clone(),
+                value,
             }),
     })
 }
@@ -1083,13 +1047,13 @@ fn eval_expr_to_i64(
 
     match_eval_expr!((context, scopes, expr) {
         Value::Int(n) =>
-            Ok(*n),
+            Ok(n),
 
         value =>
             new_loc_err(Error::IncorrectType{
                 descr: descr.to_string(),
                 exp_type: "int".to_string(),
-                value: value.clone(),
+                value,
             }),
     })
 }
@@ -1137,16 +1101,16 @@ fn get_str_range_index(
 }
 
 fn get_list_range_index(
-    list: &List,
+    list: &ListRef,
     mut maybe_start: Option<usize>,
     mut maybe_end: Option<usize>,
 )
     -> Result<ValRefWithSource, Error>
 {
     let start = maybe_start.get_or_insert(0);
-    let end = maybe_end.get_or_insert(list.len());
+    let end = maybe_end.get_or_insert(deref!(list).len());
 
-    if let Some(vs) = list.get(*start .. *end) {
+    if let Some(vs) = deref!(list).get(*start .. *end) {
         return Ok(value::new_list(vs.to_vec()));
     }
 
@@ -1172,9 +1136,9 @@ fn eval_list_items(
             continue;
         }
 
-        match deref!(v) {
+        match v.v {
             Value::List(items) => {
-                for item in items {
+                for item in &deref!(items) {
                     vals.push(item.clone());
                 }
             },
@@ -1183,9 +1147,7 @@ fn eval_list_items(
                 let (_, (line, col)) = item.expr;
 
                 return Err(Error::AtLoc{
-                    source: Box::new(Error::SpreadNonListInList{
-                        value: value.clone(),
-                    }),
+                    source: Box::new(Error::SpreadNonListInList{value}),
                     line,
                     col,
                 })
@@ -1221,29 +1183,25 @@ fn eval_call(
         {
             let ValRefWithSource{v, source} = func_val;
 
-            let unlocked_value = &*v.lock().unwrap();
-
-            match unlocked_value {
+            match v {
                 Value::BuiltinFunc{name, f} => {
                     let this = source.map(value::new_val_ref_with_no_source);
 
                     (
-                        Some(name.clone()),
-                        CallBinding::BuiltinFunc{
-                            f: *f,
-                            this,
-                            args: arg_vals,
-                        },
+                        Some(name),
+                        CallBinding::BuiltinFunc{f, this, args: arg_vals},
                     )
                 },
 
-                Value::Func{
-                    name,
-                    args: arg_names,
-                    collect_args,
-                    stmts,
-                    closure,
-                } => {
+                Value::Func(f) => {
+                    let Func{
+                        name,
+                        args: arg_names,
+                        collect_args,
+                        stmts,
+                        closure,
+                    } = &deref!(f);
+
                     let num_params = arg_names.len();
                     let got = arg_vals.len();
                     if *collect_args {
@@ -1298,9 +1256,7 @@ fn eval_call(
                 },
 
                 _ => {
-                    return new_loc_err(
-                        Error::CannotCallNonFunc{v: unlocked_value.clone()},
-                    );
+                    return new_loc_err(Error::CannotCallNonFunc{v});
                 },
             }
         };
@@ -1399,7 +1355,7 @@ fn interpolate_string(
                 ),
             };
 
-        match deref!(v) {
+        match v.v {
             Value::Str(s) => {
                 match String::from_utf8(s.clone()) {
                     Ok(s) => result.push(s),
@@ -1412,9 +1368,7 @@ fn interpolate_string(
                     ),
                 }
             },
-            v => {
-                let value = v.clone();
-
+            value => {
                 return new_loc_err(
                     Error::InterpolatedValueNotString{value},
                     slot_col,

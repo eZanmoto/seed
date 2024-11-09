@@ -8,28 +8,28 @@ use crate::eval::error::AssertArgsFailed;
 use crate::eval::error::AssertNoThisFailed;
 use crate::eval::error::Error;
 use crate::eval::value;
-use crate::eval::value::List;
+use crate::eval::value::Func;
 use crate::eval::value::ValRefWithSource;
 use crate::eval::value::Value;
 
 // TODO Duplicated from `src/eval/mod.rs`.
 macro_rules! deref {
     ( $val_ref_with_source:ident ) => {
-        &*$val_ref_with_source.v.lock().unwrap()
+        *$val_ref_with_source.lock().unwrap()
     };
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub fn print(this: Option<ValRefWithSource>, vs: List)
+pub fn print(this: Option<ValRefWithSource>, args: Vec<ValRefWithSource>)
     -> Result<ValRefWithSource, Error>
 {
-    assert_args("print", 1, &vs)
+    assert_args("print", 1, &args)
         .context(AssertArgsFailed)?;
 
     assert_no_this(&this)
         .context(AssertNoThisFailed)?;
 
-    let s = render(&vs[0])?;
+    let s = render(&args[0])?;
 
     println!("{}", s);
 
@@ -39,7 +39,7 @@ pub fn print(this: Option<ValRefWithSource>, vs: List)
 fn render(v: &ValRefWithSource) -> Result<String, Error> {
     let mut s = String::new();
 
-    match deref!(v) {
+    match v.v.clone() {
         Value::Null => {
             s += "<null>";
         },
@@ -54,7 +54,7 @@ fn render(v: &ValRefWithSource) -> Result<String, Error> {
 
         Value::Str(raw_str) => {
             let rendered_str =
-                match String::from_utf8(raw_str.clone()) {
+                match String::from_utf8(raw_str) {
                     Ok(p) => p,
                     Err(e) => return Err(Error::BuiltinFuncErr{msg: format!(
                         "couldn't convert error message to UTF-8: {}",
@@ -67,7 +67,7 @@ fn render(v: &ValRefWithSource) -> Result<String, Error> {
 
         Value::List(items) => {
             s += "[\n";
-            for item in items {
+            for item in &deref!(items) {
                 let rendered_item = render(item)?;
                 let indented = rendered_item.replace('\n', "\n    ");
                 s += &format!("    {},\n", indented);
@@ -77,7 +77,7 @@ fn render(v: &ValRefWithSource) -> Result<String, Error> {
 
         Value::Object(props) => {
             s += "{\n";
-            for (name, prop) in props {
+            for (name, prop) in &deref!(props) {
                 let rendered_prop = render(prop)?;
                 let indented = rendered_prop.replace('\n', "\n    ");
                 s += &format!("    \"{}\": {},\n", name, indented);
@@ -89,7 +89,9 @@ fn render(v: &ValRefWithSource) -> Result<String, Error> {
             s += &format!("<built-in function '{}'>", name);
         },
 
-        Value::Func{name, ..} => {
+        Value::Func(f) => {
+            let Func{name, ..} = &deref!(f);
+
             s += &format!("<function '{:?}'>", name);
         },
     }
@@ -99,10 +101,12 @@ fn render(v: &ValRefWithSource) -> Result<String, Error> {
 
 // `assert_args` asserts that the correct number of arguments were passed for
 // built-in functions.
-pub fn assert_args(fn_name: &str, exp_args: usize, args: &List)
+pub fn assert_args(fn_name: &str, exp_args: usize, args: &[ValRefWithSource])
     -> Result<(), Error>
 {
-    if args.len() != exp_args {
+    let args_len = args.len();
+
+    if args_len != exp_args {
         let mut plural = "";
         if exp_args != 1 {
             plural = "s";
@@ -113,7 +117,7 @@ pub fn assert_args(fn_name: &str, exp_args: usize, args: &List)
             fn_name,
             exp_args,
             plural,
-            args.len(),
+            args_len,
         )})
     }
 
@@ -143,9 +147,7 @@ pub fn assert_this(this: Option<ValRefWithSource>)
 pub fn assert_str(val_name: &str, v: &ValRefWithSource)
     -> Result<String, Error>
 {
-    let unlocked_value = deref!(v);
-
-    if let Value::Str(raw_str) = unlocked_value {
+    if let Value::Str(raw_str) = &v.v {
         match String::from_utf8(raw_str.clone()) {
             Ok(s) => Ok(s),
             Err(e) => Err(Error::BuiltinFuncErr{msg: format!(

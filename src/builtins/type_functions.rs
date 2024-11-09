@@ -3,6 +3,9 @@
 // licence that can be found in the LICENCE file.
 
 use std::collections::BTreeMap;
+use std::iter::FromIterator;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use snafu::ResultExt;
 
@@ -13,32 +16,25 @@ use crate::eval::error::AssertStrFailed;
 use crate::eval::error::AssertThisFailed;
 use crate::eval::error::Error;
 use crate::eval::value;
-use crate::eval::value::List;
+use crate::eval::value::ObjectRef;
 use crate::eval::value::ValRefWithSource;
 use crate::eval::value::Value;
 
-// TODO Duplicated from `src/eval/mod.rs`.
-macro_rules! deref {
-    ( $val_ref_with_source:ident ) => {
-        &*$val_ref_with_source.v.lock().unwrap()
-    };
-}
-
 pub fn type_functions() -> TypeFunctions {
     TypeFunctions{
-        bools: BTreeMap::<String, ValRefWithSource>::from([
+        bools: new_func_map(vec![
             (
                 "type".to_string(),
                 value::new_built_in_func("bool->type".to_string(), any_type),
             ),
         ]),
-        ints: BTreeMap::<String, ValRefWithSource>::from([
+        ints: new_func_map(vec![
             (
                 "type".to_string(),
                 value::new_built_in_func("int->type".to_string(), any_type),
             ),
         ]),
-        strs: BTreeMap::<String, ValRefWithSource>::from([
+        strs: new_func_map(vec![
             (
                 "len".to_string(),
                 value::new_built_in_func("str->len".to_string(), str_len),
@@ -48,19 +44,19 @@ pub fn type_functions() -> TypeFunctions {
                 value::new_built_in_func("str->type".to_string(), any_type),
             ),
         ]),
-        lists: BTreeMap::<String, ValRefWithSource>::from([
+        lists: new_func_map(vec![
             (
                 "type".to_string(),
                 value::new_built_in_func("list->type".to_string(), any_type),
             ),
         ]),
-        objects: BTreeMap::<String, ValRefWithSource>::from([
+        objects: new_func_map(vec![
             (
                 "type".to_string(),
                 value::new_built_in_func("object->type".to_string(), any_type),
             ),
         ]),
-        funcs: BTreeMap::<String, ValRefWithSource>::from([
+        funcs: new_func_map(vec![
             (
                 "type".to_string(),
                 value::new_built_in_func("func->type".to_string(), any_type),
@@ -69,8 +65,14 @@ pub fn type_functions() -> TypeFunctions {
     }
 }
 
+pub fn new_func_map(funcs: Vec<(String, ValRefWithSource)>) -> ObjectRef {
+    Arc::new(Mutex::new(BTreeMap::<String, ValRefWithSource>::from_iter(
+        funcs,
+    )))
+}
+
 #[allow(clippy::needless_pass_by_value)]
-pub fn str_len(this: Option<ValRefWithSource>, vs: List)
+pub fn str_len(this: Option<ValRefWithSource>, vs: Vec<ValRefWithSource>)
     -> Result<ValRefWithSource, Error>
 {
     fns::assert_args("len", 0, &vs)
@@ -86,7 +88,7 @@ pub fn str_len(this: Option<ValRefWithSource>, vs: List)
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub fn any_type(this: Option<ValRefWithSource>, vs: List)
+pub fn any_type(this: Option<ValRefWithSource>, vs: Vec<ValRefWithSource>)
     -> Result<ValRefWithSource, Error>
 {
     fns::assert_args("type", 0, &vs)
@@ -95,7 +97,7 @@ pub fn any_type(this: Option<ValRefWithSource>, vs: List)
     let this = fns::assert_this(this)
         .context(AssertThisFailed)?;
 
-    let s = render_type(deref!(this));
+    let s = render_type(&this.v);
 
     Ok(value::new_str_from_string(s))
 }

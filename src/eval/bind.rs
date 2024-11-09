@@ -17,22 +17,15 @@ use super::error::Error;
 use super::scope;
 use super::scope::ScopeStack;
 use value;
-use value::List;
-use value::Object;
+use value::ListRef;
+use value::ObjectRef;
 use value::ValRefWithSource;
 use value::Value;
 
 // TODO Duplicated from `src/eval/mod.rs`.
 macro_rules! deref {
     ( $val_ref_with_source:ident ) => {
-        &*$val_ref_with_source.v.lock().unwrap()
-    };
-}
-
-// TODO Duplicated from `src/eval/mod.rs`.
-macro_rules! mut_deref {
-    ( $val_ref_with_source:ident ) => {
-        &mut *$val_ref_with_source.v.lock().unwrap()
+        *$val_ref_with_source.lock().unwrap()
     };
 }
 
@@ -44,8 +37,7 @@ macro_rules! match_eval_expr {
     ) => {{
         let value = eval::eval_expr($context, $scopes, $expr)
             .context(EvalExprFailed)?;
-        let unlocked_value = mut_deref!(value);
-        match unlocked_value {
+        match value.v {
             $( $key => $value , )*
         }
     }};
@@ -105,11 +97,11 @@ fn bind_next(
                     let n = eval::eval_expr_to_index(context, scopes, locat)
                         .context(EvalListIndexFailed)?;
 
-                    if n >= items.len() {
+                    if n >= deref!(items).len() {
                         return new_loc_err(Error::OutOfListBounds{index: n});
                     }
 
-                    scope::set_val_ref(&mut items[n as usize], rhs);
+                    scope::set(&mut deref!(items)[n as usize], rhs);
 
                     Ok(())
                 },
@@ -122,11 +114,13 @@ fn bind_next(
                         eval::eval_expr_to_str(context, scopes, descr, locat)
                             .context(EvalObjectIndexFailed)?;
 
-                    if let Some(slot) = props.get_mut(&name) {
-                        scope::set_val_ref(slot, rhs);
-                    } else {
-                        props.insert(name, rhs);
+                    if let Some(slot) = deref!(props).get_mut(&name) {
+                        scope::set(slot, rhs);
+
+                        return Ok(());
                     }
+
+                    deref!(props).insert(name, rhs);
 
                     Ok(())
                 },
@@ -139,27 +133,30 @@ fn bind_next(
 
         RawExpr::RangeIndex{expr, start, end} => {
             match_eval_expr!((context, scopes, expr) {
-                Value::List(lhs_items) => {
-                    match deref!(rhs) {
+                Value::List(mut lhs_items) => {
+                    match rhs.v {
                         Value::List(rhs_items) => {
+                            let rhs = deref!(rhs_items).clone();
+
                             bind_range_index(
                                 context,
                                 scopes,
-                                (lhs_items, start, end),
+                                (&mut lhs_items, start, end),
                                 loc,
-                                rhs_items,
+                                &rhs,
                             )
                         },
 
                         Value::Str(s) => {
-                            let chars: List =
+                            let chars: Vec<ValRefWithSource> =
                                 s.iter()
                                     .map(|c| value::new_str(vec![*c]))
                                     .collect();
+
                             bind_range_index(
                                 context,
                                 scopes,
-                                (lhs_items, start, end),
+                                (&mut lhs_items, start, end),
                                 loc,
                                 &chars,
                             )
@@ -167,7 +164,7 @@ fn bind_next(
 
                         value => {
                             new_loc_err(Error::RangeIndexAssignOnNonIndexable{
-                                value: value.clone(),
+                                value,
                             })
                         },
                     }
@@ -187,46 +184,44 @@ fn bind_next(
 
             match_eval_expr!((context, scopes, expr) {
                 Value::Object(props) => {
-                    if let Some(slot) = props.get_mut(name) {
-                        scope::set_val_ref(slot, rhs);
-                    } else {
-                        props.insert(name.clone(), rhs);
+                    if let Some(slot) = deref!(props).get_mut(name) {
+                        scope::set(slot, rhs);
+
+                        return Ok(());
                     }
+
+                    deref!(props).insert(name.clone(), rhs);
 
                     Ok(())
                 },
 
                 value => {
-                    new_loc_err(Error::PropAccessOnNonObject{
-                        value: value.clone(),
-                    })
+                    new_loc_err(Error::PropAccessOnNonObject{value})
                 },
             })
         },
 
         RawExpr::Object{props: lhs_props} => {
-            match deref!(rhs) {
+            match rhs.v {
                 Value::Object(rhs_props) => {
                     bind_object(
                         context,
                         scopes,
                         names_in_binding,
                         lhs_props,
-                        rhs_props,
+                        &rhs_props,
                         bind_type,
                     )
                 },
 
                 value => {
-                    new_loc_err(Error::ObjectDestructureOnNonObject{
-                        value: value.clone(),
-                    })
+                    new_loc_err(Error::ObjectDestructureOnNonObject{value})
                 },
             }
         },
 
         RawExpr::List{items: lhs_items, collect} => {
-            match deref!(rhs) {
+            match rhs.v {
                 Value::List(rhs_items) => {
                     bind_list(
                         context,
@@ -234,15 +229,13 @@ fn bind_next(
                         names_in_binding,
                         (lhs_items, collect),
                         loc,
-                        rhs_items,
+                        &rhs_items,
                         bind_type,
                     )
                 },
 
                 value => {
-                    new_loc_err(Error::ListDestructureOnNonList{
-                        value: value.clone(),
-                    })
+                    new_loc_err(Error::ListDestructureOnNonList{value})
                 },
             }
         },
@@ -327,9 +320,9 @@ fn bind_next_name(
 fn bind_range_index(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
-    lhs: (&mut List, &Option<Box<Expr>>, &Option<Box<Expr>>),
+    lhs: (&mut ListRef, &Option<Box<Expr>>, &Option<Box<Expr>>),
     lhs_loc: &(usize, usize),
-    rhs_items: &List,
+    rhs_items: &[ValRefWithSource],
 )
     -> Result<(), Error>
 {
@@ -349,15 +342,16 @@ fn bind_range_index(
             0
         };
 
+    let rhs_len = rhs_items.len();
     let end =
         if let Some(end) = maybe_end {
             eval::eval_expr_to_index(context, scopes, end)
                     .context(EvalEndIndexFailed)?
         } else {
-            rhs_items.len()
+            rhs_len
         };
 
-    let list_len = lhs_items.len();
+    let list_len = deref!(lhs_items).len();
     if start > list_len {
         return new_loc_err(Error::RangeStartOutOfListBounds{start, list_len});
     } else if start >= end {
@@ -367,18 +361,17 @@ fn bind_range_index(
     }
 
     let range_len = end - start;
-    if range_len != rhs_items.len() {
+    if range_len != rhs_len {
         return new_loc_err(Error::RangeIndexItemMismatch{
             range_len,
-            rhs_len: rhs_items.len(),
+            rhs_len,
         });
     }
 
     for (i, v) in rhs_items.iter().enumerate() {
-        let slot = &mut lhs_items[(start+i) as usize];
+        let slot = &mut deref!(lhs_items)[(start+i) as usize];
 
-        // TODO Consider removing `clone()`.
-        scope::set_val_ref(slot, v.clone());
+        *slot = v.clone();
     }
 
     Ok(())
@@ -389,7 +382,7 @@ fn bind_object(
     scopes: &mut ScopeStack,
     names_in_binding: &mut HashSet<String>,
     lhs: &Vec<PropItem>,
-    rhs: &Object,
+    rhs: &ObjectRef,
     bind_type: BindType,
 )
     -> Result<(), Error>
@@ -399,7 +392,7 @@ fn bind_object(
     // target object.
 
     let mut remaining_keys =
-        rhs
+        deref!(rhs)
             .keys()
             .cloned()
             .collect::<HashSet<String>>();
@@ -438,7 +431,10 @@ fn bind_object(
                     let new_rhs: BTreeMap<String, ValRefWithSource> =
                         remaining_keys
                             .iter()
-                            .map(|k| (k.clone(), rhs[k].clone()))
+                            .map(|k| (
+                                k.clone(),
+                                deref!(rhs)[k].clone(),
+                            ))
                             .collect();
 
                     bind_next_name(
@@ -501,7 +497,7 @@ fn bind_object_prop(
     scopes: &mut ScopeStack,
     names_in_binding: &mut HashSet<String>,
     lhs: &Expr,
-    rhs: &Object,
+    rhs: &ObjectRef,
     prop_name: (&str, &(usize, usize)),
     bind_type: BindType,
 )
@@ -518,7 +514,7 @@ fn bind_object_prop(
     };
 
     let new_rhs =
-        match rhs.get(prop_name.0) {
+        match deref!(rhs).get(prop_name.0) {
             Some(v) => v.clone(),
             None => return new_loc_err(Error::PropNotFound{
                 name: prop_name.0.to_string(),
@@ -537,7 +533,7 @@ fn bind_list(
     names_in_binding: &mut HashSet<String>,
     raw_lhs: (&[ListItem], &bool),
     lhs_loc: &(usize, usize),
-    rhs: &List,
+    rhs: &ListRef,
     bind_type: BindType,
 )
     -> Result<(), Error>
@@ -551,17 +547,15 @@ fn bind_list(
     };
 
     let lhs_len = lhs.len();
+    let rhs_len = deref!(rhs).len();
     if *collect {
-        if lhs_len-1 > rhs.len() {
-            return new_loc_err(Error::ListCollectTooFew{
-                lhs_len,
-                rhs_len: rhs.len(),
-            });
+        if lhs_len-1 > rhs_len {
+            return new_loc_err(Error::ListCollectTooFew{lhs_len, rhs_len});
         }
-    } else if lhs_len != rhs.len() {
+    } else if lhs_len != rhs_len {
         return new_loc_err(Error::ListDestructureItemMismatch{
             lhs_len,
-            rhs_len: rhs.len(),
+            rhs_len,
         });
     }
 
@@ -573,9 +567,9 @@ fn bind_list(
 
         let rhs =
             if *collect && i == lhs_len-1 {
-                value::new_list(rhs[lhs_len-1 ..].to_vec())
+                value::new_list(deref!(rhs)[lhs_len-1 ..].to_vec())
             } else {
-                rhs[i].clone()
+                deref!(rhs)[i].clone()
             };
 
         bind_next(context, scopes, names_in_binding, lhs, rhs, bind_type)
