@@ -23,7 +23,7 @@ use value::ObjectRef;
 use value::SourcedValue;
 use value::Value;
 
-// TODO Duplicated from `src/eval/mod.rs`.
+// TODO Mostly duplicated from `src/eval/mod.rs`.
 macro_rules! match_eval_expr {
     (
         ( $context:ident, $scopes:ident, $expr:expr )
