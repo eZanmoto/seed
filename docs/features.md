@@ -106,6 +106,21 @@ lname := "Soap";
 print($"Hello ${fname} ${lname}"); # Hello Jo Soap
 ```
 
+### Lists
+
+```
+print([1, 2] + [3, 4]); # [1, 2, 3, 4]
+```
+
+An operation-assignment can be used as a shorthand for assigning the result of
+concatenation to a variable:
+
+```
+x := [1, 2];
+x += [3, 4];
+print(x); # [1, 2, 3, 4]
+```
+
 ### Boolean
 
 ```

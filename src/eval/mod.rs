@@ -7,6 +7,8 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 pub mod bind;
 pub mod builtins;
@@ -761,6 +763,7 @@ enum CallBinding {
     },
 }
 
+#[allow(clippy::too_many_lines)]
 fn apply_binary_operation(
     op: &BinaryOp,
     op_loc: &Location,
@@ -797,12 +800,21 @@ fn apply_binary_operation(
 
         BinaryOp::Sum => {
             match (lhs, rhs) {
-                (Value::Int(a), Value::Int(b)) =>
-                    Ok(Value::Int(a + b)),
-                (Value::Str(a), Value::Str(b)) =>
-                    Ok(Value::Str([a.clone(), b.clone()].concat())),
-                _ =>
-                    Err(new_invalid_op_types()),
+                (Value::Int(a), Value::Int(b)) => {
+                    Ok(Value::Int(a + b))
+                },
+                (Value::Str(a), Value::Str(b)) => {
+                    Ok(Value::Str([a.clone(), b.clone()].concat()))
+                },
+                (Value::List(a), Value::List(b)) => {
+                    let a = deref!(a).clone();
+                    let b = deref!(b).clone();
+
+                    Ok(Value::List(Arc::new(Mutex::new([a, b].concat()))))
+                },
+                _ => {
+                    Err(new_invalid_op_types())
+                },
             }
         },
 
