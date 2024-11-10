@@ -67,10 +67,15 @@ print(x);
 
 x %= 2;
 print(x);
+
+person := {"age": 20};
+person.age += 1;
+print(person.age);
 --------------------------------------------------
 3
 9
 1
+21
 ================================================== operation_assignments_strings
 x := "Hello";
 x += ", world!";

@@ -34,16 +34,16 @@ pub Stmt: Stmt = {
     <lhs:Expr> "=" <rhs:Expr> ";" =>
         Stmt::Assign{lhs, rhs},
 
-    <lhs_loc:@L> <lhs:Expr> <op_loc:@L> "+=" <rhs:Expr> ";" =>
-        Stmt::OpAssign{lhs, lhs_loc, op: BinaryOp::Sum, op_loc, rhs},
-    <lhs_loc:@L> <lhs:Expr> <op_loc:@L> "-=" <rhs:Expr> ";" =>
-        Stmt::OpAssign{lhs, lhs_loc, op: BinaryOp::Sub, op_loc, rhs},
-    <lhs_loc:@L> <lhs:Expr> <op_loc:@L> "*=" <rhs:Expr> ";" =>
-        Stmt::OpAssign{lhs, lhs_loc, op: BinaryOp::Mul, op_loc, rhs},
-    <lhs_loc:@L> <lhs:Expr> <op_loc:@L> "/=" <rhs:Expr> ";" =>
-        Stmt::OpAssign{lhs, lhs_loc, op: BinaryOp::Div, op_loc, rhs},
-    <lhs_loc:@L> <lhs:Expr> <op_loc:@L> "%=" <rhs:Expr> ";" =>
-        Stmt::OpAssign{lhs, lhs_loc, op: BinaryOp::Mod, op_loc, rhs},
+    <lhs:Expr> <op_loc:@L> "+=" <rhs:Expr> ";" =>
+        Stmt::OpAssign{lhs, op: BinaryOp::Sum, op_loc, rhs},
+    <lhs:Expr> <op_loc:@L> "-=" <rhs:Expr> ";" =>
+        Stmt::OpAssign{lhs, op: BinaryOp::Sub, op_loc, rhs},
+    <lhs:Expr> <op_loc:@L> "*=" <rhs:Expr> ";" =>
+        Stmt::OpAssign{lhs, op: BinaryOp::Mul, op_loc, rhs},
+    <lhs:Expr> <op_loc:@L> "/=" <rhs:Expr> ";" =>
+        Stmt::OpAssign{lhs, op: BinaryOp::Div, op_loc, rhs},
+    <lhs:Expr> <op_loc:@L> "%=" <rhs:Expr> ";" =>
+        Stmt::OpAssign{lhs, op: BinaryOp::Mod, op_loc, rhs},
 
     <stmt:IfStmt> => {
         let (branches, else_stmts) = stmt;

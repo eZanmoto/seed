@@ -48,7 +48,7 @@ pub fn bind(
 )
     -> Result<(), Error>
 {
-    bind_next(context, scopes, &mut HashSet::new(), lhs, rhs, bind_type)
+    bind_next(context, scopes, &mut HashSet::new(), lhs, rhs, None, bind_type)
 }
 
 #[derive(Clone, Copy)]
@@ -60,12 +60,13 @@ pub enum BindType {
 // `bind_next` performs a bind, but returns an error if a name that's in
 // `names_in_binding` gets reused.
 #[allow(clippy::too_many_lines)]
-fn bind_next(
+pub fn bind_next(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
     names_in_binding: &mut HashSet<String>,
     lhs: &Expr,
     rhs: SourcedValue,
+    op: Option<(BinaryOp, Location)>,
     bind_type: BindType,
 )
     -> Result<(), Error>
@@ -82,7 +83,15 @@ fn bind_next(
 
     match raw_lhs {
         RawExpr::Var{name} => {
-            bind_next_name(scopes, names_in_binding, name, loc, rhs, bind_type)
+            bind_next_name(
+                scopes,
+                names_in_binding,
+                name,
+                loc,
+                rhs,
+                op,
+                bind_type,
+            )
         },
 
         RawExpr::Index{expr, location: locat} => {
@@ -95,7 +104,10 @@ fn bind_next(
                         return new_loc_err(Error::OutOfListBounds{index: n});
                     }
 
-                    scope::set(&mut deref!(items)[n as usize], rhs);
+                    let lhs_val = &mut deref!(items)[n as usize];
+
+                    binary_operation_assign(lhs_val, rhs, op)
+                        .context(BinOpAssignListIndexFailed)?;
 
                     Ok(())
                 },
@@ -109,9 +121,14 @@ fn bind_next(
                             .context(EvalObjectIndexFailed)?;
 
                     if let Some(slot) = deref!(props).get_mut(&name) {
-                        scope::set(slot, rhs);
+                        binary_operation_assign(slot, rhs, op)
+                            .context(BinOpAssignObjectIndexFailed)?;
 
                         return Ok(());
+                    }
+
+                    if op.is_some() {
+                        return new_loc_err(Error::OpOnUndefinedIndex{name});
                     }
 
                     deref!(props).insert(name, rhs);
@@ -126,6 +143,10 @@ fn bind_next(
         },
 
         RawExpr::RangeIndex{expr, start, end} => {
+            if op.is_some() {
+                return new_loc_err(Error::OpOnRangeIndex);
+            }
+
             match_eval_expr!((context, scopes, expr) {
                 Value::List(mut lhs_items) => {
                     match rhs.v {
@@ -179,12 +200,19 @@ fn bind_next(
             match_eval_expr!((context, scopes, expr) {
                 Value::Object(props) => {
                     if let Some(slot) = deref!(props).get_mut(name) {
-                        scope::set(slot, rhs);
+                        binary_operation_assign(slot, rhs, op)
+                            .context(BinOpAssignPropFailed)?;
 
                         return Ok(());
                     }
 
-                    deref!(props).insert(name.clone(), rhs);
+                    let name = name.clone();
+
+                    if op.is_some() {
+                        return new_loc_err(Error::OpOnUndefinedProp{name});
+                    }
+
+                    deref!(props).insert(name, rhs);
 
                     Ok(())
                 },
@@ -196,6 +224,10 @@ fn bind_next(
         },
 
         RawExpr::Object{props: lhs_props} => {
+            if op.is_some() {
+                return new_loc_err(Error::OpOnObjectDestructure);
+            }
+
             match rhs.v {
                 Value::Object(rhs_props) => {
                     bind_object(
@@ -215,6 +247,10 @@ fn bind_next(
         },
 
         RawExpr::List{items: lhs_items, collect} => {
+            if op.is_some() {
+                return new_loc_err(Error::OpOnListDestructure);
+            }
+
             match rhs.v {
                 Value::List(rhs_items) => {
                     bind_list(
@@ -253,6 +289,30 @@ fn bind_next(
     }
 }
 
+pub fn binary_operation_assign(
+    lhs: &mut SourcedValue,
+    rhs: SourcedValue,
+    op: Option<(BinaryOp, Location)>,
+) -> Result<(), Error> {
+    let mut rhs = rhs;
+    if let Some((op, op_loc)) = op {
+        let v =
+            eval::apply_binary_operation(
+                &op,
+                &op_loc,
+                &lhs.v,
+                &rhs.v,
+            )
+                .context(ApplyBinOpFailed)?;
+
+        rhs = value::new_val_ref_with_no_source(v);
+    }
+
+    scope::set(lhs, rhs);
+
+    Ok(())
+}
+
 pub fn bind_name(
     scopes: &mut ScopeStack,
     name: &str,
@@ -262,7 +322,9 @@ pub fn bind_name(
 )
     -> Result<(), Error>
 {
-    bind_next_name(scopes, &mut HashSet::new(), name, name_loc, rhs, bind_type)
+    let names = &mut HashSet::new();
+
+    bind_next_name(scopes, names, name, name_loc, rhs, None, bind_type)
 }
 
 fn bind_next_name(
@@ -271,6 +333,7 @@ fn bind_next_name(
     name: &str,
     name_loc: &(usize, usize),
     rhs: SourcedValue,
+    op: Option<(BinaryOp, Location)>,
     bind_type: BindType,
 )
     -> Result<(), Error>
@@ -291,6 +354,12 @@ fn bind_next_name(
 
     match bind_type {
         BindType::Declaration => {
+            if op.is_some() {
+                return new_loc_error(Error::Dev{
+                    msg: "operation-assignment on declaration".to_string(),
+                });
+            }
+
             if let Err((line, col)) = scopes.declare(name, *name_loc, rhs) {
                 return new_loc_error(Error::AlreadyInScope{
                     name: name.to_string(),
@@ -300,7 +369,30 @@ fn bind_next_name(
             }
         },
         BindType::Assignment => {
-            if !scopes.assign(name, rhs) {
+            let mut rhs_val = rhs;
+            if let Some((op, op_loc)) = op {
+                let lhs_val =
+                    if let Some(v) = scopes.get(&name.to_string()) {
+                        v
+                    } else {
+                        return new_loc_error(Error::Undefined{
+                            name: name.to_string(),
+                        });
+                    };
+
+                let raw_v =
+                    eval::apply_binary_operation(
+                        &op,
+                        &op_loc,
+                        &lhs_val.v,
+                        &rhs_val.v,
+                    )
+                        .context(ApplyBinOpFailed)?;
+
+                rhs_val = value::new_val_ref_with_no_source(raw_v);
+            }
+
+            if !scopes.assign(name, rhs_val) {
                 return new_loc_error(Error::Undefined{
                     name: name.to_string(),
                 });
@@ -437,6 +529,7 @@ fn bind_object(
                         &prop_name,
                         prop_name_loc,
                         value::new_object(new_rhs),
+                        None,
                         bind_type,
                     )
                         .context(BindObjectCollectFailed)?;
@@ -515,7 +608,7 @@ fn bind_object_prop(
             }),
         };
 
-    bind_next(context, scopes, names_in_binding, lhs, new_rhs, bind_type)
+    bind_next(context, scopes, names_in_binding, lhs, new_rhs, None, bind_type)
         .context(BindNextFailed)?;
 
     Ok(())
@@ -566,7 +659,7 @@ fn bind_list(
                 deref!(rhs)[i].clone()
             };
 
-        bind_next(context, scopes, names_in_binding, lhs, rhs, bind_type)
+        bind_next(context, scopes, names_in_binding, lhs, rhs, None, bind_type)
             .context(BindListItemFailed)?;
     }
 

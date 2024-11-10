@@ -59,8 +59,6 @@ pub enum Error {
         render_type(rhs),
     ))]
     InvalidOpTypes{op: BinaryOp, lhs: Value, rhs: Value},
-    #[snafu(display("the LHS of an operation-assignment must be a variable"))]
-    OpAssignLhsNotVar,
     #[snafu(display("'break' can't be used outside of a loop"))]
     BreakOutsideLoop,
     #[snafu(display("'continue' can't be used outside of a loop"))]
@@ -186,9 +184,17 @@ pub enum Error {
     ))]
     InterpolatedValueNotString{value: Value},
     #[snafu(display("couldn't parse interpolation slot: {}", source_str))]
-    InterpolateStringParseFailed{
-        source_str: String,
-    },
+    InterpolateStringParseFailed{source_str: String},
+    #[snafu(display("'{}' is not defined", name))]
+    OpOnUndefinedIndex{name: String},
+    #[snafu(display("'{}' is not defined", name))]
+    OpOnUndefinedProp{name: String},
+    #[snafu(display("cannot perform this operation on a range-index"))]
+    OpOnRangeIndex,
+    #[snafu(display("cannot perform this operation on an object destructure"))]
+    OpOnObjectDestructure,
+    #[snafu(display("cannot perform this operation on an list destructure"))]
+    OpOnListDestructure,
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
@@ -327,6 +333,18 @@ pub enum Error {
         source: Box<Error>,
     },
     ApplyBinOpFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    BinOpAssignListIndexFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    BinOpAssignObjectIndexFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    BinOpAssignPropFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },

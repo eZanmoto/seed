@@ -426,7 +426,7 @@ dependencies = [
 
 [[package]]
 name = "seed"
-version = "0.44.5"
+version = "0.45.0"
 dependencies = [
  "assert_cmd",
  "assert_matches",

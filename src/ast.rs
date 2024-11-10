@@ -19,7 +19,6 @@ pub enum Stmt {
     Assign{lhs: Expr, rhs: Expr},
     OpAssign{
         lhs: Expr,
-        lhs_loc: Location,
         op: BinaryOp,
         op_loc: Location,
         rhs: Expr,

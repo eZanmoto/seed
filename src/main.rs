@@ -282,6 +282,7 @@ fn join_strings(xs: &[String]) -> String {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
     -> StacktracedErrorMsg
 {
@@ -315,6 +316,9 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::EvalBinOpLhsFailed{source} |
         EvalError::EvalBinOpRhsFailed{source} |
         EvalError::ApplyBinOpFailed{source} |
+        EvalError::BinOpAssignListIndexFailed{source} |
+        EvalError::BinOpAssignObjectIndexFailed{source} |
+        EvalError::BinOpAssignPropFailed{source} |
         EvalError::EvalListItemsFailed{source} |
         EvalError::EvalListItemFailed{source} |
         EvalError::EvalSourceExprFailed{source} |

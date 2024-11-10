@@ -61,7 +61,7 @@ print(2 * 3 + 4); # 10
 print(2 * (3 + 4)); # 14
 ```
 
-Assignment-operations can be used as a shorthand for assigning the result of an
+Operation-assignments can be used as a shorthand for assigning the result of an
 operation to a variable:
 
 ```
@@ -75,6 +75,10 @@ print(x); # 9
 
 x %= 2; # x = x % 2
 print(x); # 1
+
+person := {"age": 20};
+person.age += 1;
+print(person.age); # 21
 ```
 
 ### Strings
@@ -83,7 +87,7 @@ print(x); # 1
 print("Hello," + " world!"); # Hello, world!
 ```
 
-An assignment-operation can be used as a shorthand for assigning the result of
+An operation-assignment can be used as a shorthand for assigning the result of
 concatenation to a variable:
 
 ```

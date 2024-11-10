@@ -4,6 +4,7 @@
 
 use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::convert::TryInto;
 use std::path::PathBuf;
 
@@ -193,33 +194,19 @@ fn eval_stmt(
                 .context(AssignmentBindFailed)?;
         },
 
-        Stmt::OpAssign{lhs, lhs_loc, op, op_loc, rhs} => {
-            let (name, name_loc) =
-                if let (RawExpr::Var{name}, name_loc) = lhs {
-                    (name, name_loc)
-                } else {
-                    let (line, col) = lhs_loc;
-
-                    return Err(Error::AtLoc{
-                        source: Box::new(Error::OpAssignLhsNotVar),
-                        line: *line,
-                        col: *col,
-                    })
-                };
-
-            let lhs_val = eval_expr(context, scopes, lhs)
-                .context(EvalBinOpLhsFailed)?;
-
+        Stmt::OpAssign{lhs, op, op_loc, rhs} => {
             let rhs_val = eval_expr(context, scopes, rhs)
                 .context(EvalBinOpRhsFailed)?;
 
-            let raw_v =
-                apply_binary_operation(op, op_loc, &lhs_val.v, &rhs_val.v)
-                    .context(ApplyBinOpFailed)?;
-
-            let v = value::new_val_ref_with_no_source(raw_v);
-
-            bind::bind_name(scopes, name, name_loc, v, BindType::Assignment)
+            bind::bind_next(
+                context,
+                scopes,
+                &mut HashSet::new(),
+                lhs,
+                rhs_val,
+                Some((op.clone(), *op_loc)),
+                BindType::Assignment,
+            )
                 .context(OpAssignmentBindFailed)?;
         },
 
