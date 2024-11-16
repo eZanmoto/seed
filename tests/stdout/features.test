@@ -8,6 +8,7 @@ print(1234);
 print("Hello, world!");
 print(["test", null, true, 1234, [null, true]]);
 print({"hello": "world", "test": [1, 2, 3]});
+print(1_234_567);
 print("\"\x41n example string\"\n  - Anonymous");
 --------------------------------------------------
 <null>
@@ -32,6 +33,7 @@ Hello, world!
         3,
     ],
 }
+1234567
 "An example string"
   - Anonymous
 ================================================== operations

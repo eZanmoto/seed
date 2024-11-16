@@ -132,14 +132,14 @@ impl<'input> Lexer<'input> {
     fn next_int(&mut self) -> Token {
         let start = self.scanner.index;
         while let Some(c) = self.scanner.peek_char() {
-            if !c.is_ascii_digit() {
+            if !c.is_ascii_digit() && c != '_' {
                 break;
             }
             self.scanner.next_char();
         }
         let end = self.scanner.index;
 
-        let raw_int = self.scanner.range(start, end);
+        let raw_int = self.scanner.range(start, end).replace('_', "");
         let int: i64 = raw_int.parse().unwrap();
 
         Token::IntLiteral(int)

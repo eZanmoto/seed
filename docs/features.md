@@ -32,6 +32,12 @@ false
 {"hello": "world", "test": [1, 2, 3]}
 ```
 
+Integers can be formatted using underscore to help reading:
+
+```
+1_234_567
+```
+
 ```
 # Escape sequences in strings:
 "\"\x41n example string\"\n"
