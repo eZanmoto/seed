@@ -784,6 +784,17 @@ fn apply_binary_operation(
             col: *col,
         }
     };
+    let new_int_overflow = |lhs: &i64, rhs: &i64| {
+        Error::AtLoc{
+            source: Box::new(Error::IntOverflow{
+                op: op.clone(),
+                lhs: *lhs,
+                rhs: *rhs,
+            }),
+            line: *line,
+            col: *col,
+        }
+    };
 
     match op {
         BinaryOp::Eq |
@@ -801,7 +812,11 @@ fn apply_binary_operation(
         BinaryOp::Sum => {
             match (lhs, rhs) {
                 (Value::Int(a), Value::Int(b)) => {
-                    Ok(Value::Int(a + b))
+                    if let Some(v) = a.checked_add(*b) {
+                        Ok(Value::Int(v))
+                    } else {
+                        Err(new_int_overflow(a, b))
+                    }
                 },
                 (Value::Str(a), Value::Str(b)) => {
                     Ok(Value::Str([a.clone(), b.clone()].concat()))
@@ -824,17 +839,35 @@ fn apply_binary_operation(
         BinaryOp::Mod => {
             match (lhs, rhs) {
                 (Value::Int(a), Value::Int(b)) => {
-                    let v =
-                        match op {
-                            BinaryOp::Sub => a - b,
-                            BinaryOp::Mul => a * b,
-                            BinaryOp::Div => a / b,
-                            BinaryOp::Mod => a % b,
-
-                            _ => panic!("unexpected operation"),
-                        };
-
-                    Ok(Value::Int(v))
+                    match op {
+                        BinaryOp::Sub => {
+                            if let Some(v) = a.checked_sub(*b) {
+                                Ok(Value::Int(v))
+                            } else {
+                                Err(new_int_overflow(a, b))
+                            }
+                        },
+                        BinaryOp::Mul => {
+                            if let Some(v) = a.checked_mul(*b) {
+                                Ok(Value::Int(v))
+                            } else {
+                                Err(new_int_overflow(a, b))
+                            }
+                        },
+                        BinaryOp::Div => {
+                            if let Some(v) = a.checked_div(*b) {
+                                Ok(Value::Int(v))
+                            } else {
+                                Err(new_int_overflow(a, b))
+                            }
+                        },
+                        BinaryOp::Mod => {
+                            Ok(Value::Int(a % b))
+                        },
+                        _ => {
+                            panic!("unexpected operation");
+                        },
+                    }
                 },
 
                 _ => {

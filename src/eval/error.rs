@@ -195,6 +195,13 @@ pub enum Error {
     OpOnObjectDestructure,
     #[snafu(display("cannot perform this operation on an list destructure"))]
     OpOnListDestructure,
+    #[snafu(display(
+        "'{} {} {}' caused an integer overflow",
+        lhs,
+        op_symbol(op),
+        rhs,
+    ))]
+    IntOverflow{op: BinaryOp, lhs: i64, rhs: i64},
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},

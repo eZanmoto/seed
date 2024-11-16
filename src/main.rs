@@ -192,10 +192,8 @@ fn render_parse_error(error: ParseError<(usize, usize), Token, LexError>)
             match error {
                 LexError::Unexpected(loc, c) =>
                     (loc, format!("unexpected '{}'", c)),
-                LexError::IntTooHigh(loc, raw_int) =>
+                LexError::IntOverflow(loc, raw_int) =>
                     (loc, format!("'{}' is too high for an int", raw_int)),
-                LexError::IntTooLow(loc, raw_int) =>
-                    (loc, format!("'{}' is too low for an int", raw_int)),
                 LexError::InvalidEscapeChar(loc, c) =>
                     (loc, format!("'{}' is not a valid escape character", c)),
                 LexError::InvalidHexChar(loc, c) =>

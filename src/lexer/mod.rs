@@ -68,8 +68,7 @@ pub enum Token {
 #[derive(Debug)]
 pub enum LexError {
     Unexpected(Location, char),
-    IntTooHigh(Location, String),
-    IntTooLow(Location, String),
+    IntOverflow(Location, String),
     UnescapedDollar(Location),
     InvalidInterpolationStart(Location, char),
     InvalidEscapeChar(Location, char),
@@ -154,9 +153,7 @@ impl<'input> Lexer<'input> {
                 Err(e) => {
                     match e.kind() {
                         IntErrorKind::PosOverflow =>
-                            return Err(LexError::IntTooHigh(loc, raw_int)),
-                        IntErrorKind::NegOverflow =>
-                            return Err(LexError::IntTooLow(loc, raw_int)),
+                            return Err(LexError::IntOverflow(loc, raw_int)),
                         e =>
                             panic!(
                                 "unexpected parse error ({:?}) for '{}'",
