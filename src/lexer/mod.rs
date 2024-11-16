@@ -2,6 +2,8 @@
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
+use std::num::IntErrorKind;
+
 mod scanner;
 
 use self::scanner::Scanner;
@@ -66,6 +68,8 @@ pub enum Token {
 #[derive(Debug)]
 pub enum LexError {
     Unexpected(Location, char),
+    IntTooHigh(Location, String),
+    IntTooLow(Location, String),
     UnescapedDollar(Location),
     InvalidInterpolationStart(Location, char),
     InvalidEscapeChar(Location, char),
@@ -129,7 +133,9 @@ impl<'input> Lexer<'input> {
         }
     }
 
-    fn next_int(&mut self) -> Token {
+    fn next_int(&mut self) -> Result<Token, LexError> {
+        let loc = self.scanner.loc();
+
         let start = self.scanner.index;
         while let Some(c) = self.scanner.peek_char() {
             if !c.is_ascii_digit() && c != '_' {
@@ -139,10 +145,29 @@ impl<'input> Lexer<'input> {
         }
         let end = self.scanner.index;
 
-        let raw_int = self.scanner.range(start, end).replace('_', "");
-        let int: i64 = raw_int.parse().unwrap();
+        let raw_int = self.scanner.range(start, end).to_string();
+        let int: i64 =
+            match raw_int.replace('_', "").parse() {
+                Ok(v) => {
+                    v
+                },
+                Err(e) => {
+                    match e.kind() {
+                        IntErrorKind::PosOverflow =>
+                            return Err(LexError::IntTooHigh(loc, raw_int)),
+                        IntErrorKind::NegOverflow =>
+                            return Err(LexError::IntTooLow(loc, raw_int)),
+                        e =>
+                            panic!(
+                                "unexpected parse error ({:?}) for '{}'",
+                                e,
+                                raw_int,
+                            ),
+                    };
+                },
+            };
 
-        Token::IntLiteral(int)
+        Ok(Token::IntLiteral(int))
     }
 
     #[allow(clippy::too_many_lines)]
@@ -320,7 +345,10 @@ impl<'input> Iterator for Lexer<'input> {
             if c.is_ascii_alphabetic() || c == '_' {
                 self.next_keyword_or_ident()
             } else if c.is_ascii_digit() {
-                self.next_int()
+                match self.next_int() {
+                    Ok(n) => n,
+                    Err(e) => return Some(Err(e)),
+                }
             } else if c == '"' || c == '$' {
                 let mut interpolate = false;
                 if c == '$' {
