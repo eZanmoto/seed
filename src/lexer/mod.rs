@@ -407,11 +407,32 @@ impl<'input> Iterator for Lexer<'input> {
 
             if let Some(t) = last_token {
                 match t {
+                    Token::AmpAmp |
+                    Token::BangEquals |
                     Token::BraceOpen |
                     Token::BracketOpen |
+                    Token::ColonEquals |
                     Token::Comma |
+                    Token::Div |
+                    Token::DivEquals |
+                    Token::Dot |
+                    Token::Equals |
+                    Token::EqualsEquals |
+                    Token::GreaterThan |
+                    Token::GreaterThanEquals |
+                    Token::LessThan |
+                    Token::LessThanEquals |
+                    Token::Mod |
+                    Token::ModEquals |
+                    Token::Mul |
+                    Token::MulEquals |
                     Token::ParenOpen |
-                    Token::Semicolon => {},
+                    Token::PipePipe |
+                    Token::Semicolon |
+                    Token::Sub |
+                    Token::SubEquals |
+                    Token::Sum |
+                    Token::SumEquals => {},
                     _ => {
                         return Some(Ok(span));
                     },
