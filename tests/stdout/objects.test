@@ -1,57 +1,57 @@
 ================================================== prop_assign1
-person := {};
-person.name = "Jo";
-print(person.name);
+person := {}
+person.name = "Jo"
+print(person.name)
 --------------------------------------------------
 Jo
 ================================================== prop_assign2
-x := {};
-y := x;
-y.age = 30;
-print(x.age);
-print(y.age);
+x := {}
+y := x
+y.age = 30
+print(x.age)
+print(y.age)
 --------------------------------------------------
 30
 30
 ================================================== prop_assign3
-x := {"age": 20};
-y := x;
-y.age = 30;
-print(x.age);
-print(y.age);
+x := {"age": 20}
+y := x
+y.age = 30
+print(x.age)
+print(y.age)
 --------------------------------------------------
 30
 30
 ================================================== prop_assign4
-y := null;
-x := {};
-y = x;
-y.age = 30;
-print(x.age);
-print(y.age);
+y := null
+x := {}
+y = x
+y.age = 30
+print(x.age)
+print(y.age)
 --------------------------------------------------
 30
 30
 ================================================== prop_assign5
-y := null;
-x := {"age": 20};
-y = x;
-y.age = 30;
-print(x.age);
-print(y.age);
+y := null
+x := {"age": 20}
+y = x
+y.age = 30
+print(x.age)
+print(y.age)
 --------------------------------------------------
 30
 30
 ================================================== nested_prop_assign1
-person := {"name": {}};
-person.name.first = "Jo";
-print(person.name.first);
+person := {"name": {}}
+person.name.first = "Jo"
+print(person.name.first)
 --------------------------------------------------
 Jo
 ================================================== nested_prop_assign2
-person := {"name": {"last": "Doe"}};
-person.name.last = "Soap";
-print(person.name.last);
+person := {"name": {"last": "Doe"}}
+person.name.last = "Soap"
+print(person.name.last)
 --------------------------------------------------
 Soap
 ==================================================

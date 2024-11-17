@@ -1,7 +1,7 @@
 ================================================== no_stacktrace
 exit_code: 103
 --------------------------------------------------
-1();
+1()
 --------------------------------------------------
 --------------------------------------------------
 stacktrace/no_stacktrace.sd:1:1: can't call 'int' as a function
@@ -9,18 +9,18 @@ stacktrace/no_stacktrace.sd:1:1: can't call 'int' as a function
 exit_code: 103
 --------------------------------------------------
 fn first() {
-    second();
+    second()
 }
 
 fn second() {
-    third();
+    third()
 }
 
 fn third() {
-    1();
+    1()
 }
 
-first();
+first()
 --------------------------------------------------
 --------------------------------------------------
 stacktrace/stacktrace.sd:10:5: in 'third': can't call 'int' as a function
@@ -32,18 +32,18 @@ Stacktrace:
 exit_code: 103
 --------------------------------------------------
 fn first() {
-    second();
+    second()
 }
 
 fn second() {
-    third();
+    third()
 }
 
 fn third() {
-    print(1, 2);
+    print(1, 2)
 }
 
-first();
+first()
 --------------------------------------------------
 --------------------------------------------------
 stacktrace/stacktrace_builtin.sd:10:5: in 'third': `print` only takes 1 argument (got 2)
@@ -55,18 +55,18 @@ Stacktrace:
 exit_code: 103
 --------------------------------------------------
 fn first() {
-    second();
+    second()
 }
 
 second := fn () {
-    third();
-};
-
-fn third() {
-    print(1, 2);
+    third()
 }
 
-first();
+fn third() {
+    print(1, 2)
+}
+
+first()
 --------------------------------------------------
 --------------------------------------------------
 stacktrace/stacktrace_anon_function.sd:10:5: in 'third': `print` only takes 1 argument (got 2)
@@ -78,20 +78,20 @@ Stacktrace:
 exit_code: 103
 --------------------------------------------------
 fn first() {
-    second();
+    second()
 }
 
 fn f() {
-    third();
+    third()
 }
 
-second := f;
+second := f
 
 fn third() {
-    print(1, 2);
+    print(1, 2)
 }
 
-first();
+first()
 --------------------------------------------------
 --------------------------------------------------
 stacktrace/stacktrace_function_variable.sd:12:5: in 'third': `print` only takes 1 argument (got 2)

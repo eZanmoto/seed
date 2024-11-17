@@ -1,51 +1,51 @@
 ================================================== function_variable
 person := {
     "greet": fn () {
-        return "Hello";
+        return "Hello"
     },
-};
+}
 
-print(person["greet"]());
+print(person["greet"]())
 --------------------------------------------------
 Hello
 ================================================== parameter_mutation1
 fn set_age(p) {
-    p.age = 30;
+    p.age = 30
 }
 
-person := {};
-set_age(person);
-print(person.age);
+person := {}
+set_age(person)
+print(person.age)
 --------------------------------------------------
 30
 ================================================== parameter_mutation2
 fn update_age(p) {
-    p.age = 30;
+    p.age = 30
 }
 
-person := {"age": 20};
-update_age(person);
-print(person.age);
+person := {"age": 20}
+update_age(person)
+print(person.age)
 --------------------------------------------------
 30
 ================================================== parameter_mutation3
 fn set_first_name(p) {
-    p.name.first = "Jo";
+    p.name.first = "Jo"
 }
 
-person := {"name": {}};
-set_first_name(person);
-print(person.name.first);
+person := {"name": {}}
+set_first_name(person)
+print(person.name.first)
 --------------------------------------------------
 Jo
 ================================================== parameter_mutation4
 fn f(y) {
-    y = 2;
+    y = 2
 }
 
-x := 1;
-f(x);
-print(x);
+x := 1
+f(x)
+print(x)
 --------------------------------------------------
 1
 ==================================================

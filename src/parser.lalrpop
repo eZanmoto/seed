@@ -14,6 +14,10 @@ pub Prog: Prog = {
     <stmts:Stmt*> => Prog::Body{stmts},
 }
 
+// We require that blocks end with `;` to simplify the rules for omitting
+// semicolons. By adding this change to the grammar, we can use the same rules
+// for handling "statement"-based blocks (control flow) and "expression"-based
+// blocks (objects).
 pub Stmt: Stmt = {
     // We require at least one statement in a block to avoid ambiguity between
     // empty blocks (`{}`) and empty objects (`{};`). Note that an empty object
@@ -23,7 +27,7 @@ pub Stmt: Stmt = {
     // object needs to be made when the closing brace is encountered - the token
     // after can't be checked. We require at least one statement in a block as a
     // simple solution, rather than reworking the grammar to allow empty blocks.
-    "{" <block:Stmt+> "}" =>
+    "{" <block:Stmt+> "}" ";" =>
         Stmt::Block{block},
 
     <expr:Expr> ";" =>
@@ -45,22 +49,22 @@ pub Stmt: Stmt = {
     <lhs:Expr> <op_loc:@L> "%=" <rhs:Expr> ";" =>
         Stmt::OpAssign{lhs, op: BinaryOp::Mod, op_loc, rhs},
 
-    <stmt:IfStmt> => {
+    <stmt:IfStmt> ";" => {
         let (branches, else_stmts) = stmt;
 
         Stmt::If{branches, else_stmts}
     },
 
-    "while" <cond:Expr> <stmts:Block> =>
+    "while" <cond:Expr> <stmts:Block> ";" =>
         Stmt::While{cond, stmts},
-    "for" <lhs:Expr> "in" <iter:Expr> <stmts:Block> =>
+    "for" <lhs:Expr> "in" <iter:Expr> <stmts:Block> ";" =>
         Stmt::For{lhs, iter, stmts},
     <loc:@L> "break" ";" =>
         Stmt::Break{loc},
     <loc:@L> "continue" ";" =>
         Stmt::Continue{loc},
 
-    "fn" <loc:@L> <name:Ident> "(" <raw_args:ParamList> ")" <stmts:Block> => {
+    "fn" <loc:@L> <name:Ident> "(" <raw_args:ParamList> ")" <stmts:Block> ";" => {
         let (args, collect_args) = raw_args;
 
         Stmt::Func{name: (name, loc), args, collect_args, stmts}
