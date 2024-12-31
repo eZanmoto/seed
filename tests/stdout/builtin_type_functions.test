@@ -1,26 +1,26 @@
 ================================================== types
-v := null;
+v := null
 
-v = false;
-print(v->type());
+v = false
+print(v->type())
 
-v = 0;
-print(v->type());
+v = 0
+print(v->type())
 
-v = "";
-print(v->type());
+v = ""
+print(v->type())
 
-v = [];
-print(v->type());
+v = []
+print(v->type())
 
-v = {};
-print(v->type());
+v = {}
+print(v->type())
 
-v = print;
-print(v->type());
+v = print
+print(v->type())
 
-v = fn(){};
-print(v->type());
+v = fn(){}
+print(v->type())
 --------------------------------------------------
 bool
 int

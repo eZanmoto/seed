@@ -14,10 +14,18 @@ pub Prog: Prog = {
     <stmts:Stmt*> => Prog::Body{stmts},
 }
 
+// We require that blocks end with `;` to simplify the rules for omitting
+// semicolons. By adding this change to the grammar, we can use the same rules
+// for handling "statement"-based blocks (control flow) and "expression"-based
+// blocks (objects).
 pub Stmt: Stmt = {
+    <stmt:RawStmt> "stmt_end" => stmt,
+}
+
+pub RawStmt: Stmt = {
     // We require at least one statement in a block to avoid ambiguity between
     // empty blocks (`{}`) and empty objects (`{};`). Note that an empty object
-    // must be followed by a semicolon when it's used as an expression
+    // must be followed by a `stmt_end` when it's used as an expression
     // statement; however, because LALRPOP provides one lookahead token (LR(1)),
     // the decision of whether the production is an empty block or an empty
     // object needs to be made when the closing brace is encountered - the token
@@ -26,23 +34,23 @@ pub Stmt: Stmt = {
     "{" <block:Stmt+> "}" =>
         Stmt::Block{block},
 
-    <expr:Expr> ";" =>
+    <expr:Expr> =>
         Stmt::Expr{expr},
 
-    <lhs:Expr> ":=" <rhs:Expr> ";" =>
+    <lhs:Expr> ":=" <rhs:Expr> =>
         Stmt::Declare{lhs, rhs},
-    <lhs:Expr> "=" <rhs:Expr> ";" =>
+    <lhs:Expr> "=" <rhs:Expr> =>
         Stmt::Assign{lhs, rhs},
 
-    <lhs:Expr> <op_loc:@L> "+=" <rhs:Expr> ";" =>
+    <lhs:Expr> <op_loc:@L> "+=" <rhs:Expr> =>
         Stmt::OpAssign{lhs, op: BinaryOp::Sum, op_loc, rhs},
-    <lhs:Expr> <op_loc:@L> "-=" <rhs:Expr> ";" =>
+    <lhs:Expr> <op_loc:@L> "-=" <rhs:Expr> =>
         Stmt::OpAssign{lhs, op: BinaryOp::Sub, op_loc, rhs},
-    <lhs:Expr> <op_loc:@L> "*=" <rhs:Expr> ";" =>
+    <lhs:Expr> <op_loc:@L> "*=" <rhs:Expr> =>
         Stmt::OpAssign{lhs, op: BinaryOp::Mul, op_loc, rhs},
-    <lhs:Expr> <op_loc:@L> "/=" <rhs:Expr> ";" =>
+    <lhs:Expr> <op_loc:@L> "/=" <rhs:Expr> =>
         Stmt::OpAssign{lhs, op: BinaryOp::Div, op_loc, rhs},
-    <lhs:Expr> <op_loc:@L> "%=" <rhs:Expr> ";" =>
+    <lhs:Expr> <op_loc:@L> "%=" <rhs:Expr> =>
         Stmt::OpAssign{lhs, op: BinaryOp::Mod, op_loc, rhs},
 
     <stmt:IfStmt> => {
@@ -55,9 +63,9 @@ pub Stmt: Stmt = {
         Stmt::While{cond, stmts},
     "for" <lhs:Expr> "in" <iter:Expr> <stmts:Block> =>
         Stmt::For{lhs, iter, stmts},
-    <loc:@L> "break" ";" =>
+    <loc:@L> "break" =>
         Stmt::Break{loc},
-    <loc:@L> "continue" ";" =>
+    <loc:@L> "continue" =>
         Stmt::Continue{loc},
 
     "fn" <loc:@L> <name:Ident> "(" <raw_args:ParamList> ")" <stmts:Block> => {
@@ -65,7 +73,7 @@ pub Stmt: Stmt = {
 
         Stmt::Func{name: (name, loc), args, collect_args, stmts}
     },
-    <loc:@L> "return" <expr:Expr> ";" =>
+    <loc:@L> "return" <expr:Expr> =>
         Stmt::Return{loc, expr},
 }
 
@@ -337,6 +345,8 @@ extern {
         "interp_str_literal" =>
             Token::InterpStrLiteral(<String>, <Vec<InterpSlot>>),
 
+        "stmt_end" => Token::StmtEnd,
+
         "break" => Token::Break,
         "continue" => Token::Continue,
         "else" => Token::Else,
@@ -365,7 +375,6 @@ extern {
         "*" => Token::Mul,
         ")" => Token::ParenClose,
         "(" => Token::ParenOpen,
-        ";" => Token::Semicolon,
         "-" => Token::Sub,
         "+" => Token::Sum,
 

@@ -12,7 +12,7 @@ constructs found in many mainstream C-style languages. It is not intended for
 production use.
 
 ```seed
-print("Hello, world!");
+print("Hello, world!")
 ```
 
 Overview

@@ -250,7 +250,7 @@ fn render_token(t: Token) -> String {
         Token::Mul => "*".to_string(),
         Token::ParenClose => ")".to_string(),
         Token::ParenOpen => "(".to_string(),
-        Token::Semicolon => ";".to_string(),
+        Token::StmtEnd => "stmt_end".to_string(),
         Token::Sub => "-".to_string(),
         Token::Sum => "+".to_string(),
 

@@ -45,7 +45,7 @@ pub enum Token {
     Mul,
     ParenClose,
     ParenOpen,
-    Semicolon,
+    StmtEnd,
     Sub,
     Sum,
 
@@ -77,11 +77,16 @@ pub enum LexError {
 
 pub struct Lexer<'input> {
     pub scanner: Scanner<'input>,
+
+    last_token: Option<Token>,
 }
 
 impl<'input> Lexer<'input> {
     pub fn new(chars: &'input str) -> Self {
-        Lexer{scanner: Scanner::new(chars)}
+        Lexer{
+            scanner: Scanner::new(chars),
+            last_token: None,
+        }
     }
 
     fn skip_whitespace_and_comments(&mut self) {
@@ -94,7 +99,10 @@ impl<'input> Lexer<'input> {
                     self.scanner.next_char();
                 }
             } else {
-                if !c.is_ascii_whitespace() {
+                // We return a `Token::StmtEnd` in the case of a newline
+                // character, as a simplification of the rules for omitting
+                // semicolons.
+                if c == '\n' || !c.is_ascii_whitespace() {
                     return;
                 }
                 self.scanner.next_char();
@@ -315,23 +323,8 @@ impl<'input> Lexer<'input> {
 
         match_double_symbol_token(first_char, second_char)
     }
-}
 
-enum StrScanState {
-    None,
-    Escape,
-    Hex,
-    Interpolate,
-}
-
-pub type Span = (Location, Token, Location);
-
-pub type Location = (usize, usize);
-
-impl<'input> Iterator for Lexer<'input> {
-    type Item = Result<Span, LexError>;
-
-    fn next(&mut self) -> Option<Self::Item> {
+    fn next_token(&mut self) -> Option<Result<Span, LexError>> {
         self.skip_whitespace_and_comments();
 
         let start_loc = self.scanner.loc();
@@ -339,7 +332,11 @@ impl<'input> Iterator for Lexer<'input> {
         let c = self.scanner.peek_char()?;
 
         let t =
-            if c.is_ascii_alphabetic() || c == '_' {
+            if c == '\n' || c == ';' {
+                self.scanner.next_char();
+
+                Token::StmtEnd
+            } else if c.is_ascii_alphabetic() || c == '_' {
                 self.next_keyword_or_ident()
             } else if c.is_ascii_digit() {
                 match self.next_int() {
@@ -375,6 +372,76 @@ impl<'input> Iterator for Lexer<'input> {
     }
 }
 
+enum StrScanState {
+    None,
+    Escape,
+    Hex,
+    Interpolate,
+}
+
+pub type Span = (Location, Token, Location);
+
+pub type Location = (usize, usize);
+
+impl<'input> Iterator for Lexer<'input> {
+    type Item = Result<Span, LexError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let item = self.next_token()?;
+
+            let span =
+                match item {
+                    Ok(span) => span,
+                    Err(e) => return Some(Err(e)),
+                };
+
+            let (_, t, _) = &span;
+
+            let last_token = self.last_token.clone();
+            self.last_token = Some(t.clone());
+
+            if *t != Token::StmtEnd {
+                return Some(Ok(span));
+            }
+
+            if let Some(t) = last_token {
+                match t {
+                    Token::AmpAmp |
+                    Token::BangEquals |
+                    Token::BraceOpen |
+                    Token::BracketOpen |
+                    Token::ColonEquals |
+                    Token::Comma |
+                    Token::Div |
+                    Token::DivEquals |
+                    Token::Dot |
+                    Token::Equals |
+                    Token::EqualsEquals |
+                    Token::GreaterThan |
+                    Token::GreaterThanEquals |
+                    Token::LessThan |
+                    Token::LessThanEquals |
+                    Token::Mod |
+                    Token::ModEquals |
+                    Token::Mul |
+                    Token::MulEquals |
+                    Token::ParenOpen |
+                    Token::PipePipe |
+                    Token::StmtEnd |
+                    Token::Sub |
+                    Token::SubEquals |
+                    Token::Sum |
+                    Token::SumEquals => {},
+                    _ => {
+                        return Some(Ok(span));
+                    },
+                }
+            }
+        }
+    }
+}
+
 fn match_single_symbol_token(c: char) -> Option<Token> {
     match c {
         '}' => Some(Token::BraceClose),
@@ -392,7 +459,6 @@ fn match_single_symbol_token(c: char) -> Option<Token> {
         '*' => Some(Token::Mul),
         ')' => Some(Token::ParenClose),
         '(' => Some(Token::ParenOpen),
-        ';' => Some(Token::Semicolon),
         '-' => Some(Token::Sub),
         '+' => Some(Token::Sum),
 
@@ -449,7 +515,7 @@ mod test {
                     Token::Ident("test".to_string()),
                     Token::ColonEquals,
                     Token::IntLiteral(1234),
-                    Token::Semicolon,
+                    Token::StmtEnd,
                 ],
             ),
         ];

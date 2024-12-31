@@ -1,8 +1,8 @@
 ================================================== unexpected_eof
 exit_code: 103
 --------------------------------------------------
-1 +
+{
 --------------------------------------------------
 --------------------------------------------------
-parse_errors/unexpected_eof.sd:2:0: unexpected EOF; expected "(", "-", "[", "false", "fn", "identifier", "int_literal", "interp_str_literal", "null", "str_literal", "true" or "{"
+parse_errors/unexpected_eof.sd:2:0: unexpected EOF; expected "(", "-", "..", "[", "break", "continue", "false", "fn", "for", "identifier", "if", "int_literal", "interp_str_literal", "null", "return", "str_literal", "true", "while", "{" or "}"
 ==================================================
