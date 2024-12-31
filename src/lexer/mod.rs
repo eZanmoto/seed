@@ -63,6 +63,9 @@ pub enum Token {
     PipePipe,
     SubEquals,
     SumEquals,
+
+    EqualsEqualsEquals,
+    BangEqualsEquals,
 }
 
 #[derive(Debug)]
@@ -292,36 +295,101 @@ impl<'input> Lexer<'input> {
         }
     }
 
-    fn next_symbol_token(&mut self, c: char) -> Option<Token> {
-        if let Some(initial_t) = match_single_symbol_token(c) {
-            self.scanner.next_char();
+    fn next_symbol_token(&mut self, char1: char) -> Option<Token> {
+        let mut t =
+            if let Some(new_t) = match_single_symbol_token(char1) {
+                new_t
+            } else {
+                return self.next_multi_symbol_token(char1);
+            };
+        self.scanner.next_char();
 
-            let next_char =
-                match self.scanner.peek_char() {
-                    Some(c) => c,
-                    None => return Some(initial_t),
-                };
+        let char2 =
+            match self.scanner.peek_char() {
+                Some(c) => c,
+                None => return Some(t),
+            };
+        // Here we handle the matching of double-symbol tokens that have a
+        // prefix matching a single-symbol token.
+        t =
+            match match_double_symbol_token(char1, char2) {
+                Some(new_t) => {
+                    new_t
+                },
+                None => {
+                    // TODO We don't handle the matching of triple-symbol
+                    // tokens that do have a prefix matching a single-symbol
+                    // token, but don't have a prefix matching a double-symbol
+                    // token. This is because if we attempt to match a
+                    // triple-symbol token after failing to match a
+                    // double-symbol token, it will require us to consume an
+                    // extra character from the stream, i.e. it requires more
+                    // than one lookahead character.
 
-            let t =
-                match match_double_symbol_token(c, next_char) {
-                    Some(t) => t,
-                    None => return Some(initial_t),
-                };
+                    return Some(t);
+                }
+            };
+        self.scanner.next_char();
 
-            self.scanner.next_char();
+        let char3 =
+            match self.scanner.peek_char() {
+                Some(c) => c,
+                None => return Some(t),
+            };
+        // Here we handle the matching of triple-symbol tokens that have a
+        // prefix matching a single-symbol token and a double-symbol token.
+        t =
+            match match_triple_symbol_token(char1, char2, char3) {
+                Some(new_t) => new_t,
+                None => return Some(t),
+            };
+        self.scanner.next_char();
 
-            Some(t)
-        } else {
-            self.next_double_symbol_token(c)
-        }
+        Some(t)
     }
 
-    fn next_double_symbol_token(&mut self, first_char: char) -> Option<Token> {
-        self.scanner.next_char();
-        let second_char = self.scanner.peek_char()?;
+    fn next_multi_symbol_token(&mut self, char1: char) -> Option<Token> {
         self.scanner.next_char();
 
-        match_double_symbol_token(first_char, second_char)
+        let char2 = self.scanner.peek_char()?;
+        self.scanner.next_char();
+
+        // Here we handle the matching of double-symbol tokens that don't have
+        // a prefix matching a single-symbol token.
+        let mut t =
+            match match_double_symbol_token(char1, char2) {
+                Some(new_t) => {
+                    new_t
+                },
+                None => {
+                    let char3 = self.scanner.peek_char()?;
+                    self.scanner.next_char();
+
+                    // Here we handle the matching of triple-symbol tokens that
+                    // don't have a prefix matching a single-symbol tokens or
+                    // double-symbol token.
+                    let t = match_triple_symbol_token(char1, char2, char3)?;
+
+                    return Some(t);
+                }
+            };
+
+        let char3 =
+            match self.scanner.peek_char() {
+                Some(c) => c,
+                None => return Some(t),
+            };
+        // Here we handle the matching of triple-symbol tokens that don't have
+        // a prefix matching a single-symbol token, but do have a prefix
+        // matching a double-symbol token.
+        t =
+            match match_triple_symbol_token(char1, char2, char3) {
+                Some(new_t) => new_t,
+                None => return Some(t),
+            };
+        self.scanner.next_char();
+
+        Some(t)
     }
 
     fn next_token(&mut self) -> Option<Result<Span, LexError>> {
@@ -487,6 +555,15 @@ fn match_double_symbol_token(a: char, b: char) -> Option<Token> {
     }
 }
 
+fn match_triple_symbol_token(a: char, b: char, c: char) -> Option<Token> {
+    match (a, b, c) {
+        ('=', '=', '=') => Some(Token::EqualsEqualsEquals),
+        ('!', '=', '=') => Some(Token::BangEqualsEquals),
+
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod test {
     // The testing approach taken in this module is largely inspired by the
@@ -516,6 +593,16 @@ mod test {
                     Token::ColonEquals,
                     Token::IntLiteral(1234),
                     Token::StmtEnd,
+                ],
+            ),
+            (
+                r#"null || === fn"#,
+                r#"(--) () (-) ()"#,
+                vec![
+                    Token::Null,
+                    Token::PipePipe,
+                    Token::EqualsEqualsEquals,
+                    Token::Fn,
                 ],
             ),
         ];

@@ -155,6 +155,19 @@ print({} == {"a": 1}) # false
 print({"a": 1} == {"a": 1}) # true
 ```
 
+Reference equality can be performed on reference types (lists, objects and
+functions):
+
+```
+a := {}
+b := a
+c := {}
+
+print(a === a) # true
+print(a === b) # true
+print(a === c) # false
+```
+
 ### Comparison
 
 ```

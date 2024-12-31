@@ -807,6 +807,19 @@ fn apply_binary_operation(
             }
         },
 
+        BinaryOp::RefEq |
+        BinaryOp::RefNe => {
+            if let Some(v) = ref_eq(lhs, rhs) {
+                match op {
+                    BinaryOp::RefEq => Ok(Value::Bool(v)),
+                    _ => Ok(Value::Bool(!v)),
+                }
+            } else {
+                Err(new_invalid_op_types())
+            }
+        },
+
+
         BinaryOp::Sum => {
             match (lhs, rhs) {
                 (Value::Int(a), Value::Int(b)) => {
@@ -985,6 +998,25 @@ fn eq(lhs: &Value, rhs: &Value) -> Option<bool> {
             }
 
             Some(true)
+        },
+
+        _ =>
+            None,
+    }
+}
+
+fn ref_eq(lhs: &Value, rhs: &Value) -> Option<bool> {
+    match (lhs, rhs) {
+        (Value::List(a), Value::List(b)) => {
+            Some(value::ref_eq(a, b))
+        },
+
+        (Value::Object(a), Value::Object(b)) => {
+            Some(value::ref_eq(a, b))
+        },
+
+        (Value::Func(a), Value::Func(b)) => {
+            Some(value::ref_eq(a, b))
         },
 
         _ =>

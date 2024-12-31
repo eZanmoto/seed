@@ -516,6 +516,9 @@ fn op_symbol(op: &BinaryOp) -> String {
             BinaryOp::Gte => ">=",
             BinaryOp::Lt => "<",
             BinaryOp::Lte => "<=",
+
+            BinaryOp::RefEq => "===",
+            BinaryOp::RefNe => "!==",
         };
 
     s.to_string()

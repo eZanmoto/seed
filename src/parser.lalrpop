@@ -178,6 +178,9 @@ pub ExprOp4: BinaryOp = {
     ">=" => BinaryOp::Gte,
     "<" => BinaryOp::Lt,
     "<=" => BinaryOp::Lte,
+
+    "===" => BinaryOp::RefEq,
+    "!==" => BinaryOp::RefNe,
 };
 
 pub ExprPrecedence5: RawExpr = {
@@ -393,5 +396,8 @@ extern {
         "+=" => Token::SumEquals,
 
         ":=" => Token::ColonEquals,
+
+        "===" => Token::EqualsEqualsEquals,
+        "!==" => Token::BangEqualsEquals,
     }
 }

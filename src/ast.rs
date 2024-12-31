@@ -103,6 +103,9 @@ pub enum BinaryOp {
     Gte,
     Lt,
     Lte,
+
+    RefEq,
+    RefNe,
 }
 
 #[derive(Clone,Debug)]
