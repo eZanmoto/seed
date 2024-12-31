@@ -19,13 +19,13 @@ pub Prog: Prog = {
 // for handling "statement"-based blocks (control flow) and "expression"-based
 // blocks (objects).
 pub Stmt: Stmt = {
-    <stmt:RawStmt> ";" => stmt,
+    <stmt:RawStmt> "stmt_end" => stmt,
 }
 
 pub RawStmt: Stmt = {
     // We require at least one statement in a block to avoid ambiguity between
     // empty blocks (`{}`) and empty objects (`{};`). Note that an empty object
-    // must be followed by a semicolon when it's used as an expression
+    // must be followed by a `stmt_end` when it's used as an expression
     // statement; however, because LALRPOP provides one lookahead token (LR(1)),
     // the decision of whether the production is an empty block or an empty
     // object needs to be made when the closing brace is encountered - the token
@@ -345,6 +345,8 @@ extern {
         "interp_str_literal" =>
             Token::InterpStrLiteral(<String>, <Vec<InterpSlot>>),
 
+        "stmt_end" => Token::StmtEnd,
+
         "break" => Token::Break,
         "continue" => Token::Continue,
         "else" => Token::Else,
@@ -373,7 +375,6 @@ extern {
         "*" => Token::Mul,
         ")" => Token::ParenClose,
         "(" => Token::ParenOpen,
-        ";" => Token::Semicolon,
         "-" => Token::Sub,
         "+" => Token::Sum,
 

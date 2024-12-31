@@ -45,7 +45,7 @@ pub enum Token {
     Mul,
     ParenClose,
     ParenOpen,
-    Semicolon,
+    StmtEnd,
     Sub,
     Sum,
 
@@ -99,7 +99,7 @@ impl<'input> Lexer<'input> {
                     self.scanner.next_char();
                 }
             } else {
-                // We return a `Token::Semicolon` in the case of a newline
+                // We return a `Token::StmtEnd` in the case of a newline
                 // character, as a simplification of the rules for omitting
                 // semicolons.
                 if c == '\n' || !c.is_ascii_whitespace() {
@@ -335,7 +335,7 @@ impl<'input> Lexer<'input> {
             if c == '\n' || c == ';' {
                 self.scanner.next_char();
 
-                Token::Semicolon
+                Token::StmtEnd
             } else if c.is_ascii_alphabetic() || c == '_' {
                 self.next_keyword_or_ident()
             } else if c.is_ascii_digit() {
@@ -401,7 +401,7 @@ impl<'input> Iterator for Lexer<'input> {
             let last_token = self.last_token.clone();
             self.last_token = Some(t.clone());
 
-            if *t != Token::Semicolon {
+            if *t != Token::StmtEnd {
                 return Some(Ok(span));
             }
 
@@ -428,7 +428,7 @@ impl<'input> Iterator for Lexer<'input> {
                     Token::MulEquals |
                     Token::ParenOpen |
                     Token::PipePipe |
-                    Token::Semicolon |
+                    Token::StmtEnd |
                     Token::Sub |
                     Token::SubEquals |
                     Token::Sum |
@@ -515,7 +515,7 @@ mod test {
                     Token::Ident("test".to_string()),
                     Token::ColonEquals,
                     Token::IntLiteral(1234),
-                    Token::Semicolon,
+                    Token::StmtEnd,
                 ],
             ),
         ];
