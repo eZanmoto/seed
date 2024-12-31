@@ -8,6 +8,7 @@ use ::deref;
 use crate::eval::error::AssertArgsFailed;
 use crate::eval::error::AssertNoThisFailed;
 use crate::eval::error::Error;
+use crate::eval::error::Result;
 use crate::eval::value;
 use crate::eval::value::Func;
 use crate::eval::value::SourcedValue;
@@ -15,7 +16,7 @@ use crate::eval::value::Value;
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn print(this: Option<SourcedValue>, args: Vec<SourcedValue>)
-    -> Result<SourcedValue, Error>
+    -> Result<SourcedValue>
 {
     assert_args("print", 1, &args)
         .context(AssertArgsFailed)?;
@@ -30,7 +31,7 @@ pub fn print(this: Option<SourcedValue>, args: Vec<SourcedValue>)
     Ok(value::new_null())
 }
 
-fn render(v: &SourcedValue) -> Result<String, Error> {
+fn render(v: &SourcedValue) -> Result<String> {
     let mut s = String::new();
 
     match v.v.clone() {
@@ -96,7 +97,7 @@ fn render(v: &SourcedValue) -> Result<String, Error> {
 // `assert_args` asserts that the correct number of arguments were passed for
 // built-in functions.
 pub fn assert_args(fn_name: &str, exp_args: usize, args: &[SourcedValue])
-    -> Result<(), Error>
+    -> Result<()>
 {
     let args_len = args.len();
 
@@ -118,7 +119,7 @@ pub fn assert_args(fn_name: &str, exp_args: usize, args: &[SourcedValue])
     Ok(())
 }
 
-pub fn assert_no_this(this: &Option<SourcedValue>) -> Result<(), Error> {
+pub fn assert_no_this(this: &Option<SourcedValue>) -> Result<()> {
     if this.is_none() {
         Ok(())
     } else {
@@ -126,7 +127,7 @@ pub fn assert_no_this(this: &Option<SourcedValue>) -> Result<(), Error> {
     }
 }
 
-pub fn assert_this(this: Option<SourcedValue>) -> Result<SourcedValue, Error> {
+pub fn assert_this(this: Option<SourcedValue>) -> Result<SourcedValue> {
     if let Some(v) = this {
         Ok(v)
     } else {
@@ -134,7 +135,7 @@ pub fn assert_this(this: Option<SourcedValue>) -> Result<SourcedValue, Error> {
     }
 }
 
-pub fn assert_str(val_name: &str, v: &SourcedValue) -> Result<String, Error> {
+pub fn assert_str(val_name: &str, v: &SourcedValue) -> Result<String> {
     if let Value::Str(raw_str) = &v.v {
         match String::from_utf8(raw_str.clone()) {
             Ok(s) => Ok(s),

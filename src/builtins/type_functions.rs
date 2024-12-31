@@ -14,7 +14,7 @@ use crate::eval::builtins::TypeFunctions;
 use crate::eval::error::AssertArgsFailed;
 use crate::eval::error::AssertStrFailed;
 use crate::eval::error::AssertThisFailed;
-use crate::eval::error::Error;
+use crate::eval::error::Result;
 use crate::eval::value;
 use crate::eval::value::ObjectRef;
 use crate::eval::value::SourcedValue;
@@ -73,7 +73,7 @@ pub fn new_func_map(funcs: Vec<(String, SourcedValue)>) -> ObjectRef {
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn str_len(this: Option<SourcedValue>, vs: Vec<SourcedValue>)
-    -> Result<SourcedValue, Error>
+    -> Result<SourcedValue>
 {
     fns::assert_args("len", 0, &vs)
         .context(AssertArgsFailed)?;
@@ -89,7 +89,7 @@ pub fn str_len(this: Option<SourcedValue>, vs: Vec<SourcedValue>)
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn any_type(this: Option<SourcedValue>, vs: Vec<SourcedValue>)
-    -> Result<SourcedValue, Error>
+    -> Result<SourcedValue>
 {
     fns::assert_args("type", 0, &vs)
         .context(AssertArgsFailed)?;

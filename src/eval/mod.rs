@@ -68,7 +68,7 @@ pub fn eval_prog(
     global_bindings: Vec<(RawExpr, SourcedValue)>,
     Prog::Body{stmts}: &Prog,
 )
-    -> Result<(), Error>
+    -> Result<()>
 {
     let bindings =
         global_bindings
@@ -119,7 +119,7 @@ pub fn eval_stmts(
     new_bindings: Vec<(Expr, SourcedValue)>,
     stmts: &Block,
 )
-    -> Result<Escape, Error>
+    -> Result<Escape>
 {
     let mut new_scopes = scopes.new_from_push(HashMap::new());
 
@@ -139,7 +139,7 @@ pub fn eval_stmts_with_scope_stack(
     scopes: &mut ScopeStack,
     stmts: &Block,
 )
-    -> Result<Escape, Error>
+    -> Result<Escape>
 {
     for stmt in stmts {
         let v = eval_stmt(context, scopes, stmt)
@@ -167,7 +167,7 @@ fn eval_stmt(
     scopes: &mut ScopeStack,
     stmt: &Stmt,
 )
-    -> Result<Escape, Error>
+    -> Result<Escape>
 {
     match stmt {
         Stmt::Block{block} => {
@@ -313,9 +313,7 @@ fn eval_stmt(
 
 // `value_to_pairs` returns the "index, value" pairs in `v`, if `v` represents
 // an "iterable" type.
-fn value_to_pairs(v: &Value)
-    -> Result<Vec<(SourcedValue, SourcedValue)>, Error>
-{
+fn value_to_pairs(v: &Value) -> Result<Vec<(SourcedValue, SourcedValue)>> {
     let pairs =
         match v {
             Value::Str(s) =>
@@ -367,7 +365,7 @@ pub fn eval_stmts_in_new_scope(
     outer_scopes: &mut ScopeStack,
     stmts: &Block,
 )
-    -> Result<Escape, Error>
+    -> Result<Escape>
 {
     eval_stmts(context, outer_scopes, vec![], stmts)
 }
@@ -377,7 +375,7 @@ fn eval_expr(
     context: &EvaluationContext,
     scopes: &mut ScopeStack,
     expr: &Expr,
-) -> Result<SourcedValue, Error> {
+) -> Result<SourcedValue> {
     let (raw_expr, (line, col)) = expr;
     let new_loc_err = |source| {
         Err(Error::AtLoc{source: Box::new(source), line: *line, col: *col})
@@ -770,7 +768,7 @@ fn apply_binary_operation(
     lhs: &Value,
     rhs: &Value,
 )
-    -> Result<Value, Error>
+    -> Result<Value>
 {
     let (line, col) = op_loc;
     let new_invalid_op_types = || {
@@ -1000,7 +998,7 @@ fn eval_expr_to_str(
     descr: &str,
     expr: &Expr,
 )
-    -> Result<String, Error>
+    -> Result<String>
 {
     let (_, (line, col)) = expr;
     let new_loc_err = |source| {
@@ -1035,7 +1033,7 @@ fn eval_expr_to_bool(
     descr: &str,
     expr: &Expr,
 )
-    -> Result<bool, Error>
+    -> Result<bool>
 {
     let (_, (line, col)) = expr;
     let new_loc_err = |source| {
@@ -1061,7 +1059,7 @@ fn eval_expr_to_i64(
     descr: &str,
     expr: &Expr,
 )
-    -> Result<i64, Error>
+    -> Result<i64>
 {
     let (_, (line, col)) = expr;
     let new_loc_err = |source| {
@@ -1086,7 +1084,7 @@ fn eval_expr_to_index(
     scopes: &mut ScopeStack,
     expr: &Expr,
 )
-    -> Result<usize, Error>
+    -> Result<usize>
 {
     let (_, (line, col)) = expr;
     let new_loc_err = |source| {
@@ -1111,7 +1109,7 @@ fn get_str_range_index(
     mut maybe_start: Option<usize>,
     mut maybe_end: Option<usize>,
 )
-    -> Result<SourcedValue, Error>
+    -> Result<SourcedValue>
 {
     let start = maybe_start.get_or_insert(0);
     let end = maybe_end.get_or_insert(s.len());
@@ -1128,7 +1126,7 @@ fn get_list_range_index(
     mut maybe_start: Option<usize>,
     mut maybe_end: Option<usize>,
 )
-    -> Result<SourcedValue, Error>
+    -> Result<SourcedValue>
 {
     let start = maybe_start.get_or_insert(0);
     let end = maybe_end.get_or_insert(deref!(list).len());
@@ -1145,7 +1143,7 @@ fn eval_list_items(
     scopes: &mut ScopeStack,
     items: &Vec<ListItem>,
 )
-    -> Result<Vec<SourcedValue>, Error>
+    -> Result<Vec<SourcedValue>>
 {
     let mut vals = vec![];
 
@@ -1189,7 +1187,7 @@ fn eval_call(
     args: &Vec<ListItem>,
     loc: (&usize, &usize),
 )
-    -> Result<SourcedValue, Error>
+    -> Result<SourcedValue>
 {
     let (line, col) = loc;
     let new_loc_err = |source| {
@@ -1328,7 +1326,7 @@ fn interpolate_string(
     interpolation_slots: &Vec<(usize, usize)>,
     loc: (&usize, &usize),
 )
-    -> Result<String, Error>
+    -> Result<String>
 {
     let (line, col) = loc;
     let new_loc_err = |source, col| {

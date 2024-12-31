@@ -7,8 +7,8 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use ast::Block;
-use eval::Error;
 use eval::Expr;
+use eval::Result;
 use super::scope::ScopeStack;
 
 // `deref` must be defined as a macro, because a reference to the temporary
@@ -79,8 +79,7 @@ pub type ObjectRef = Arc<Mutex<Object>>;
 pub type Object = BTreeMap<String, SourcedValue>;
 
 pub type BuiltinFunc =
-    fn(Option<SourcedValue>, Vec<SourcedValue>)
-        -> Result<SourcedValue, Error>;
+    fn(Option<SourcedValue>, Vec<SourcedValue>) -> Result<SourcedValue>;
 
 #[derive(Clone, Debug)]
 pub struct Func {

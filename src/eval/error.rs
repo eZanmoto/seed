@@ -10,6 +10,8 @@ use snafu::Snafu;
 use ast::BinaryOp;
 use eval::Value;
 
+pub type Result<T> = std::result::Result<T, Error>;
+
 // TODO Ideally `Error` would be defined in `src/eval/mod.rs`, since these are
 // errors that occur during evaluation. However, we define it here because
 // `value::Value::BuiltinFunc` refers to it. We could make the error type for

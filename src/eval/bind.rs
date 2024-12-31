@@ -46,7 +46,7 @@ pub fn bind(
     rhs: SourcedValue,
     bind_type: BindType,
 )
-    -> Result<(), Error>
+    -> Result<()>
 {
     bind_next(context, scopes, &mut HashSet::new(), lhs, rhs, None, bind_type)
 }
@@ -69,7 +69,7 @@ pub fn bind_next(
     op: Option<(BinaryOp, Location)>,
     bind_type: BindType,
 )
-    -> Result<(), Error>
+    -> Result<()>
 {
     let (raw_lhs, loc) = lhs;
     let new_loc_err = |source| {
@@ -293,7 +293,7 @@ pub fn binary_operation_assign(
     lhs: &mut SourcedValue,
     rhs: SourcedValue,
     op: Option<(BinaryOp, Location)>,
-) -> Result<(), Error> {
+) -> Result<()> {
     let mut rhs = rhs;
     if let Some((op, op_loc)) = op {
         let v =
@@ -320,7 +320,7 @@ pub fn bind_name(
     rhs: SourcedValue,
     bind_type: BindType,
 )
-    -> Result<(), Error>
+    -> Result<()>
 {
     let names = &mut HashSet::new();
 
@@ -336,7 +336,7 @@ fn bind_next_name(
     op: Option<(BinaryOp, Location)>,
     bind_type: BindType,
 )
-    -> Result<(), Error>
+    -> Result<()>
 {
     if name == "_" {
         return Ok(())
@@ -410,7 +410,7 @@ fn bind_range_index(
     lhs_loc: &(usize, usize),
     rhs_items: &[SourcedValue],
 )
-    -> Result<(), Error>
+    -> Result<()>
 {
     let new_loc_err = |source| {
         let (line, col) = lhs_loc;
@@ -471,7 +471,7 @@ fn bind_object(
     rhs: &ObjectRef,
     bind_type: BindType,
 )
-    -> Result<(), Error>
+    -> Result<()>
 {
     // In contrast with lists, we don't explicitly require that the number of
     // elements in the source object is equal to the number of elements in the
@@ -588,7 +588,7 @@ fn bind_object_prop(
     prop_name: (&str, &(usize, usize)),
     bind_type: BindType,
 )
-    -> Result<(), Error>
+    -> Result<()>
 {
     if prop_name.0 == "_" {
         return Ok(());
@@ -623,7 +623,7 @@ fn bind_list(
     rhs: &ListRef,
     bind_type: BindType,
 )
-    -> Result<(), Error>
+    -> Result<()>
 {
     let (lhs, collect) = raw_lhs;
 
