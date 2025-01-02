@@ -422,7 +422,7 @@ dependencies = [
 
 [[package]]
 name = "seed"
-version = "0.50.3"
+version = "0.50.4"
 dependencies = [
  "assert_cmd",
  "assert_matches",

@@ -8,6 +8,7 @@ use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::convert::TryInto;
 use std::path::PathBuf;
+use std::result::Result as StdResult;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -928,7 +929,6 @@ fn apply_binary_operation(
             }
         },
 
-
         BinaryOp::Sum => {
             match (lhs, rhs) {
                 (Value::Int(a), Value::Int(b)) => {
@@ -1044,11 +1044,9 @@ fn apply_binary_operation(
     }
 }
 
-// `eq` returns a path to the values in `lhs` and `rhs` that differ if `lhs`
-// and `rhs` are of different types.
-fn eq(lhs: &Value, rhs: &Value)
-    -> std::result::Result<bool, (String, String, String)>
-{
+// `eq` returns a path to the values in `lhs` and `rhs` that differ, and the
+// type that differ, if `lhs` and `rhs` are of different types.
+fn eq(lhs: &Value, rhs: &Value) -> StdResult<bool, (String, String, String)> {
     match (lhs, rhs) {
         (Value::Null, Value::Null) =>
             Ok(true),
