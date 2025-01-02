@@ -183,10 +183,10 @@ fn extract_tests(entry_path: PathBuf, extended_format: bool) -> Vec<Test> {
 
         cur_test = Some(Test{
             name: String::from(test_name),
-            src: String::from(""),
+            src: String::new(),
             tgt_code: 0,
-            tgt_stdout: String::from(""),
-            tgt_stderr: String::from(""),
+            tgt_stdout: String::new(),
+            tgt_stderr: String::new(),
         });
         test_section = 0;
     }
@@ -284,7 +284,9 @@ fn write_test(
                         src: String::from(r#\"{src}\"#),
                         exp: TestExpectation{{
                             code: {tgt_code},
+                            #[allow(clippy::all)]
                             stdout: String::from(r#\"{tgt_stdout}\"#),
+                            #[allow(clippy::all)]
                             stderr: String::from(r#\"{tgt_stderr}\"#),
                         }},
                     }}

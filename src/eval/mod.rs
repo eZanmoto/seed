@@ -20,7 +20,7 @@ pub mod value;
 use snafu::ResultExt;
 
 #[allow(clippy::wildcard_imports)]
-use ast::*;
+use crate::ast::*;
 use self::bind::BindType;
 use self::builtins::Builtins;
 // We use a wildcard import for `error` to import the many error variant
@@ -36,8 +36,8 @@ use self::value::SourcedValue;
 use self::value::Str;
 use self::value::Value;
 
-use lexer::Lexer;
-use parser::ExprParser;
+use crate::lexer::Lexer;
+use crate::parser::ExprParser;
 
 macro_rules! match_eval_expr {
     (
@@ -54,12 +54,9 @@ macro_rules! match_eval_expr {
 
 pub struct EvaluationContext<'a> {
     pub builtins: &'a Builtins,
+    // TODO `cur_script_dir` will later be exposed by reflection imports.
+    #[allow(dead_code)]
     pub cur_script_dir: PathBuf,
-
-    // `global_bindings` are added to the global scope when the program starts.
-    //
-    // TODO Consider grouping `global_bindings` with `builtins`.
-    pub global_bindings: &'a Vec<(RawExpr, SourcedValue)>,
 }
 
 pub fn eval_prog(
@@ -314,34 +311,37 @@ fn eval_stmt(
 // `value_to_pairs` returns the "index, value" pairs in `v`, if `v` represents
 // an "iterable" type.
 fn value_to_pairs(v: &Value) -> Result<Vec<(SourcedValue, SourcedValue)>> {
-    let pairs =
-        match v {
-            Value::Str(s) =>
-                s
-                    .iter()
-                    .enumerate()
-                    .map(|(i, c)| {
-                        // TODO Handle issues caused by casting.
-                        (value::new_int(i as i64), value::new_str(vec![*c]))
-                    })
-                    .collect(),
+    match v {
+        Value::Str(s) => {
+            let mut pairs = Vec::with_capacity(s.len());
+            for (i, c) in s.iter().enumerate() {
+                let n: i64 = i.try_into()
+                    .context(CastFailed)?;
 
-            Value::List(items) => {
-                let items = &deref!(items);
+                pairs.push((value::new_int(n), value::new_str(vec![*c])));
+            }
 
-                items
-                    .iter()
-                    .enumerate()
-                    .map(|(i, value)| {
-                        // TODO Handle issues caused by casting.
-                        (value::new_int(i as i64), value.clone())
-                    })
-                    .collect()
-            },
+            Ok(pairs)
+        },
 
-            Value::Object(props) => {
-                let props = &deref!(props);
+        Value::List(items) => {
+            let items = &lock_deref!(items);
 
+            let mut pairs = Vec::with_capacity(items.len());
+            for (i, value) in items.iter().enumerate() {
+                let n: i64 = i.try_into()
+                    .context(CastFailed)?;
+
+                pairs.push((value::new_int(n), value.clone()));
+            }
+
+            Ok(pairs)
+        },
+
+        Value::Object(props) => {
+            let props = &lock_deref!(props);
+
+            let pairs =
                 props
                     .iter()
                     .map(|(key, value)| {
@@ -350,14 +350,15 @@ fn value_to_pairs(v: &Value) -> Result<Vec<(SourcedValue, SourcedValue)>> {
                             value.clone(),
                         )
                     })
-                    .collect()
-            },
+                    .collect();
 
-            _ =>
-                return Err(Error::ForIterNotIterable),
-        };
+            Ok(pairs)
+        },
 
-    Ok(pairs)
+        _ => {
+            Err(Error::ForIterNotIterable)
+        },
+    }
 }
 
 pub fn eval_stmts_in_new_scope(
@@ -1131,7 +1132,7 @@ fn eval_expr_to_index(
     }
 
     let i: usize = index.try_into()
-        .context(ConvertIndexToUsizeFailed)?;
+        .context(CastFailed)?;
 
     Ok(i)
 }

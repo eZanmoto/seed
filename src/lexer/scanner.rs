@@ -86,7 +86,7 @@ mod test {
             ("\n\n1234$", (3, 5)),
         ];
 
-        for (src, exp_dollar_loc) in tests.iter() {
+        for (src, exp_dollar_loc) in tests {
             assert_scan_dollar(src, *exp_dollar_loc);
         }
     }

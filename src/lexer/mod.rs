@@ -450,7 +450,7 @@ pub type Span = (Location, Token, Location);
 
 pub type Location = (usize, usize);
 
-impl<'input> Iterator for Lexer<'input> {
+impl Iterator for Lexer<'_> {
     type Item = Result<Span, LexError>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -574,6 +574,7 @@ mod test {
     #[test]
     fn test_lexs() {
         let tests = &[
+            #[allow(clippy::all)]
             (
                 r#"print ( "hello" )"#,
                 r#"(---) - (-----) -"#,
@@ -606,7 +607,7 @@ mod test {
             ),
         ];
 
-        for (src, encoded_exp_locs, exp_toks) in tests.iter() {
+        for (src, encoded_exp_locs, exp_toks) in tests {
             assert_lex(src, encoded_exp_locs, exp_toks.clone());
         }
     }

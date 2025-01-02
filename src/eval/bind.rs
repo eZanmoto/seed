@@ -8,8 +8,8 @@ use std::collections::HashSet;
 use snafu::ResultExt;
 
 #[allow(clippy::wildcard_imports)]
-use ast::*;
-use eval;
+use crate::ast::*;
+use crate::eval;
 use eval::EvaluationContext;
 #[allow(clippy::wildcard_imports)]
 use super::error::*;

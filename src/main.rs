@@ -45,6 +45,7 @@ lalrpop_mod!(
     #[allow(clippy::all)]
     #[allow(clippy::pedantic)]
     #[allow(dead_code)]
+    #[allow(unused_imports)]
     parser
 );
 
@@ -89,7 +90,7 @@ fn main() {
                 Error::EvalFailed{source, path} => {
                     let st = eval_err_to_stacktrace(&path, None, source);
 
-                    let mut rendered_stacktrace = "".to_string();
+                    let mut rendered_stacktrace = String::new();
                     if !st.stacktrace.is_empty() {
                         rendered_stacktrace = format!(
                             "\nStacktrace:\n  {}",
@@ -139,7 +140,6 @@ fn run(cur_rel_script_path: &Path) -> Result<(), Error> {
                 std: Arc::new(Mutex::new(BTreeMap::new())),
                 type_functions: type_functions::type_functions(),
             },
-            global_bindings: &global_bindings,
             cur_script_dir,
         },
         &mut scopes,
@@ -361,7 +361,7 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
                 if let Some(f) = func {
                     format!(" in '{f}':")
                 } else {
-                    "".to_string()
+                    String::new()
                 };
 
             st.msg = format!("{}:{}:{} {}", line, col, sep, st.msg);
@@ -389,7 +389,7 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
                 if let Some(f) = func {
                     format!(" in '{f}':")
                 } else {
-                    "".to_string()
+                    String::new()
                 };
 
             st.msg = format!("{}:{}:{} {}", line, col, sep, st.msg);

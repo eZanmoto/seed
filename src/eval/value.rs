@@ -6,9 +6,9 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use ast::Block;
-use eval::Expr;
-use eval::Result;
+use crate::ast::Block;
+use crate::eval::Expr;
+use crate::eval::Result;
 use super::scope::ScopeStack;
 
 // `lock_deref` must be defined as a macro, because a reference to the
