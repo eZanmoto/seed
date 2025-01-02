@@ -5,6 +5,7 @@
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::VecDeque;
 use std::convert::TryInto;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -284,6 +285,9 @@ fn eval_stmt(
         },
 
         Stmt::Func{name: (name, loc), args, collect_args, stmts} => {
+            validate_args(args)
+                .context(ValidateArgsFailed)?;
+
             let closure = scopes.clone();
             let func = value::new_func(
                 Some(name.clone()),
@@ -306,6 +310,93 @@ fn eval_stmt(
     }
 
     Ok(Escape::None)
+}
+
+fn validate_args(args: &[Expr]) -> Result<()> {
+    let mut queue = VecDeque::from(args.to_owned());
+    let mut name_locs = HashMap::<String, Location>::new();
+
+    while let Some(arg) = queue.pop_front() {
+        let (raw_arg, loc) = arg;
+        let new_loc_err = |source| {
+            let (line, col) = loc;
+
+            Err(Error::AtLoc{source: Box::new(source), line, col})
+        };
+        let new_invalid_bind_error = |s: &str| {
+            new_loc_err(Error::InvalidBindTarget{descr: s.to_string()})
+        };
+
+        match raw_arg {
+            RawExpr::Var{name} => {
+                if name == "_" {
+                    break;
+                }
+
+                if let Some((line, col)) = name_locs.get(&name) {
+                    return new_loc_err(Error::DupParamName{
+                        name: name.to_string(),
+                        line: *line,
+                        col: *col,
+                    });
+                }
+                name_locs.insert(name.clone(), loc);
+            },
+
+            RawExpr::Object{props} => {
+                for prop in props {
+                    match prop {
+                        PropItem::Pair{name: _, value} => {
+                            queue.push_back(value.clone());
+                        },
+                        PropItem::Single{expr, is_spread, collect: _} => {
+                            if is_spread {
+                                return new_loc_err(
+                                    Error::PropSpreadInParamList,
+                                );
+                            }
+                            queue.push_back(expr.clone());
+                        },
+                    }
+                }
+            },
+
+            RawExpr::List{items, collect: _} => {
+                for ListItem{expr, is_spread} in items {
+                    if is_spread {
+                        return new_loc_err(Error::ItemSpreadInParamList);
+                    }
+
+                    queue.push_back(expr.clone());
+                }
+            },
+
+            RawExpr::Index{..} =>
+                return new_invalid_bind_error("an index operation"),
+            RawExpr::RangeIndex{..} =>
+                return new_invalid_bind_error("a range index operation"),
+            RawExpr::Prop{..} =>
+                return new_invalid_bind_error("a property access operation"),
+            RawExpr::Null =>
+                return new_invalid_bind_error("`null`"),
+            RawExpr::Bool{..} =>
+                return new_invalid_bind_error("a boolean literal"),
+            RawExpr::Int{..} =>
+                return new_invalid_bind_error("an integer literal"),
+            RawExpr::Str{..} =>
+                return new_invalid_bind_error("a string literal"),
+            RawExpr::BinaryOp{..} =>
+                return new_invalid_bind_error("a binary operation"),
+            RawExpr::Range{..} =>
+                return new_invalid_bind_error("a range operation"),
+            RawExpr::Func{..} =>
+                return new_invalid_bind_error("an anonymous function"),
+            RawExpr::Call{..} =>
+                return new_invalid_bind_error("a function call"),
+        }
+    }
+
+    Ok(())
 }
 
 // `value_to_pairs` returns the "index, value" pairs in `v`, if `v` represents

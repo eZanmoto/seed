@@ -312,6 +312,7 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         EvalError::EvalForIterFailed{source} |
         EvalError::ConvertForIterToPairsFailed{source} |
         EvalError::EvalForStatementsFailed{source} |
+        EvalError::ValidateArgsFailed{source} |
         EvalError::DeclareFunctionFailed{source} |
         EvalError::EvalBlockFailed{source} |
         EvalError::EvalStmtFailed{source} |

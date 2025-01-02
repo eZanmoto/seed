@@ -9,7 +9,7 @@ license = "MIT"
 name = "seed"
 readme = "README.md"
 repository = "https://github.com/ezanmoto/seed"
-version = "0.50.1"
+version = "0.50.2"
 edition = "2021"
 
 [build-dependencies]

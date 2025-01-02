@@ -204,6 +204,12 @@ pub enum Error {
         rhs,
     ))]
     IntOverflow{op: BinaryOp, lhs: i64, rhs: i64},
+    #[snafu(display("'{}' is already declared at [{}:{}]", name, line, col))]
+    DupParamName{name: String, line: usize, col: usize},
+    #[snafu(display("can't use spread operator in parameter list"))]
+    PropSpreadInParamList,
+    #[snafu(display("can't use spread operator in parameter list"))]
+    ItemSpreadInParamList,
 
     #[snafu(display("{}", msg))]
     BuiltinFuncErr{msg: String},
@@ -314,6 +320,10 @@ pub enum Error {
         source: Box<Error>,
     },
     EvalForStatementsFailed{
+        #[snafu(source(from(Error, Box::new)))]
+        source: Box<Error>,
+    },
+    ValidateArgsFailed{
         #[snafu(source(from(Error, Box::new)))]
         source: Box<Error>,
     },
