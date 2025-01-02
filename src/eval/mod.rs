@@ -1,4 +1,4 @@
-// Copyright 2023-2024 Sean Kelleher. All rights reserved.
+// Copyright 2023-2025 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -1388,7 +1388,7 @@ fn interpolate_string(
                 Ok(v) => v,
                 Err(e) => return new_loc_err(
                     Error::InterpolateStringParseFailed{
-                        source_str: format!("{:?}", e),
+                        source_str: format!("{e:?}"),
                     },
                     slot_col,
                 ),

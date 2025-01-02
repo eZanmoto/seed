@@ -1,4 +1,4 @@
-// Copyright 2023-2024 Sean Kelleher. All rights reserved.
+// Copyright 2023-2025 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -167,9 +167,8 @@ impl<'input> Lexer<'input> {
                             return Err(LexError::IntOverflow(loc, raw_int)),
                         e =>
                             panic!(
-                                "unexpected parse error ({:?}) for '{}'",
-                                e,
-                                raw_int,
+                                "unexpected parse error ({e:?}) for \
+                                 '{raw_int}'",
                             ),
                     };
                 },
@@ -625,17 +624,14 @@ mod test {
             assert_eq!(
                 exp_span,
                 act_span,
-                "span {} of '{}' wasn't as expected",
-                n,
-                src,
+                "span {n} of '{src}' wasn't as expected",
             );
         }
 
         let r = lexer.next();
         assert!(
-            matches!(r, None),
-            "expected end of token stream, got '{:?}'",
-            r,
+            r.is_none(),
+            "expected end of token stream, got '{r:?}'",
         );
     }
 
@@ -696,7 +692,7 @@ mod test {
                     }
                 },
                 c => {
-                    panic!("encountered '{}' inside spans encoding", c);
+                    panic!("encountered '{c}' inside spans encoding");
                 },
             }
         }
@@ -865,8 +861,7 @@ mod test {
             assert_eq!(
                 &locs,
                 tgt,
-                "incorrect locations parsed from '{}'",
-                src,
+                "incorrect locations parsed from '{src}'",
             );
         }
     }

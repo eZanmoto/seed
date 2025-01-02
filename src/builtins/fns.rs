@@ -1,4 +1,4 @@
-// Copyright 2023-2024 Sean Kelleher. All rights reserved.
+// Copyright 2023-2025 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -26,7 +26,7 @@ pub fn print(this: Option<SourcedValue>, args: Vec<SourcedValue>)
 
     let s = render(&args[0])?;
 
-    println!("{}", s);
+    println!("{s}");
 
     Ok(value::new_null())
 }
@@ -40,11 +40,11 @@ fn render(v: &SourcedValue) -> Result<String> {
         },
 
         Value::Bool(b) => {
-            s += &format!("{}", b);
+            s += &format!("{b}");
         },
 
         Value::Int(n) => {
-            s += &format!("{}", n);
+            s += &format!("{n}");
         },
 
         Value::Str(raw_str) => {
@@ -52,8 +52,7 @@ fn render(v: &SourcedValue) -> Result<String> {
                 match String::from_utf8(raw_str) {
                     Ok(p) => p,
                     Err(e) => return Err(Error::BuiltinFuncErr{msg: format!(
-                        "couldn't convert error message to UTF-8: {}",
-                        e,
+                        "couldn't convert error message to UTF-8: {e}",
                     )}),
                 };
 
@@ -65,7 +64,7 @@ fn render(v: &SourcedValue) -> Result<String> {
             for item in &deref!(items) {
                 let rendered_item = render(item)?;
                 let indented = rendered_item.replace('\n', "\n    ");
-                s += &format!("    {},\n", indented);
+                s += &format!("    {indented},\n");
             }
             s += "]";
         },
@@ -75,19 +74,19 @@ fn render(v: &SourcedValue) -> Result<String> {
             for (name, prop) in &deref!(props) {
                 let rendered_prop = render(prop)?;
                 let indented = rendered_prop.replace('\n', "\n    ");
-                s += &format!("    \"{}\": {},\n", name, indented);
+                s += &format!("    \"{name}\": {indented},\n");
             }
             s += "}";
         },
 
         Value::BuiltinFunc{name, ..} => {
-            s += &format!("<built-in function '{}'>", name);
+            s += &format!("<built-in function '{name}'>");
         },
 
         Value::Func(f) => {
             let Func{name, ..} = &deref!(f);
 
-            s += &format!("<function '{:?}'>", name);
+            s += &format!("<function '{name:?}'>");
         },
     }
 
@@ -108,11 +107,8 @@ pub fn assert_args(fn_name: &str, exp_args: usize, args: &[SourcedValue])
         }
 
         return Err(Error::BuiltinFuncErr{msg: format!(
-            "`{}` only takes {} argument{} (got {})",
-            fn_name,
-            exp_args,
-            plural,
-            args_len,
+            "`{fn_name}` only takes {exp_args} argument{plural} (got \
+             {args_len})",
         )})
     }
 
@@ -140,9 +136,7 @@ pub fn assert_str(val_name: &str, v: &SourcedValue) -> Result<String> {
         match String::from_utf8(raw_str.clone()) {
             Ok(s) => Ok(s),
             Err(e) => Err(Error::BuiltinFuncErr{msg: format!(
-                "couldn't convert `{}` string to UTF-8: {}",
-                val_name,
-                e,
+                "couldn't convert `{val_name}` string to UTF-8: {e}",
             )}),
         }
     } else {
