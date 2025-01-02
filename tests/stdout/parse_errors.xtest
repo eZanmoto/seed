@@ -4,5 +4,5 @@ exit_code: 103
 {
 --------------------------------------------------
 --------------------------------------------------
-parse_errors/unexpected_eof.sd:2:0: unexpected EOF; expected "(", "-", "..", "[", "break", "continue", "false", "fn", "for", "identifier", "if", "int_literal", "interp_str_literal", "null", "return", "str_literal", "true", "while", "{" or "}"
+parse_errors/unexpected_eof.sd:2:0: unexpected EOF; expected "identifier", "int_literal", "str_literal", "interp_str_literal", "break", "continue", "false", "fn", "for", "if", "null", "return", "true", "while", "}", "{", "[", "(", "-" or ".."
 ==================================================

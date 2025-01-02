@@ -169,7 +169,7 @@ fn render_parse_error(error: ParseError<(usize, usize), Token, LexError>)
         ParseError::InvalidToken{location} => {
             (location, "invalid token".to_string())
         },
-        ParseError::UnrecognizedEOF{location, expected} =>
+        ParseError::UnrecognizedEof{location, expected} =>
             (
                 location,
                 format!(
