@@ -21,7 +21,7 @@ pub fn print(this: Option<SourcedValue>, args: Vec<SourcedValue>)
     assert_args("print", 1, &args)
         .context(AssertArgsFailed)?;
 
-    assert_no_this(&this)
+    assert_no_this(this.as_ref())
         .context(AssertNoThisFailed)?;
 
     let s = render(&args[0])?;
@@ -115,7 +115,7 @@ pub fn assert_args(fn_name: &str, exp_args: usize, args: &[SourcedValue])
     Ok(())
 }
 
-pub fn assert_no_this(this: &Option<SourcedValue>) -> Result<()> {
+pub fn assert_no_this(this: Option<&SourcedValue>) -> Result<()> {
     if this.is_none() {
         Ok(())
     } else {
