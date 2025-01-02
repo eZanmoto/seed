@@ -571,6 +571,7 @@ mod test {
 
     use super::*;
 
+    #[allow(clippy::needless_raw_string_hashes)]
     #[test]
     fn test_lexs() {
         let tests = &[

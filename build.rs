@@ -275,6 +275,8 @@ fn write_test(
         test_file,
         indoc!{"
 
+            #[allow(clippy::manual_string_new)]
+            #[allow(clippy::needless_raw_string_hashes)]
             #[test]
             fn {name}() {{
                 run_test(
@@ -284,9 +286,7 @@ fn write_test(
                         src: String::from(r#\"{src}\"#),
                         exp: TestExpectation{{
                             code: {tgt_code},
-                            #[allow(clippy::all)]
                             stdout: String::from(r#\"{tgt_stdout}\"#),
-                            #[allow(clippy::all)]
                             stderr: String::from(r#\"{tgt_stderr}\"#),
                         }},
                     }}
