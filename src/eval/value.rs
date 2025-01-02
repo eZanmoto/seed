@@ -1,4 +1,4 @@
-// Copyright 2023-2024 Sean Kelleher. All rights reserved.
+// Copyright 2023-2025 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -11,12 +11,13 @@ use eval::Expr;
 use eval::Result;
 use super::scope::ScopeStack;
 
-// `deref` must be defined as a macro, because a reference to the temporary
-// value borrowed from the `Mutex` `v` can't be returned from a function,
-// because once the lock is released at the end of the function, the reference
-// is no longer valid. As such, we define a macro to abstract this access.
+// `lock_deref` must be defined as a macro, because a reference to the
+// temporary value borrowed from the `Mutex` `v` can't be returned from a
+// function, because once the lock is released at the end of the function, the
+// reference is no longer valid. As such, we define a macro to abstract this
+// access.
 #[macro_export]
-macro_rules! deref {
+macro_rules! lock_deref {
     ( $val_ref_with_source:ident ) => {
         *$val_ref_with_source.try_lock().unwrap()
     };

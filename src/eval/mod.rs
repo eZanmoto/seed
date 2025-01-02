@@ -468,7 +468,7 @@ fn eval_expr(
                         .context(EvalListIndexFailed)?;
 
                     let v =
-                        match deref!(list).get(index) {
+                        match lock_deref!(list).get(index) {
                             Some(v) => v.clone(),
                             None => return new_loc_err(
                                 Error::OutOfListBounds{index},
@@ -486,7 +486,7 @@ fn eval_expr(
                             .context(EvalObjectIndexFailed)?;
 
                     let v =
-                        match deref!(props).get(&name) {
+                        match lock_deref!(props).get(&name) {
                             Some(value) => {
                                 value.v.clone()
                             },
@@ -615,7 +615,7 @@ fn eval_expr(
                         if *is_spread {
                             match_eval_expr!((context, scopes, expr) {
                                 Value::Object(props) => {
-                                    for (name, value) in &deref!(props) {
+                                    for (name, value) in &lock_deref!(props) {
                                         vals.insert(
                                             name.to_string(),
                                             value.clone(),
@@ -708,7 +708,7 @@ fn eval_expr(
                 };
 
             let v =
-                if let Some(value) = deref!(namespace).get(name) {
+                if let Some(value) = lock_deref!(namespace).get(name) {
                     Ok(value::new_val_ref_with_source(
                         value.v.clone(),
                         source.v.clone(),
@@ -833,8 +833,8 @@ fn apply_binary_operation(
                     Ok(Value::Str([a.clone(), b.clone()].concat()))
                 },
                 (Value::List(a), Value::List(b)) => {
-                    let a = deref!(a).clone();
-                    let b = deref!(b).clone();
+                    let a = lock_deref!(a).clone();
+                    let b = lock_deref!(b).clone();
 
                     Ok(Value::List(Arc::new(Mutex::new([a, b].concat()))))
                 },
@@ -955,12 +955,12 @@ fn eq(lhs: &Value, rhs: &Value) -> Option<bool> {
                 return Some(true);
             }
 
-            if deref!(xs).len() != deref!(ys).len() {
+            if lock_deref!(xs).len() != lock_deref!(ys).len() {
                 return Some(false);
             }
 
-            for (i, x) in deref!(xs).iter().enumerate() {
-                let y = &deref!(ys)[i];
+            for (i, x) in lock_deref!(xs).iter().enumerate() {
+                let y = &lock_deref!(ys)[i];
 
                 let equal = eq(&x.v, &y.v)?;
 
@@ -977,12 +977,12 @@ fn eq(lhs: &Value, rhs: &Value) -> Option<bool> {
                 return Some(true);
             }
 
-            if deref!(xs).len() != deref!(ys).len() {
+            if lock_deref!(xs).len() != lock_deref!(ys).len() {
                 return Some(false);
             }
 
-            for (k, x) in &deref!(xs) {
-                let ys = &deref!(ys);
+            for (k, x) in &lock_deref!(xs) {
+                let ys = &lock_deref!(ys);
                 let y =
                     if let Some(y) = ys.get(k) {
                         y
@@ -1161,9 +1161,9 @@ fn get_list_range_index(
     -> Result<SourcedValue>
 {
     let start = maybe_start.get_or_insert(0);
-    let end = maybe_end.get_or_insert(deref!(list).len());
+    let end = maybe_end.get_or_insert(lock_deref!(list).len());
 
-    if let Some(vs) = deref!(list).get(*start .. *end) {
+    if let Some(vs) = lock_deref!(list).get(*start .. *end) {
         return Ok(value::new_list(vs.to_vec()));
     }
 
@@ -1191,7 +1191,7 @@ fn eval_list_items(
 
         match v.v {
             Value::List(items) => {
-                for item in &deref!(items) {
+                for item in &lock_deref!(items) {
                     vals.push(item.clone());
                 }
             },
@@ -1253,7 +1253,7 @@ fn eval_call(
                         collect_args,
                         stmts,
                         closure,
-                    } = &deref!(f);
+                    } = &lock_deref!(f);
 
                     let num_params = arg_names.len();
                     let got = arg_vals.len();

@@ -4,7 +4,6 @@
 
 use snafu::ResultExt;
 
-use ::deref;
 use crate::eval::error::AssertArgsFailed;
 use crate::eval::error::AssertNoThisFailed;
 use crate::eval::error::Error;
@@ -13,6 +12,7 @@ use crate::eval::value;
 use crate::eval::value::Func;
 use crate::eval::value::SourcedValue;
 use crate::eval::value::Value;
+use crate::lock_deref;
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn print(this: Option<SourcedValue>, args: Vec<SourcedValue>)
@@ -61,7 +61,7 @@ fn render(v: &SourcedValue) -> Result<String> {
 
         Value::List(items) => {
             s += "[\n";
-            for item in &deref!(items) {
+            for item in &lock_deref!(items) {
                 let rendered_item = render(item)?;
                 let indented = rendered_item.replace('\n', "\n    ");
                 s += &format!("    {indented},\n");
@@ -71,7 +71,7 @@ fn render(v: &SourcedValue) -> Result<String> {
 
         Value::Object(props) => {
             s += "{\n";
-            for (name, prop) in &deref!(props) {
+            for (name, prop) in &lock_deref!(props) {
                 let rendered_prop = render(prop)?;
                 let indented = rendered_prop.replace('\n', "\n    ");
                 s += &format!("    \"{name}\": {indented},\n");
@@ -84,7 +84,7 @@ fn render(v: &SourcedValue) -> Result<String> {
         },
 
         Value::Func(f) => {
-            let Func{name, ..} = &deref!(f);
+            let Func{name, ..} = &lock_deref!(f);
 
             s += &format!("<function '{name:?}'>");
         },
