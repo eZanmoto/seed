@@ -889,13 +889,30 @@ fn apply_binary_operation(
     match op {
         BinaryOp::Eq |
         BinaryOp::Ne => {
-            if let Some(v) = eq(lhs, rhs) {
-                match op {
-                    BinaryOp::Eq => Ok(Value::Bool(v)),
-                    _ => Ok(Value::Bool(!v)),
-                }
-            } else {
-                Err(new_invalid_op_types())
+            match eq(lhs, rhs) {
+                Ok(v) => {
+                    match op {
+                        BinaryOp::Eq => Ok(Value::Bool(v)),
+                        _ => Ok(Value::Bool(!v)),
+                    }
+                },
+                Err((path, lhs_type, rhs_type)) => {
+                    let mut msg = String::new();
+                    if !path.is_empty() {
+                        msg = format!(" (at {path})");
+                    }
+
+                    Err(Error::AtLoc{
+                        source: Box::new(Error::InvalidEqOpTypes{
+                            op: op.clone(),
+                            lhs_type,
+                            rhs_type,
+                            msg,
+                        }),
+                        line: *line,
+                        col: *col,
+                    })
+                },
             }
         },
 
@@ -1027,50 +1044,61 @@ fn apply_binary_operation(
     }
 }
 
-// `eq` returns `None` if `lhs` and `rhs` are of different types.
-fn eq(lhs: &Value, rhs: &Value) -> Option<bool> {
+// `eq` returns a path to the values in `lhs` and `rhs` that differ if `lhs`
+// and `rhs` are of different types.
+fn eq(lhs: &Value, rhs: &Value)
+    -> std::result::Result<bool, (String, String, String)>
+{
     match (lhs, rhs) {
         (Value::Null, Value::Null) =>
-            Some(true),
+            Ok(true),
 
         (Value::Bool(a), Value::Bool(b)) =>
-            Some(a == b),
+            Ok(a == b),
 
         (Value::Int(a), Value::Int(b)) =>
-            Some(a == b),
+            Ok(a == b),
 
         (Value::Str(a), Value::Str(b)) =>
-            Some(a == b),
+            Ok(a == b),
 
         (Value::List(xs), Value::List(ys)) => {
             if value::ref_eq(xs, ys) {
-                return Some(true);
+                return Ok(true);
             }
 
             if lock_deref!(xs).len() != lock_deref!(ys).len() {
-                return Some(false);
+                return Ok(false);
             }
 
             for (i, x) in lock_deref!(xs).iter().enumerate() {
                 let y = &lock_deref!(ys)[i];
 
-                let equal = eq(&x.v, &y.v)?;
+                let equal =
+                    match eq(&x.v, &y.v) {
+                        Ok(v) => v,
+                        Err((path, a, b)) => return Err((
+                            format!("[{i}]{path}"),
+                            a,
+                            b,
+                        )),
+                    };
 
                 if !equal {
-                    return Some(false);
+                    return Ok(false);
                 }
             }
 
-            Some(true)
+            Ok(true)
         },
 
         (Value::Object(xs), Value::Object(ys)) => {
             if value::ref_eq(xs, ys) {
-                return Some(true);
+                return Ok(true);
             }
 
             if lock_deref!(xs).len() != lock_deref!(ys).len() {
-                return Some(false);
+                return Ok(false);
             }
 
             for (k, x) in &lock_deref!(xs) {
@@ -1079,21 +1107,33 @@ fn eq(lhs: &Value, rhs: &Value) -> Option<bool> {
                     if let Some(y) = ys.get(k) {
                         y
                     } else {
-                        return Some(false);
+                        return Ok(false);
                     };
 
-                let equal = eq(&x.v, &y.v)?;
+                let equal =
+                    match eq(&x.v, &y.v) {
+                        Ok(v) => v,
+                        Err((path, a, b)) => return Err((
+                            format!(".'{k}'{path}"),
+                            a,
+                            b,
+                        )),
+                    };
 
                 if !equal {
-                    return Some(false);
+                    return Ok(false);
                 }
             }
 
-            Some(true)
+            Ok(true)
         },
 
         _ =>
-            None,
+            Err((
+                String::new(),
+                error::render_type(lhs),
+                error::render_type(rhs),
+            )),
     }
 }
 

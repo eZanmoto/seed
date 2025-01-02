@@ -61,6 +61,19 @@ pub enum Error {
         render_type(rhs),
     ))]
     InvalidOpTypes{op: BinaryOp, lhs: Value, rhs: Value},
+    #[snafu(display(
+        "can't apply '{}' to '{}' and '{}'{}",
+        op_symbol(op),
+        lhs_type,
+        rhs_type,
+        msg,
+    ))]
+    InvalidEqOpTypes{
+        op: BinaryOp,
+        lhs_type: String,
+        rhs_type: String,
+        msg: String,
+    },
     #[snafu(display("'break' can't be used outside of a loop"))]
     BreakOutsideLoop,
     #[snafu(display("'continue' can't be used outside of a loop"))]
