@@ -1,4 +1,4 @@
-// Copyright 2023-2024 Sean Kelleher. All rights reserved.
+// Copyright 2023-2025 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -14,6 +14,7 @@ use crate::eval::builtins::TypeFunctions;
 use crate::eval::error::AssertArgsFailed;
 use crate::eval::error::AssertStrFailed;
 use crate::eval::error::AssertThisFailed;
+use crate::eval::error::CastFailed;
 use crate::eval::error::Result;
 use crate::eval::value;
 use crate::eval::value::ObjectRef;
@@ -84,7 +85,10 @@ pub fn str_len(this: Option<SourcedValue>, vs: Vec<SourcedValue>)
     let s = fns::assert_str("this", &this)
         .context(AssertStrFailed)?;
 
-    Ok(value::new_int(s.len() as i64))
+    let n: i64 = s.len().try_into()
+        .context(CastFailed)?;
+
+    Ok(value::new_int(n))
 }
 
 #[allow(clippy::needless_pass_by_value)]

@@ -1,4 +1,4 @@
-// Copyright 2023 Sean Kelleher. All rights reserved.
+// Copyright 2023-2025 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -86,7 +86,7 @@ mod test {
             ("\n\n1234$", (3, 5)),
         ];
 
-        for (src, exp_dollar_loc) in tests.iter() {
+        for (src, exp_dollar_loc) in tests {
             assert_scan_dollar(src, *exp_dollar_loc);
         }
     }
@@ -99,8 +99,7 @@ mod test {
                 assert_eq!(
                     exp_dollar_loc,
                     scanner.loc(),
-                    "unexpected location for '{}'",
-                    src,
+                    "unexpected location for '{src}'",
                 );
             }
             scanner.next_char();

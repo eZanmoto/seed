@@ -1,10 +1,9 @@
-// Copyright 2023-2024 Sean Kelleher. All rights reserved.
+// Copyright 2023-2025 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
 use snafu::ResultExt;
 
-use ::deref;
 use crate::eval::error::AssertArgsFailed;
 use crate::eval::error::AssertNoThisFailed;
 use crate::eval::error::Error;
@@ -13,6 +12,7 @@ use crate::eval::value;
 use crate::eval::value::Func;
 use crate::eval::value::SourcedValue;
 use crate::eval::value::Value;
+use crate::lock_deref;
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn print(this: Option<SourcedValue>, args: Vec<SourcedValue>)
@@ -21,12 +21,12 @@ pub fn print(this: Option<SourcedValue>, args: Vec<SourcedValue>)
     assert_args("print", 1, &args)
         .context(AssertArgsFailed)?;
 
-    assert_no_this(&this)
+    assert_no_this(this.as_ref())
         .context(AssertNoThisFailed)?;
 
     let s = render(&args[0])?;
 
-    println!("{}", s);
+    println!("{s}");
 
     Ok(value::new_null())
 }
@@ -40,11 +40,11 @@ fn render(v: &SourcedValue) -> Result<String> {
         },
 
         Value::Bool(b) => {
-            s += &format!("{}", b);
+            s += &format!("{b}");
         },
 
         Value::Int(n) => {
-            s += &format!("{}", n);
+            s += &format!("{n}");
         },
 
         Value::Str(raw_str) => {
@@ -52,8 +52,7 @@ fn render(v: &SourcedValue) -> Result<String> {
                 match String::from_utf8(raw_str) {
                     Ok(p) => p,
                     Err(e) => return Err(Error::BuiltinFuncErr{msg: format!(
-                        "couldn't convert error message to UTF-8: {}",
-                        e,
+                        "couldn't convert error message to UTF-8: {e}",
                     )}),
                 };
 
@@ -62,32 +61,32 @@ fn render(v: &SourcedValue) -> Result<String> {
 
         Value::List(items) => {
             s += "[\n";
-            for item in &deref!(items) {
+            for item in &lock_deref!(items) {
                 let rendered_item = render(item)?;
                 let indented = rendered_item.replace('\n', "\n    ");
-                s += &format!("    {},\n", indented);
+                s += &format!("    {indented},\n");
             }
             s += "]";
         },
 
         Value::Object(props) => {
             s += "{\n";
-            for (name, prop) in &deref!(props) {
+            for (name, prop) in &lock_deref!(props) {
                 let rendered_prop = render(prop)?;
                 let indented = rendered_prop.replace('\n', "\n    ");
-                s += &format!("    \"{}\": {},\n", name, indented);
+                s += &format!("    \"{name}\": {indented},\n");
             }
             s += "}";
         },
 
         Value::BuiltinFunc{name, ..} => {
-            s += &format!("<built-in function '{}'>", name);
+            s += &format!("<built-in function '{name}'>");
         },
 
         Value::Func(f) => {
-            let Func{name, ..} = &deref!(f);
+            let Func{name, ..} = &lock_deref!(f);
 
-            s += &format!("<function '{:?}'>", name);
+            s += &format!("<function '{name:?}'>");
         },
     }
 
@@ -108,18 +107,15 @@ pub fn assert_args(fn_name: &str, exp_args: usize, args: &[SourcedValue])
         }
 
         return Err(Error::BuiltinFuncErr{msg: format!(
-            "`{}` only takes {} argument{} (got {})",
-            fn_name,
-            exp_args,
-            plural,
-            args_len,
+            "`{fn_name}` only takes {exp_args} argument{plural} (got \
+             {args_len})",
         )})
     }
 
     Ok(())
 }
 
-pub fn assert_no_this(this: &Option<SourcedValue>) -> Result<()> {
+pub fn assert_no_this(this: Option<&SourcedValue>) -> Result<()> {
     if this.is_none() {
         Ok(())
     } else {
@@ -140,9 +136,7 @@ pub fn assert_str(val_name: &str, v: &SourcedValue) -> Result<String> {
         match String::from_utf8(raw_str.clone()) {
             Ok(s) => Ok(s),
             Err(e) => Err(Error::BuiltinFuncErr{msg: format!(
-                "couldn't convert `{}` string to UTF-8: {}",
-                val_name,
-                e,
+                "couldn't convert `{val_name}` string to UTF-8: {e}",
             )}),
         }
     } else {

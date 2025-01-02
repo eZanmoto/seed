@@ -1,8 +1,10 @@
-# Copyright 2023 Sean Kelleher. All rights reserved.
+# Copyright 2023-2025 Sean Kelleher. All rights reserved.
 # Use of this source code is governed by an MIT
 # licence that can be found in the LICENCE file.
 
-FROM rust:1.60.0-buster
+FROM rust:1.83.0-bullseye
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN \
     rustup component add \
@@ -42,5 +44,5 @@ RUN \
     | bash \
         -s \
         -- \
-        --tag 1.16.0 \
+        --tag 1.38.0 \
         --to /usr/local/bin

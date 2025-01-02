@@ -1,4 +1,4 @@
-// Copyright 2023-2024 Sean Kelleher. All rights reserved.
+// Copyright 2023-2025 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -8,16 +8,16 @@ use std::collections::HashSet;
 use snafu::ResultExt;
 
 #[allow(clippy::wildcard_imports)]
-use ast::*;
-use eval;
+use crate::ast::*;
+use crate::eval;
 use eval::EvaluationContext;
 #[allow(clippy::wildcard_imports)]
 use super::error::*;
 use super::error::Error;
 use super::scope;
 use super::scope::ScopeStack;
-use ::deref;
-use value;
+use crate::lock_deref;
+use crate::value;
 use value::ListRef;
 use value::ObjectRef;
 use value::SourcedValue;
@@ -100,11 +100,11 @@ pub fn bind_next(
                     let n = eval::eval_expr_to_index(context, scopes, locat)
                         .context(EvalListIndexFailed)?;
 
-                    if n >= deref!(items).len() {
+                    if n >= lock_deref!(items).len() {
                         return new_loc_err(Error::OutOfListBounds{index: n});
                     }
 
-                    let lhs_val = &mut deref!(items)[n as usize];
+                    let lhs_val = &mut lock_deref!(items)[n as usize];
 
                     binary_operation_assign(lhs_val, rhs, op)
                         .context(BinOpAssignListIndexFailed)?;
@@ -120,7 +120,7 @@ pub fn bind_next(
                         eval::eval_expr_to_str(context, scopes, descr, locat)
                             .context(EvalObjectIndexFailed)?;
 
-                    if let Some(slot) = deref!(props).get_mut(&name) {
+                    if let Some(slot) = lock_deref!(props).get_mut(&name) {
                         binary_operation_assign(slot, rhs, op)
                             .context(BinOpAssignObjectIndexFailed)?;
 
@@ -131,7 +131,7 @@ pub fn bind_next(
                         return new_loc_err(Error::OpOnUndefinedIndex{name});
                     }
 
-                    deref!(props).insert(name, rhs);
+                    lock_deref!(props).insert(name, rhs);
 
                     Ok(())
                 },
@@ -151,7 +151,7 @@ pub fn bind_next(
                 Value::List(mut lhs_items) => {
                     match rhs.v {
                         Value::List(rhs_items) => {
-                            let rhs = deref!(rhs_items).clone();
+                            let rhs = lock_deref!(rhs_items).clone();
 
                             bind_range_index(
                                 context,
@@ -199,7 +199,7 @@ pub fn bind_next(
 
             match_eval_expr!((context, scopes, expr) {
                 Value::Object(props) => {
-                    if let Some(slot) = deref!(props).get_mut(name) {
+                    if let Some(slot) = lock_deref!(props).get_mut(name) {
                         binary_operation_assign(slot, rhs, op)
                             .context(BinOpAssignPropFailed)?;
 
@@ -212,7 +212,7 @@ pub fn bind_next(
                         return new_loc_err(Error::OpOnUndefinedProp{name});
                     }
 
-                    deref!(props).insert(name, rhs);
+                    lock_deref!(props).insert(name, rhs);
 
                     Ok(())
                 },
@@ -437,7 +437,7 @@ fn bind_range_index(
             rhs_len
         };
 
-    let list_len = deref!(lhs_items).len();
+    let list_len = lock_deref!(lhs_items).len();
     if start > list_len {
         return new_loc_err(Error::RangeStartOutOfListBounds{start, list_len});
     } else if start >= end {
@@ -455,7 +455,7 @@ fn bind_range_index(
     }
 
     for (i, v) in rhs_items.iter().enumerate() {
-        let slot = &mut deref!(lhs_items)[(start+i) as usize];
+        let slot = &mut lock_deref!(lhs_items)[(start+i) as usize];
 
         *slot = v.clone();
     }
@@ -478,7 +478,7 @@ fn bind_object(
     // target object.
 
     let mut remaining_keys =
-        deref!(rhs)
+        lock_deref!(rhs)
             .keys()
             .cloned()
             .collect::<HashSet<String>>();
@@ -519,7 +519,7 @@ fn bind_object(
                             .iter()
                             .map(|k| (
                                 k.clone(),
-                                deref!(rhs)[k].clone(),
+                                lock_deref!(rhs)[k].clone(),
                             ))
                             .collect();
 
@@ -601,7 +601,7 @@ fn bind_object_prop(
     };
 
     let new_rhs =
-        match deref!(rhs).get(prop_name.0) {
+        match lock_deref!(rhs).get(prop_name.0) {
             Some(v) => v.clone(),
             None => return new_loc_err(Error::PropNotFound{
                 name: prop_name.0.to_string(),
@@ -634,7 +634,7 @@ fn bind_list(
     };
 
     let lhs_len = lhs.len();
-    let rhs_len = deref!(rhs).len();
+    let rhs_len = lock_deref!(rhs).len();
     if *collect {
         if lhs_len-1 > rhs_len {
             return new_loc_err(Error::ListCollectTooFew{lhs_len, rhs_len});
@@ -654,9 +654,9 @@ fn bind_list(
 
         let rhs =
             if *collect && i == lhs_len-1 {
-                value::new_list(deref!(rhs)[lhs_len-1 ..].to_vec())
+                value::new_list(lock_deref!(rhs)[lhs_len-1 ..].to_vec())
             } else {
-                deref!(rhs)[i].clone()
+                lock_deref!(rhs)[i].clone()
             };
 
         bind_next(context, scopes, names_in_binding, lhs, rhs, None, bind_type)

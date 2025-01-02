@@ -1,4 +1,4 @@
-// Copyright 2023-2024 Sean Kelleher. All rights reserved.
+// Copyright 2023-2025 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -20,7 +20,7 @@ pub mod value;
 use snafu::ResultExt;
 
 #[allow(clippy::wildcard_imports)]
-use ast::*;
+use crate::ast::*;
 use self::bind::BindType;
 use self::builtins::Builtins;
 // We use a wildcard import for `error` to import the many error variant
@@ -36,8 +36,8 @@ use self::value::SourcedValue;
 use self::value::Str;
 use self::value::Value;
 
-use lexer::Lexer;
-use parser::ExprParser;
+use crate::lexer::Lexer;
+use crate::parser::ExprParser;
 
 macro_rules! match_eval_expr {
     (
@@ -54,12 +54,9 @@ macro_rules! match_eval_expr {
 
 pub struct EvaluationContext<'a> {
     pub builtins: &'a Builtins,
+    // TODO `cur_script_dir` will later be exposed by reflection imports.
+    #[allow(dead_code)]
     pub cur_script_dir: PathBuf,
-
-    // `global_bindings` are added to the global scope when the program starts.
-    //
-    // TODO Consider grouping `global_bindings` with `builtins`.
-    pub global_bindings: &'a Vec<(RawExpr, SourcedValue)>,
 }
 
 pub fn eval_prog(
@@ -314,34 +311,37 @@ fn eval_stmt(
 // `value_to_pairs` returns the "index, value" pairs in `v`, if `v` represents
 // an "iterable" type.
 fn value_to_pairs(v: &Value) -> Result<Vec<(SourcedValue, SourcedValue)>> {
-    let pairs =
-        match v {
-            Value::Str(s) =>
-                s
-                    .iter()
-                    .enumerate()
-                    .map(|(i, c)| {
-                        // TODO Handle issues caused by casting.
-                        (value::new_int(i as i64), value::new_str(vec![*c]))
-                    })
-                    .collect(),
+    match v {
+        Value::Str(s) => {
+            let mut pairs = Vec::with_capacity(s.len());
+            for (i, c) in s.iter().enumerate() {
+                let n: i64 = i.try_into()
+                    .context(CastFailed)?;
 
-            Value::List(items) => {
-                let items = &deref!(items);
+                pairs.push((value::new_int(n), value::new_str(vec![*c])));
+            }
 
-                items
-                    .iter()
-                    .enumerate()
-                    .map(|(i, value)| {
-                        // TODO Handle issues caused by casting.
-                        (value::new_int(i as i64), value.clone())
-                    })
-                    .collect()
-            },
+            Ok(pairs)
+        },
 
-            Value::Object(props) => {
-                let props = &deref!(props);
+        Value::List(items) => {
+            let items = &lock_deref!(items);
 
+            let mut pairs = Vec::with_capacity(items.len());
+            for (i, value) in items.iter().enumerate() {
+                let n: i64 = i.try_into()
+                    .context(CastFailed)?;
+
+                pairs.push((value::new_int(n), value.clone()));
+            }
+
+            Ok(pairs)
+        },
+
+        Value::Object(props) => {
+            let props = &lock_deref!(props);
+
+            let pairs =
                 props
                     .iter()
                     .map(|(key, value)| {
@@ -350,14 +350,15 @@ fn value_to_pairs(v: &Value) -> Result<Vec<(SourcedValue, SourcedValue)>> {
                             value.clone(),
                         )
                     })
-                    .collect()
-            },
+                    .collect();
 
-            _ =>
-                return Err(Error::ForIterNotIterable),
-        };
+            Ok(pairs)
+        },
 
-    Ok(pairs)
+        _ => {
+            Err(Error::ForIterNotIterable)
+        },
+    }
 }
 
 pub fn eval_stmts_in_new_scope(
@@ -468,7 +469,7 @@ fn eval_expr(
                         .context(EvalListIndexFailed)?;
 
                     let v =
-                        match deref!(list).get(index) {
+                        match lock_deref!(list).get(index) {
                             Some(v) => v.clone(),
                             None => return new_loc_err(
                                 Error::OutOfListBounds{index},
@@ -486,7 +487,7 @@ fn eval_expr(
                             .context(EvalObjectIndexFailed)?;
 
                     let v =
-                        match deref!(props).get(&name) {
+                        match lock_deref!(props).get(&name) {
                             Some(value) => {
                                 value.v.clone()
                             },
@@ -615,7 +616,7 @@ fn eval_expr(
                         if *is_spread {
                             match_eval_expr!((context, scopes, expr) {
                                 Value::Object(props) => {
-                                    for (name, value) in &deref!(props) {
+                                    for (name, value) in &lock_deref!(props) {
                                         vals.insert(
                                             name.to_string(),
                                             value.clone(),
@@ -708,7 +709,7 @@ fn eval_expr(
                 };
 
             let v =
-                if let Some(value) = deref!(namespace).get(name) {
+                if let Some(value) = lock_deref!(namespace).get(name) {
                     Ok(value::new_val_ref_with_source(
                         value.v.clone(),
                         source.v.clone(),
@@ -833,8 +834,8 @@ fn apply_binary_operation(
                     Ok(Value::Str([a.clone(), b.clone()].concat()))
                 },
                 (Value::List(a), Value::List(b)) => {
-                    let a = deref!(a).clone();
-                    let b = deref!(b).clone();
+                    let a = lock_deref!(a).clone();
+                    let b = lock_deref!(b).clone();
 
                     Ok(Value::List(Arc::new(Mutex::new([a, b].concat()))))
                 },
@@ -955,12 +956,12 @@ fn eq(lhs: &Value, rhs: &Value) -> Option<bool> {
                 return Some(true);
             }
 
-            if deref!(xs).len() != deref!(ys).len() {
+            if lock_deref!(xs).len() != lock_deref!(ys).len() {
                 return Some(false);
             }
 
-            for (i, x) in deref!(xs).iter().enumerate() {
-                let y = &deref!(ys)[i];
+            for (i, x) in lock_deref!(xs).iter().enumerate() {
+                let y = &lock_deref!(ys)[i];
 
                 let equal = eq(&x.v, &y.v)?;
 
@@ -977,12 +978,12 @@ fn eq(lhs: &Value, rhs: &Value) -> Option<bool> {
                 return Some(true);
             }
 
-            if deref!(xs).len() != deref!(ys).len() {
+            if lock_deref!(xs).len() != lock_deref!(ys).len() {
                 return Some(false);
             }
 
-            for (k, x) in &deref!(xs) {
-                let ys = &deref!(ys);
+            for (k, x) in &lock_deref!(xs) {
+                let ys = &lock_deref!(ys);
                 let y =
                     if let Some(y) = ys.get(k) {
                         y
@@ -1131,7 +1132,7 @@ fn eval_expr_to_index(
     }
 
     let i: usize = index.try_into()
-        .context(ConvertIndexToUsizeFailed)?;
+        .context(CastFailed)?;
 
     Ok(i)
 }
@@ -1161,9 +1162,9 @@ fn get_list_range_index(
     -> Result<SourcedValue>
 {
     let start = maybe_start.get_or_insert(0);
-    let end = maybe_end.get_or_insert(deref!(list).len());
+    let end = maybe_end.get_or_insert(lock_deref!(list).len());
 
-    if let Some(vs) = deref!(list).get(*start .. *end) {
+    if let Some(vs) = lock_deref!(list).get(*start .. *end) {
         return Ok(value::new_list(vs.to_vec()));
     }
 
@@ -1191,7 +1192,7 @@ fn eval_list_items(
 
         match v.v {
             Value::List(items) => {
-                for item in &deref!(items) {
+                for item in &lock_deref!(items) {
                     vals.push(item.clone());
                 }
             },
@@ -1253,7 +1254,7 @@ fn eval_call(
                         collect_args,
                         stmts,
                         closure,
-                    } = &deref!(f);
+                    } = &lock_deref!(f);
 
                     let num_params = arg_names.len();
                     let got = arg_vals.len();
@@ -1388,7 +1389,7 @@ fn interpolate_string(
                 Ok(v) => v,
                 Err(e) => return new_loc_err(
                     Error::InterpolateStringParseFailed{
-                        source_str: format!("{:?}", e),
+                        source_str: format!("{e:?}"),
                     },
                     slot_col,
                 ),

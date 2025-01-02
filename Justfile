@@ -1,4 +1,4 @@
-# Copyright 2023 Sean Kelleher. All rights reserved.
+# Copyright 2023-2025 Sean Kelleher. All rights reserved.
 # Use of this source code is governed by an MIT
 # licence that can be found in the LICENCE file.
 
@@ -40,7 +40,9 @@ check_lint:
         --deny clippy::pedantic \
         --deny clippy::cargo \
         --allow clippy::manual-assert \
-        --allow clippy::module-name-repetitions
+        --allow clippy::manual-let-else \
+        --allow clippy::module-name-repetitions \
+        --allow clippy::single-match-else
 
 # Run unit tests.
 check_unit tests='':

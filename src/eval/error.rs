@@ -1,4 +1,4 @@
-// Copyright 2023-2024 Sean Kelleher. All rights reserved.
+// Copyright 2023-2025 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -7,8 +7,8 @@ use std::string::FromUtf8Error;
 
 use snafu::Snafu;
 
-use ast::BinaryOp;
-use eval::Value;
+use crate::ast::BinaryOp;
+use crate::eval::Value;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -223,7 +223,7 @@ pub enum Error {
         col: usize,
     },
 
-    ConvertIndexToUsizeFailed{source: TryFromIntError},
+    CastFailed{source: TryFromIntError},
 
     BindFailed{
         #[snafu(source(from(Error, Box::new)))]

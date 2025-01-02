@@ -1,4 +1,4 @@
-// Copyright 2023-2024 Sean Kelleher. All rights reserved.
+// Copyright 2023-2025 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use ast::Location;
-use value::SourcedValue;
+use crate::ast::Location;
+use crate::value::SourcedValue;
 
 #[derive(Clone, Debug)]
 pub struct ScopeStack(Vec<Arc<Mutex<Scope>>>);

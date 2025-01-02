@@ -1,4 +1,4 @@
-// Copyright 2023-2024 Sean Kelleher. All rights reserved.
+// Copyright 2023-2025 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -45,6 +45,7 @@ lalrpop_mod!(
     #[allow(clippy::all)]
     #[allow(clippy::pedantic)]
     #[allow(dead_code)]
+    #[allow(unused_imports)]
     parser
 );
 
@@ -63,7 +64,7 @@ fn main() {
         match args.next() {
             Some(v) => v,
             None => {
-                eprintln!("usage: {} <script-path>", prog);
+                eprintln!("usage: {prog} <script-path>");
                 process::exit(102);
             },
         };
@@ -74,22 +75,22 @@ fn main() {
         let msg =
             match e {
                 Error::GetCurrentDirFailed{source} => {
-                    format!(" couldn't get current directory: {}", source)
+                    format!(" couldn't get current directory: {source}")
                 },
                 Error::ReadScriptFailed{path, source} => {
                     let p = path.to_string_lossy();
 
-                    format!(" couldn't read script at '{}': {}", p, source)
+                    format!(" couldn't read script at '{p}': {source}")
                 },
                 Error::ParseFailed{src} => {
                     let ((ln, ch), msg) = render_parse_error(src);
 
-                    format!("{}:{}: {}", ln, ch, msg)
+                    format!("{ln}:{ch}: {msg}")
                 },
                 Error::EvalFailed{source, path} => {
                     let st = eval_err_to_stacktrace(&path, None, source);
 
-                    let mut rendered_stacktrace = "".to_string();
+                    let mut rendered_stacktrace = String::new();
                     if !st.stacktrace.is_empty() {
                         rendered_stacktrace = format!(
                             "\nStacktrace:\n  {}",
@@ -100,7 +101,7 @@ fn main() {
                     format!("{}{}", st.msg, rendered_stacktrace)
                 },
             };
-        eprintln!("{}:{}", raw_cur_rel_script_path, msg);
+        eprintln!("{raw_cur_rel_script_path}:{msg}");
         process::exit(103);
     }
 }
@@ -139,7 +140,6 @@ fn run(cur_rel_script_path: &Path) -> Result<(), Error> {
                 std: Arc::new(Mutex::new(BTreeMap::new())),
                 type_functions: type_functions::type_functions(),
             },
-            global_bindings: &global_bindings,
             cur_script_dir,
         },
         &mut scopes,
@@ -187,25 +187,24 @@ fn render_parse_error(error: ParseError<(usize, usize), Token, LexError>)
                 ),
             ),
         ParseError::ExtraToken{token: (loc, tok, _loc)} =>
-            (loc, format!("encountered extra token '{:?}'", tok)),
+            (loc, format!("encountered extra token '{tok:?}'")),
         ParseError::User{error} =>
             match error {
                 LexError::Unexpected(loc, c) =>
-                    (loc, format!("unexpected '{}'", c)),
+                    (loc, format!("unexpected '{c}'")),
                 LexError::IntOverflow(loc, raw_int) =>
-                    (loc, format!("'{}' is too high for an int", raw_int)),
+                    (loc, format!("'{raw_int}' is too high for an int")),
                 LexError::InvalidEscapeChar(loc, c) =>
-                    (loc, format!("'{}' is not a valid escape character", c)),
+                    (loc, format!("'{c}' is not a valid escape character")),
                 LexError::InvalidHexChar(loc, c) =>
-                    (loc, format!("'{}' is not a valid hex character", c)),
+                    (loc, format!("'{c}' is not a valid hex character")),
                 LexError::UnescapedDollar(loc) =>
                     (loc, "'$' must be escaped".to_string()),
                 LexError::InvalidInterpolationStart(loc, c) =>
                     (
                         loc,
                         format!(
-                            "interpolation slots start with '{{', got '{}'",
-                            c,
+                            "interpolation slots start with '{{', got '{c}'",
                         ),
                     ),
             },
@@ -214,13 +213,11 @@ fn render_parse_error(error: ParseError<(usize, usize), Token, LexError>)
 
 fn render_token(t: Token) -> String {
     match t {
-        Token::Ident(s) => format!("`{}`", s),
-        Token::IntLiteral(n) => format!("{}", n),
+        Token::Ident(s) => format!("`{s}`"),
+        Token::IntLiteral(n) => format!("{n}"),
 
         Token::StrLiteral(s)
-        | Token::InterpStrLiteral(s, _) => {
-            format!("\"{}\"", s)
-        },
+        | Token::InterpStrLiteral(s, _) => format!("\"{s}\""),
 
         Token::Break => "`break`".to_string(),
         Token::Continue => "`continue`".to_string(),
@@ -283,7 +280,7 @@ fn join_strings(xs: &[String]) -> String {
         let pre = xs[0 .. xs.len() - 1].join(", ");
         let last = xs[xs.len() - 1].clone();
 
-        format!("{} or {}", pre, last)
+        format!("{pre} or {last}")
     }
 }
 
@@ -362,9 +359,9 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
             let (line, col) = call_loc;
             let sep =
                 if let Some(f) = func {
-                    format!(" in '{}':", f)
+                    format!(" in '{f}':")
                 } else {
-                    "".to_string()
+                    String::new()
                 };
 
             st.msg = format!("{}:{}:{} {}", line, col, sep, st.msg);
@@ -381,7 +378,7 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
             let (line, col) = call_loc;
             let f = func.unwrap_or("<root>");
 
-            st.stacktrace.push(format!("{}:{}:{}: in '{}'", p, line, col, f));
+            st.stacktrace.push(format!("{p}:{line}:{col}: in '{f}'"));
 
             st
         },
@@ -390,9 +387,9 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
             let mut st = eval_err_to_stacktrace(path, func, *source);
             let sep =
                 if let Some(f) = func {
-                    format!(" in '{}':", f)
+                    format!(" in '{f}':")
                 } else {
-                    "".to_string()
+                    String::new()
                 };
 
             st.msg = format!("{}:{}:{} {}", line, col, sep, st.msg);
@@ -401,7 +398,7 @@ fn eval_err_to_stacktrace(path: &Path, func: Option<&str>, error: EvalError)
         },
 
         _ => {
-            StacktracedErrorMsg{stacktrace: vec![], msg: format!("{}", error)}
+            StacktracedErrorMsg{stacktrace: vec![], msg: format!("{error}")}
         },
     }
 }

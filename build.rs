@@ -1,4 +1,4 @@
-// Copyright 2023 Sean Kelleher. All rights reserved.
+// Copyright 2023-2025 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
@@ -42,7 +42,7 @@ fn gen_tests(src_dir: &str, tgt_dir: &Path) {
     // as opposed to the time of generating the tests.
     if let Err(e) = fs::create_dir(&test_dir) {
         if e.kind() != ErrorKind::AlreadyExists {
-            panic!("couldn't create test directory: {}", e);
+            panic!("couldn't create test directory: {e}");
         }
     }
 
@@ -183,10 +183,10 @@ fn extract_tests(entry_path: PathBuf, extended_format: bool) -> Vec<Test> {
 
         cur_test = Some(Test{
             name: String::from(test_name),
-            src: String::from(""),
+            src: String::new(),
             tgt_code: 0,
-            tgt_stdout: String::from(""),
-            tgt_stderr: String::from(""),
+            tgt_stdout: String::new(),
+            tgt_stderr: String::new(),
         });
         test_section = 0;
     }
@@ -252,7 +252,7 @@ fn write_test_file_header(test_file: &mut File) {
                 .stderr(exp.stderr);
         }
     "};
-    write!(test_file, "{}", header)
+    write!(test_file, "{header}")
         .expect("couldn't write test file header");
 }
 
@@ -275,6 +275,8 @@ fn write_test(
         test_file,
         indoc!{"
 
+            #[allow(clippy::manual_string_new)]
+            #[allow(clippy::needless_raw_string_hashes)]
             #[test]
             fn {name}() {{
                 run_test(
@@ -300,7 +302,6 @@ fn write_test(
         tgt_stderr = test.tgt_stderr,
     )
         .unwrap_or_else(|_| panic!(
-            "couldn't write test to test file '{:?}'",
-            test_file_path,
+            "couldn't write test to test file '{test_file_path:?}'",
         ));
 }

@@ -1,12 +1,12 @@
-// Copyright 2023-2024 Sean Kelleher. All rights reserved.
+// Copyright 2023-2025 Sean Kelleher. All rights reserved.
 // Use of this source code is governed by an MIT
 // licence that can be found in the LICENCE file.
 
-use ast::*;
-use lexer::InterpSlot;
-use lexer::LexError;
-use lexer::Location as LexLocation;
-use lexer::Token;
+use crate::ast::*;
+use crate::lexer::InterpSlot;
+use crate::lexer::LexError;
+use crate::lexer::Location as LexLocation;
+use crate::lexer::Token;
 
 grammar;
 
