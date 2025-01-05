@@ -30,6 +30,9 @@ false
 
 # Objects:
 {"hello": "world", "test": [1, 2, 3]}
+
+# Functions:
+fn f() {}
 ```
 
 Integers can be formatted using underscore to help reading:
